@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ห้องทดลองไร้น้ำหนัก · ครูเอกชัย</title>
+<meta name="description" content="การทดลองฟิสิกส์เสมือนจริง 20 บท โดยครูเอกชัย">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Sarabun:wght@400;500&display=swap" rel="stylesheet">
+<!--
+  ===== วิธีเพิ่ม simulation เรื่องใหม่ =====
+  1) อัปโหลดไฟล์ไว้ในโฟลเดอร์ของบทนั้น เช่น ch09/wave-lab.html
+  2) เพิ่ม 1 บรรทัดในส่วน [การทดลอง] ด้านล่าง:
+     เลขบท | ชื่อการทดลอง | คำอธิบายสั้น | ไฟล์
+     เช่น  9 | ห้องทดลองคลื่นในเชือก | การสะท้อน · การซ้อนทับ | ch09/wave-lab.html
+-->
+<script type="text/plain" id="data">
+[หมวด]
+กลศาสตร์ | 🚀
+คลื่น แสง และเสียง | 🌊
+ไฟฟ้าและแม่เหล็ก | ⚡
+ความร้อนและสสาร | 🔥
+ฟิสิกส์ยุคใหม่ | ⚛️
+
+[บท]
+1 | กลศาสตร์ | ความรู้เบื้องต้นทางฟิสิกส์
+2 | กลศาสตร์ | การเคลื่อนที่แนวตรง
+3 | กลศาสตร์ | แรงและกฎการเคลื่อนที่
+4 | กลศาสตร์ | สมดุลกล
+5 | กลศาสตร์ | งานและพลังงาน
+6 | กลศาสตร์ | โมเมนตัมและการชน
+7 | กลศาสตร์ | การเคลื่อนที่แนวโค้ง (โพรเจกไทล์ และการเคลื่อนที่แบบวงกลม)
+8 | กลศาสตร์ | การเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย
+9 | คลื่น แสง และเสียง | คลื่น
+10 | คลื่น แสง และเสียง | แสงเชิงคลื่น
+11 | คลื่น แสง และเสียง | แสงเชิงรังสี (ทัศนอุปกรณ์)
+12 | คลื่น แสง และเสียง | เสียง
+13 | ไฟฟ้าและแม่เหล็ก | ไฟฟ้าสถิต
+14 | ไฟฟ้าและแม่เหล็ก | ไฟฟ้ากระแส
+15 | ไฟฟ้าและแม่เหล็ก | แม่เหล็กและไฟฟ้า
+16 | ความร้อนและสสาร | ความร้อนและแก๊ส
+17 | ความร้อนและสสาร | ของแข็งและของไหล
+18 | ฟิสิกส์ยุคใหม่ | คลื่นแม่เหล็กไฟฟ้า
+19 | ฟิสิกส์ยุคใหม่ | ฟิสิกส์อะตอม
+20 | ฟิสิกส์ยุคใหม่ | ฟิสิกส์นิวเคลียร์และฟิสิกส์อนุภาค
+
+[การทดลอง]
+8 | ห้องทดลองฮาร์มอนิกอย่างง่าย | มวลติดปลายสปริง · ลูกตุ้มอย่างง่าย · กราฟ x–t v–t a–t · พลังงาน | ch08/shm-lab.html
+</script>
+<style>
+:root{--bg:#070B1F;--p1:#121A42;--p2:#0B1030;--c:#5EEAD4;--v:#A78BFA;--o:#FDBA74;--t:#E6EAFF;--m:#9AA3C7}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--t);font-family:'Sarabun',sans-serif}
+body{padding:20px max(16px,3vw) 40px}
+.wrap{max-width:1100px;margin:0 auto}
+.top{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:end;justify-content:space-between;margin-bottom:18px}
+.eyebrow{font:13px monospace;letter-spacing:3px;color:var(--c)}
+h1{margin:4px 0 0;font-family:'Chakra Petch';font-weight:600;font-size:clamp(26px,4vw,38px);color:#fff}
+.prog{min-width:240px;flex:0 1 320px}
+.prog .lbl{display:flex;justify-content:space-between;font-family:'Chakra Petch';font-size:14px;color:var(--m);margin-bottom:6px}
+.prog .lbl b{color:var(--c)}
+.bar{height:10px;border-radius:99px;background:rgba(230,234,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--c),var(--v));box-shadow:0 0 12px var(--c);border-radius:99px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px}
+.chip{font-family:'Chakra Petch';font-size:14px;padding:7px 14px;border-radius:999px;cursor:pointer;border:1px solid rgba(94,234,212,.3);background:transparent;color:#C9D0F5}
+.chip:hover{border-color:var(--c);color:#fff}
+.chip.on{background:var(--c);color:#04201C;border-color:var(--c)}
+.search{flex:1 1 220px;min-width:180px;font:15px 'Sarabun';padding:9px 14px;border-radius:999px;border:1px solid rgba(167,139,250,.3);background:var(--p2);color:var(--t);outline:none}
+.search:focus{border-color:var(--c)}
+.cat{margin:28px 0 8px;font-family:'Chakra Petch';font-weight:600;font-size:20px;color:#fff;display:flex;gap:10px;align-items:center}
+.cat::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(94,234,212,.35),transparent)}
+.ch{margin:0 0 10px}
+.chh{display:flex;gap:12px;align-items:baseline;padding:8px 4px}
+.no{font:600 13px 'Chakra Petch';color:var(--v);min-width:46px}
+.cn{font-size:16px;color:#fff}
+.ch.empty .chh{opacity:.42}
+.soon{margin-left:auto;font-size:12px;color:var(--m);white-space:nowrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:10px;padding-left:58px}
+a.card{display:flex;gap:14px;align-items:center;text-decoration:none;color:inherit;padding:14px 16px;border-radius:14px;
+  border:1px solid rgba(94,234,212,.35);background:linear-gradient(160deg,var(--p1),var(--p2));transition:.2s}
+a.card:hover{border-color:var(--c);transform:translateY(-2px);box-shadow:0 10px 26px rgba(94,234,212,.16)}
+.ic{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:rgba(94,234,212,.1)}
+.ttl{font-family:'Chakra Petch';font-weight:600;font-size:16px;color:#fff}
+.ds{font-size:13px;color:var(--m);margin-top:2px}
+.go{margin-left:auto;font:12px monospace;color:var(--c);white-space:nowrap}
+.none{color:var(--m);text-align:center;padding:30px}
+footer{margin-top:40px;text-align:center;font-size:13px;color:var(--m)}
+footer a{color:var(--c)}
+@media (max-width:560px){.cards{padding-left:0;grid-template-columns:1fr}.go{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><div class="eyebrow">// ZERO-G LAB</div><h1>ห้องทดลองไร้น้ำหนัก</h1></div>
+    <div class="prog"><div class="lbl"><span>ความคืบหน้าภารกิจ</span><span id="pt"></span></div><div class="bar"><i id="pb"></i></div></div>
+  </div>
+  <div class="tools"><div id="chips" style="display:flex;flex-wrap:wrap;gap:8px"></div><input class="search" id="q" type="search" placeholder="🔍 ค้นหา เช่น ลูกตุ้ม สปริง คลื่น"></div>
+  <div id="list"></div>
+  <footer>สร้างโดยครูเอกชัย · <a href="https://sites.google.com/view/kru-ekachai" target="_top">กลับเว็บไซต์ครูเอกชัย</a></footer>
+</div>
+<script>
+const sec={};let cur=null;
+document.getElementById('data').textContent.split('\n').forEach(l=>{l=l.trim();if(!l)return;const m=l.match(/^\[(.+)\]$/);if(m){cur=m[1];sec[cur]=[];return}if(cur)sec[cur].push(l.split('|').map(s=>s.trim()))});
+const cats=(sec['หมวด']||[]).map(([n,i])=>({n,i}));
+const chs=(sec['บท']||[]).filter(r=>r.length>=3).map(([no,c,n])=>({no:+no,c,n}));
+const sims=(sec['การทดลอง']||[]).filter(r=>r.length>=4).map(([no,t,d,f])=>({no:+no,t,d,f}));
+const esc=s=>String(s).replace(/[&<>"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]));
+const done=new Set(sims.map(s=>s.no));const ready=chs.filter(c=>done.has(c.no)).length;
+document.getElementById('pt').innerHTML=`พร้อมใช้ <b>${ready}</b> / ${chs.length} บท`;
+document.getElementById('pb').style.width=Math.max(3,ready/chs.length*100)+'%';
+let sel='ทั้งหมด';
+function draw(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  document.getElementById('chips').innerHTML=['ทั้งหมด',...cats.map(c=>c.n)].map(n=>{const c=cats.find(x=>x.n===n);
+    return `<button class="chip${n===sel?' on':''}" data-n="${esc(n)}">${c?c.i+' ':''}${esc(n)}</button>`}).join('');
+  let h='';
+  cats.filter(c=>sel==='ทั้งหมด'||c.n===sel).forEach(c=>{
+    let rows=chs.filter(x=>x.c===c.n).map(ch=>{
+      let ss=sims.filter(s=>s.no===ch.no);
+      if(q){const hitCh=ch.n.toLowerCase().includes(q);ss=ss.filter(s=>hitCh||(s.t+' '+s.d).toLowerCase().includes(q));if(!hitCh&&!ss.length)return''}
+      return `<div class="ch${ss.length?'':' empty'}"><div class="chh"><span class="no">บท ${ch.no}</span><span class="cn">${esc(ch.n)}</span>${ss.length?'':'<span class="soon">🔒 เร็ว ๆ นี้</span>'}</div>`+
+        (ss.length?`<div class="cards">`+ss.map(s=>`<a class="card" href="${esc(s.f)}" target="_blank" rel="noopener"><span class="ic">🛰️</span><span><div class="ttl">${esc(s.t)}</div><div class="ds">${esc(s.d)}</div></span><span class="go">เปิด ↗</span></a>`).join('')+`</div>`:'')+`</div>`}).join('');
+    if(rows)h+=`<div class="cat">${c.i} ${esc(c.n)}</div>`+rows});
+  document.getElementById('list').innerHTML=h||'<div class="none">ไม่พบการทดลองที่ค้นหา</div>';
+}
+document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b){sel=b.dataset.n;draw()}});
+document.getElementById('q').addEventListener('input',draw);
+draw();
+</script>
+</body>
+</html>
