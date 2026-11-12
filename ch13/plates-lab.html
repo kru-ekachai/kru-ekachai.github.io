@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ห้องทดลองสนามไฟฟ้าสม่ำเสมอ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.35);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(4.5em,auto) auto minmax(0,5.5em) auto minmax(0,1fr);align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.9)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.05);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.85);white-space:nowrap}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.95);line-height:1.55;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.12em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+@media (max-width:760px){.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:5.5em auto minmax(0,1fr) auto auto}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>สนามไฟฟ้าสม่ำเสมอ</h1>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" aria-selected="true" data-t="1">① ความต่างศักย์และงาน</button>
+      <button role="tab" aria-selected="false" data-t="2">② ประจุเคลื่อนที่ในสนาม</button>
+      <button role="tab" aria-selected="false" data-t="3">③ มิลลิแกน / ลูกพิธ</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="tools">
+      <div class="seg" data-tabs="2" id="partSeg" role="group" aria-label="ชนิดอนุภาค">
+        <button data-p="e" aria-pressed="true">อิเล็กตรอน</button><button data-p="p" aria-pressed="false">โปรตอน</button><button data-p="c" aria-pressed="false">กำหนดเอง</button>
+      </div>
+      <button class="btn" data-tabs="2" id="shoot">➜ ยิงแนวนอน</button>
+      <button class="btn" data-tabs="2" id="drop">● ปล่อยจากหยุดนิ่ง</button>
+      <div class="seg" data-tabs="3" id="modeSeg" role="group" aria-label="รูปแบบ">
+        <button data-m="oil" aria-pressed="true">หยดน้ำมัน</button><button data-m="pend" aria-pressed="false">ลูกพิธแขวนด้าย</button>
+      </div>
+      <button class="btn" id="reset">↺ เริ่มใหม่</button>
+      <button class="btn" id="fs">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <div class="panel stage" id="stageBox">
+    <canvas id="cv"></canvas>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+
+<script>
+/* ===================== ตัวช่วย ===================== */
+const $=id=>document.getElementById(id);
+const E_CH=1.6e-19, M_E=9.1e-31, M_P=1.67e-27, G=10;
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+const sup=n=>String(n).split('').map(c=>SUP[c]||c).join('');
+const trimN=s=>s.includes('.')&&!s.includes('e')?s.replace(/\.?0+$/,''):s;
+function fmt(x,sig=3){
+  if(!isFinite(x))return '—';if(x===0)return '0';
+  let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(sig));
+  if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=3)return trimN(Number(x.toPrecision(sig)).toString()).replace('-','−');
+  return trimN(m.toPrecision(sig)).replace('-','−')+'×10'+sup(e);
+}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1700)}
+
+/* ===================== สถานะ ===================== */
+function defaults(){return{
+  1:{V:8,d:1,q:2,A:{x:-.3,y:-.25},B:{x:.3,y:.25}},           // ข้อ 54: E = 8 V/m, AB = 0.5 m
+  2:{V:100,d:2,v0:10,p:'e',cq:2,cm:4,run:null,trail:[]},   // d เป็น cm · v0 เป็น ×10⁶ m/s
+  3:{mode:'oil',V:60,d:.8,m:9.6,n:5,y:.5,                   // ข้อ 59: d 0.8 cm, E 12000 V/m, q 8×10⁻¹⁹ C
+     pV:6,pd:10,pq:2.5,pm:.015,th:0}                         // ข้อ 67: q 2.5 μC, m 0.015 g → E 60 N/C
+}}
+let S={tab:1,st:defaults(),drag:null,dirty:true};
+const T=()=>S.st[S.tab];
+
+/* ===================== แผงปรับค่า ===================== */
+const SPECS={
+  1:[['V','ความต่างศักย์ V','V',1,1,1000],['d','ระยะห่างแผ่น d','m',.1,.2,5],['q','ประจุทดสอบ q','μC',1,-100,100]],
+  2:[['V','ความต่างศักย์ V','V',10,10,2000],['d','ระยะห่างแผ่น d','cm',.5,1,5],['v0','ความเร็วยิง v₀','×10⁶ m/s',1,0,50]],
+  '2c':[['cq','ประจุ (เท่าของ e)','e',1,-10,10],['cm','มวล (เท่าของโปรตอน)','mₚ',1,1,100]],
+  oil:[['V','ความต่างศักย์ V','V',1,0,1000],['d','ระยะห่างแผ่น d','cm',.1,.2,5],['m','มวลหยดน้ำมัน','×10⁻¹⁶ kg',.1,.1,100],['n','อิเล็กตรอนเกิน','ตัว',1,1,50]],
+  pend:[['pV','ความต่างศักย์ V','V',1,0,500],['pd','ระยะห่างแผ่น d','cm',1,2,50],['pq','ประจุลูกพิธ','μC',.5,-20,20],['pm','มวลลูกพิธ','g',.005,.005,1]]
+};
+function specs(){if(S.tab===3)return SPECS[T().mode];if(S.tab===2)return T().p==='c'?SPECS[2].concat(SPECS['2c']):SPECS[2];return SPECS[1]}
+function renderParams(){
+  const st=T();$('params').innerHTML='<span class="label">ปรับค่า</span>'+specs().map(([k,l,u])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1" aria-label="ลด">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${+st[k].toFixed(4)}"><button class="mini" data-k="${k}" data-d="1" aria-label="เพิ่ม">+</button><span class="unit">${u}</span></div>`).join('');
+}
+function setParam(k,v){const sp=specs().find(s=>s[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],v));v=Math.round(v/sp[3])*sp[3];v=+v.toFixed(4);
+  if(k==='q'&&v===0)v=sp[3];if(k==='cq'&&v===0)v=1;T()[k]=v;const inp=document.querySelector(`#params input[data-k="${k}"]`);if(inp&&document.activeElement!==inp)inp.value=v;
+  if(S.tab===2){T().run=null;T().trail=[]}clampAB();S.dirty=true}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=specs().find(s=>s[0]===b.dataset.k);setParam(b.dataset.k,T()[b.dataset.k]+sp[3]*+b.dataset.d)});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i)i.value=T()[i.dataset.k]});
+
+/* ===================== ผังเวที ===================== */
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0,Vw={};
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(layout).observe(cv);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+const U=()=>Math.max(12,Math.min(W,H*1.6)*.016);
+function arrow(x1,y1,x2,y2,col,w=4){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const ux=(x2-x1)/L,uy=(y2-y1)/L,h=Math.min(L*.5,Math.max(9,w*3));
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-ux*h*.8,y2-uy*h*.8);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-ux*h-uy*h*.55,y2-uy*h+ux*h*.55);ctx.lineTo(x2-ux*h+uy*h*.55,y2-uy*h-ux*h*.55);ctx.closePath();ctx.fill()}
+function tag(text,x,y,col,side=1){font(Math.max(13,U()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(20,U()*1.6);
+  let bx=side<0?x-w-6:x+6,by=y-h/2;bx=Math.max(4,Math.min(W-w-4,bx));by=Math.max(4,Math.min(H-h-4,by));
+  ctx.fillStyle='rgba(255,255,255,.93)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function sym(x,y,r,s){
+  if(s>0){ctx.strokeStyle='#d42a2a';ctx.lineWidth=Math.max(1.8,r*.32);ctx.beginPath();ctx.moveTo(x-r*.6,y);ctx.lineTo(x+r*.6,y);ctx.moveTo(x,y-r*.6);ctx.lineTo(x,y+r*.6);ctx.stroke()}
+  else{ctx.strokeStyle='#2557d6';ctx.lineWidth=Math.max(1.8,r*.32);ctx.beginPath();ctx.moveTo(x-r*.6,y);ctx.lineTo(x+r*.6,y);ctx.stroke()}}
+// แผ่นคู่ขนานแนวนอน: บน + ล่าง −
+function platesH(x0,x1,yt,yb,showEq,V){
+  const th=Math.max(10,U()*.9);
+  ctx.fillStyle='#e9d2d2';ctx.strokeStyle='#b91c1c';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x0,yt-th,x1-x0,th,3);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#d3dcf2';ctx.strokeStyle='#1d4ed8';ctx.beginPath();ctx.roundRect(x0,yb,x1-x0,th,3);ctx.fill();ctx.stroke();
+  const n=Math.max(4,Math.round((x1-x0)/(U()*3.2)));
+  for(let i=0;i<n;i++){const x=x0+(x1-x0)*(i+.5)/n;sym(x,yt-th/2,th*.42,1);sym(x,yb+th/2,th*.42,-1)}
+  // เส้นสนาม
+  const nf=Math.max(3,Math.round((x1-x0)/(U()*5)));
+  for(let i=0;i<nf;i++){const x=x0+(x1-x0)*(i+.5)/nf;ctx.globalAlpha=.55;arrow(x,yt+4,x,yb-4,'#0d6e66',1.8);ctx.globalAlpha=1}
+  if(showEq){ctx.setLineDash([5,7]);ctx.strokeStyle='rgba(124,58,237,.45)';ctx.lineWidth=1.3;
+    font(Math.max(11,U()*.85),600,'"JetBrains Mono",monospace');ctx.fillStyle='#6d28d9';ctx.textAlign='left';ctx.textBaseline='middle';
+    for(let k=0;k<=4;k++){const y=yb+(yt-yb)*k/4;if(k>0&&k<4){ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke()}ctx.fillText(fmt(V*k/4)+' V',x1+8,y)}
+    ctx.setLineDash([])}
+}
+
+/* ===================== แท็บ ①: ความต่างศักย์และงาน ===================== */
+function geo1(){const st=T(),Lw=Math.max(2*st.d,1.6),sc=Math.min(W*.78/Lw,H*.72/st.d);return{sc,Lw,cx:W*.47,cy:H*.5}}
+const w1=(g,p)=>({x:g.cx+p.x*g.sc,y:g.cy-p.y*g.sc});
+function clampAB(){if(S.tab!==1)return;const st=T(),Lw=Math.max(2*st.d,1.6);for(const k of['A','B']){const p=st[k];p.x=Math.max(-Lw/2+.05,Math.min(Lw/2-.05,p.x));p.y=Math.max(-st.d/2,Math.min(st.d/2,p.y))}}
+function probe(x,y,label,col){const r=Math.max(9,U()*.75);ctx.fillStyle='#fff';ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-r*1.5,y);ctx.lineTo(x+r*1.5,y);ctx.moveTo(x,y-r*1.5);ctx.lineTo(x,y+r*1.5);ctx.stroke();
+  font(Math.max(14,U()*1.3),700);ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,x+r+3,y-r)}
+function draw1(){
+  const st=T(),g=geo1(),yt=g.cy-st.d/2*g.sc,yb=g.cy+st.d/2*g.sc,x0=g.cx-g.Lw/2*g.sc,x1=g.cx+g.Lw/2*g.sc;
+  platesH(x0,x1,yt,yb,true,st.V);
+  const A=w1(g,st.A),B=w1(g,st.B);
+  ctx.setLineDash([7,6]);ctx.strokeStyle='#334155';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.setLineDash([]);
+  // ระยะตามแนวสนาม
+  const dy=Math.abs(st.A.y-st.B.y);
+  if(dy>1e-9){const bx=Math.max(A.x,B.x)+U()*2.6;ctx.strokeStyle='#c2410c';ctx.lineWidth=2.5;
+    ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(bx,A.y);ctx.moveTo(B.x,B.y);ctx.lineTo(bx,B.y);ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(bx,A.y);ctx.lineTo(bx,B.y);ctx.moveTo(bx-6,A.y);ctx.lineTo(bx+6,A.y);ctx.moveTo(bx-6,B.y);ctx.lineTo(bx+6,B.y);ctx.stroke();
+    tag('d∥ = '+fmt(dy)+' m',bx,(A.y+B.y)/2,'#c2410c',1)}
+  else tag('ตั้งฉากกับสนาม → ΔV = 0',(A.x+B.x)/2,A.y-U()*2.4,'#c2410c',-1);
+  font(Math.max(14,U()*1.2),700);ctx.fillStyle='#0d6e66';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('E ↓',x0-10,g.cy);
+  probe(A.x,A.y,'A','#334155');probe(B.x,B.y,'B','#334155');
+}
+function calc1(){const st=T(),E=st.V/st.d,Vat=y=>E*(y+st.d/2),VA=Vat(st.A.y),VB=Vat(st.B.y),dV=VB-VA,dy=Math.abs(st.A.y-st.B.y),q=st.q*1e-6;
+  const dir=dy<1e-9?'ตั้งฉากกับสนาม':(st.B.y<st.A.y?'ไปทางเดียวกับสนาม → ศักย์ลดลง':'สวนทางกับสนาม → ศักย์เพิ่มขึ้น');
+  return `<div class="cl"><span class="lab">สนาม</span>E = V/d = ${fmt(st.V)}/${fmt(st.d)} = <b>${fmt(E)} V/m</b> (ทิศจากแผ่น + ลงหาแผ่น −)</div>
+  <div class="cl"><span class="lab">A → B</span>ระยะตามแนวสนาม d∥ = ${fmt(dy)} m · ${dir}</div>
+  <div class="cl"><span class="lab">ΔV</span>V_B − V_A = ${dy<1e-9?'0':(dV<0?'−':'+')+'Ed∥ = '+(dV<0?'−':'')+'('+fmt(E)+')('+fmt(dy)+')'} = <span class="res">${fmt(dV)} V</span></div>
+  <div class="cl"><span class="lab">งาน</span>W = q(V_B − V_A) = (${fmt(q)})(${fmt(dV)}) = <span class="res">${fmt(q*dV)} J</span></div>
+  <div class="cl note">ลาก A และ B ได้ · ใช้เฉพาะระยะที่ขนานกับ E</div>`}
+
+/* ===================== แท็บ ②: ประจุเคลื่อนที่ในสนาม ===================== */
+const PL=.1;   // ความยาวแผ่น 10 cm
+function particle(){const st=T();if(st.p==='e')return{q:-E_CH,m:M_E,n:'อิเล็กตรอน',s:-1};if(st.p==='p')return{q:E_CH,m:M_P,n:'โปรตอน',s:1};
+  return{q:st.cq*E_CH,m:st.cm*M_P,n:'ไอออน',s:Math.sign(st.cq)}}
+function phys2(){const st=T(),d=st.d/100,E=st.V/d,P=particle(),F=P.q*E,ay=-F/P.m;   // แกน y ชี้ขึ้น · E ชี้ลง → แรงบนประจุบวกชี้ลง
+  // ay ใช้แกนขึ้น: E มีทิศ −y ดังนั้น F_y = q(−E)
+  const Fy=-P.q*E,a=Fy/P.m;return{d,E,P,F:Math.abs(P.q*E),a}}
+function launch(kind){const st=T(),k=phys2(),v0=kind==='shoot'?st.v0*1e6:0;
+  if(kind==='shoot'&&v0<=0){toast('ตั้งความเร็วยิงมากกว่า 0');return}
+  const x0=kind==='shoot'?-PL/2:0,tHit=Math.sqrt(k.d/Math.abs(k.a)),tExit=v0>0?PL/v0:Infinity,tEnd=Math.min(tHit,tExit);
+  st.run={kind,x0,v0,a:k.a,t:0,tHit,tExit,tEnd,hit:tHit<=tExit,tAfter:v0>0&&tExit<tHit?(PL*.35)/v0:0};st.trail=[];S.dirty=true}
+function pos2(r,t){if(t<=r.tEnd)return{x:r.x0+r.v0*t,y:.5*r.a*t*t};const xe=r.x0+r.v0*r.tEnd,ye=.5*r.a*r.tEnd*r.tEnd,vy=r.a*r.tEnd,dt=t-r.tEnd;return{x:xe+r.v0*dt,y:ye+vy*dt}}
+function step2(dt){const r=T().run;if(!r)return;const total=r.tEnd+r.tAfter;if(r.t>=total)return;r.t=Math.min(total,r.t+dt*total/2.8);T().trail.push(pos2(r,r.t));S.dirty=true}
+function geo2(){const st=T(),d=st.d/100,nr=W<640,sc=Math.min(W*(nr?.86:.8)/(PL*(nr?1.12:1.45)),H*.78/d);return{sc,cx:W*.48,cy:H*.5,d}}
+function draw2(){
+  const st=T(),g=geo2(),k=phys2(),yt=g.cy-g.d/2*g.sc,yb=g.cy+g.d/2*g.sc,x0=g.cx-PL/2*g.sc,x1=g.cx+PL/2*g.sc;
+  platesH(x0,x1,yt,yb,false,st.V);
+  const P=(p)=>({x:g.cx+p.x*g.sc,y:g.cy-p.y*g.sc}),col=k.P.s<0?'#2557d6':'#d42a2a';
+  if(st.trail.length>1){ctx.strokeStyle=col;ctx.globalAlpha=.6;ctx.lineWidth=2.5;ctx.beginPath();st.trail.forEach((p,i)=>{const q=P(p);i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y)});ctx.stroke();ctx.globalAlpha=1}
+  const r=st.run,cur=r?pos2(r,r.t):{x:-PL/2,y:0},c=P(cur),rad=Math.max(8,U()*.75);
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(c.x,c.y,rad,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(c.x-rad*.5,c.y);ctx.lineTo(c.x+rad*.5,c.y);if(k.P.s>0){ctx.moveTo(c.x,c.y-rad*.5);ctx.lineTo(c.x,c.y+rad*.5)}ctx.stroke();
+  const inside=cur.x>=-PL/2-1e-9&&cur.x<=PL/2+1e-9&&Math.abs(cur.y)<=g.d/2+1e-9;
+  const done=r&&r.t>=r.tEnd+r.tAfter-1e-18;
+  if(inside&&!(done&&r.hit)){const L=Math.min(H*.18,U()*5),dir=k.a>0?-1:1;arrow(c.x,c.y,c.x,c.y+dir*L,'#16232a',4.5);tag('F = qE',c.x,c.y+dir*L,'#16232a',1)}
+  if(done&&r.hit)tag('ชนแผ่น'+(k.a>0?' +':' −'),c.x+rad,c.y+(k.a>0?1:-1)*U()*2.4,'#b91c1c',1);
+  font(Math.max(13,U()*1.1),600);ctx.fillStyle='#4d5f64';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('แผ่นยาว 10 cm · ภาพเคลื่อนที่แบบช้าลง ตัวเลขเป็นค่าจริง',W/2,Math.min(H-U()*1.6,yb+U()*2.2));
+}
+function calc2(){const st=T(),k=phys2(),r=st.run,v0=st.v0*1e6;let h=
+  `<div class="cl"><span class="lab">อนุภาค</span>${k.P.n} q = ${fmt(k.P.q)} C · m = ${fmt(k.P.m)} kg (ไม่คิดน้ำหนัก)</div>
+  <div class="cl"><span class="lab">สนาม</span>E = V/d = ${fmt(st.V)}/${fmt(k.d)} = <b>${fmt(k.E)} V/m</b></div>
+  <div class="cl"><span class="lab">แรง</span>F = qE = (${fmt(Math.abs(k.P.q))})(${fmt(k.E)}) = <b>${fmt(k.F)} N</b> ทิศ${k.a>0?'ขึ้น (ไปหาแผ่น +)':'ลง (ไปหาแผ่น −)'}</div>
+  <div class="cl"><span class="lab">ความเร่ง</span>a = F/m = <span class="res">${fmt(Math.abs(k.a))} m/s²</span></div>`;
+  if(r&&r.kind==='shoot'){const tE=PL/v0,y=.5*Math.abs(k.a)*tE*tE;
+    h+=r.hit?`<div class="cl"><span class="lab">ยิง v₀ = ${fmt(v0)} m/s</span>ชนแผ่นที่ t = √(d/a) = ${fmt(r.tHit)} s · ระยะแนวนอน ${fmt(v0*r.tHit*100)} cm</div>`
+      :`<div class="cl"><span class="lab">ยิง v₀ = ${fmt(v0)} m/s</span>t = L/v₀ = ${fmt(tE)} s · เบี่ยงเบน y = ½at² = <span class="res">${fmt(y*100)} cm</span> → หลุดออกจากแผ่น</div>`}
+  else if(r){const v=Math.abs(k.a)*r.tHit;h+=`<div class="cl"><span class="lab">ปล่อยจากกลางแผ่น</span>t = √(d/a) = ${fmt(r.tHit)} s · v = at = <span class="res">${fmt(v)} m/s</span> · Ek = qV/2 = ${fmt(Math.abs(k.P.q)*st.V/2)} J</div>`}
+  else h+=`<div class="cl note">กด ➜ ยิงแนวนอน หรือ ● ปล่อยจากหยุดนิ่ง (กด Space ก็ได้)</div>`;
+  return h}
+
+/* ===================== แท็บ ③: มิลลิแกน / ลูกพิธ ===================== */
+function oil(){const st=T(),d=st.d/100,E=st.V/d,q=st.n*E_CH,m=st.m*1e-16,mg=m*G,qE=q*E;return{d,E,q,m,mg,qE,net:qE-mg,Vb:mg*d/q}}
+function pend(){const st=T(),d=st.pd/100,E=st.pV/d,q=st.pq*1e-6,m=st.pm/1000,mg=m*G,F=q*E;return{d,E,q,m,mg,F,th:Math.atan2(F,mg),T:Math.hypot(F,mg)}}
+function step3(dt){const st=T();
+  if(st.mode==='oil'){const o=oil(),r=o.net/o.mg;if(Math.abs(r)<.015)return;const v=Math.max(-.6,Math.min(.6,r*.35));const ny=Math.max(.06,Math.min(.94,st.y+v*dt));if(ny!==st.y){st.y=ny;S.dirty=true}}
+  else{const p=pend(),d=p.th-st.th;if(Math.abs(d)>1e-4){st.th+=d*Math.min(1,dt*4);S.dirty=true}}}
+function draw3(){const st=T();
+  if(st.mode==='oil'){const o=oil(),gw=Math.min(W*.6,H*1.2),gh=H*.62,x0=W*.42-gw/2,x1=x0+gw,yt=H*.18,yb=yt+gh;
+    platesH(x0,x1,yt,yb,false,st.V);
+    const x=W*.42,y=yb-(yb-yt)*st.y,r=Math.max(12,U()*1.1);
+    const g=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.1,x,y,r);g.addColorStop(0,'#fff5c2');g.addColorStop(1,'#d9a300');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+    sym(x,y,r*.55,-1);
+    const sc=Math.min(gh*.32,U()*7)/Math.max(o.mg,o.qE),Lg=o.mg*sc,Lq=o.qE*sc;
+    arrow(x,y+r,x,y+r+Lg,'#16232a',5);tag('mg = '+fmt(o.mg)+' N',x+r,y+r+Lg,'#16232a',1);
+    arrow(x,y-r,x,y-r-Lq,'#c2410c',5);tag('qE = '+fmt(o.qE)+' N',x+r,y-r-Lq,'#c2410c',1);
+    const still=Math.abs(o.net/o.mg)<.015;font(Math.max(16,U()*1.6),700);ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillStyle=still?'#15803d':'#4d5f64';ctx.fillText(still?'ลอยนิ่ง ✓  qE = mg':o.net>0?'เคลื่อนขึ้น ↑':'ตกลง ↓',x,yt-U()*1.6);
+  }else{const p=pend(),gw=Math.min(W*.5,H*1.1),x0=W*.42-gw/2,x1=W*.42+gw/2,yt=H*.1,yb=H*.92,th=Math.max(10,U()*.9);
+    ctx.fillStyle='#e9d2d2';ctx.strokeStyle='#b91c1c';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x0-th,yt,th,yb-yt,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#d3dcf2';ctx.strokeStyle='#1d4ed8';ctx.beginPath();ctx.roundRect(x1,yt,th,yb-yt,3);ctx.fill();ctx.stroke();
+    const n=Math.max(4,Math.round((yb-yt)/(U()*3)));for(let i=0;i<n;i++){const y=yt+(yb-yt)*(i+.5)/n;sym(x0-th/2,y,th*.42,1);sym(x1+th/2,y,th*.42,-1);if(i%2===0){ctx.globalAlpha=.4;arrow(x0+4,y,x1-4,y,'#0d6e66',1.6);ctx.globalAlpha=1}}
+    const px=W*.42,py=yt+U()*1.2,L=(yb-yt)*.55,bx=px+L*Math.sin(st.th),by=py+L*Math.cos(st.th),r=Math.max(12,U()*1.1);
+    ctx.fillStyle='#8a6a3a';ctx.fillRect(px-U()*2,py-6,U()*4,6);
+    ctx.setLineDash([5,6]);ctx.strokeStyle='rgba(77,95,100,.5)';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py+L*1.08);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle='#5b6b70';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(bx,by);ctx.stroke();
+    const g=ctx.createRadialGradient(bx-r*.3,by-r*.3,r*.1,bx,by,r);g.addColorStop(0,'#fff');g.addColorStop(1,'#a9b7bc');ctx.fillStyle=g;ctx.beginPath();ctx.arc(bx,by,r,0,7);ctx.fill();sym(bx,by,r*.55,Math.sign(p.q));
+    const sc=Math.min(H*.2,U()*6)/Math.max(p.mg,Math.abs(p.F));
+    arrow(bx,by+r,bx,by+r+p.mg*sc,'#16232a',4.5);tag('mg',bx,by+r+p.mg*sc,'#16232a',1);
+    if(Math.abs(p.F)>1e-12){const s=Math.sign(p.F);arrow(bx+s*r,by,bx+s*(r+Math.abs(p.F)*sc),by,'#c2410c',4.5);tag('qE',bx+s*(r+Math.abs(p.F)*sc),by,'#c2410c',s)}
+    tag('θ = '+fmt(Math.abs(st.th*180/Math.PI),3)+'°',px,py+U()*3.5,'#6d28d9',st.th>=0?-1:1);
+  }}
+function calc3(){const st=T();
+  if(st.mode==='oil'){const o=oil(),still=Math.abs(o.net/o.mg)<.015;
+    return `<div class="cl"><span class="lab">สนาม</span>E = V/d = ${fmt(st.V)}/${fmt(o.d)} = <b>${fmt(o.E)} V/m</b> (ทิศลง)</div>
+    <div class="cl"><span class="lab">หยดน้ำมัน</span>q = ne = (${st.n})(1.6×10⁻¹⁹) = ${fmt(o.q)} C (ประจุลบ แรงไฟฟ้าชี้ขึ้น) · m = ${fmt(o.m)} kg</div>
+    <div class="cl"><span class="lab">แรง</span>mg = ${fmt(o.mg)} N · qE = ${fmt(o.qE)} N</div>
+    <div class="cl"><span class="lab">ลอยนิ่งเมื่อ</span>qE = mg → V = mgd/q = <span class="res">${fmt(o.Vb)} V</span> ${still?'<span class="ok">✓ ลอยนิ่งแล้ว</span>':''}</div>
+    <div class="cl note">ใช้ g = 10 m/s² · ปรับ V จนหยดน้ำมันลอยนิ่ง</div>`}
+  const p=pend();return `<div class="cl"><span class="lab">สนาม</span>E = V/d = ${fmt(st.pV)}/${fmt(p.d)} = <b>${fmt(p.E)} N/C</b> (ทิศจากซ้ายไปขวา)</div>
+    <div class="cl"><span class="lab">แรง</span>qE = (${fmt(Math.abs(p.q))})(${fmt(p.E)}) = ${fmt(Math.abs(p.F))} N · mg = (${fmt(p.m)})(10) = ${fmt(p.mg)} N</div>
+    <div class="cl"><span class="lab">มุมเอียง</span>tan θ = qE/mg = ${fmt(Math.abs(p.F)/p.mg)} → <span class="res">θ = ${fmt(Math.abs(p.th*180/Math.PI),3)}°</span></div>
+    <div class="cl"><span class="lab">แรงตึงเชือก</span>T = √((mg)² + (qE)²) = <b>${fmt(p.T)} N</b></div>`}
+
+/* ===================== รวม ===================== */
+function draw(){if(!W)return;ctx.fillStyle='#f8faf9';ctx.fillRect(0,0,W,H);({1:draw1,2:draw2,3:draw3})[S.tab]()}
+function calc(){$('calc').innerHTML=({1:calc1,2:calc2,3:calc3})[S.tab]()}
+function showTabs(){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(S.tab)))}
+function syncSegs(){document.querySelectorAll('#partSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===S.st[2].p));document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.st[3].mode))}
+function setTab(t){S.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));showTabs();syncSegs();renderParams();layout()}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+$('reset').onclick=()=>{S.st[S.tab]=defaults()[S.tab];syncSegs();renderParams();S.dirty=true};
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+$('shoot').onclick=()=>launch('shoot');$('drop').onclick=()=>launch('drop');
+$('partSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const st=S.st[2];st.p=b.dataset.p;st.run=null;st.trail=[];
+  if(st.p==='p'&&st.v0>5)st.v0=1;if(st.p==='e'&&st.v0<5)st.v0=10;syncSegs();renderParams();S.dirty=true});
+$('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.st[3].mode=b.dataset.m;syncSegs();renderParams();S.dirty=true});
+
+// ลาก A, B (แท็บ ①)
+function pt(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function hit1(p){if(S.tab!==1)return null;const g=geo1(),st=T();for(const k of['A','B']){const q=w1(g,st[k]);if(Math.hypot(p.x-q.x,p.y-q.y)<Math.max(22,U()*1.8))return k}return null}
+cv.addEventListener('pointerdown',e=>{const k=hit1(pt(e));if(!k)return;S.drag=k;cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'});
+cv.addEventListener('pointermove',e=>{const p=pt(e);if(!S.drag){cv.style.cursor=hit1(p)?'grab':'default';return}
+  const g=geo1(),st=T(),sn=v=>Math.round(v*20)/20;const o=st[S.drag];o.x=sn((p.x-g.cx)/g.sc);o.y=sn((g.cy-p.y)/g.sc);clampAB();S.dirty=true});
+const end=()=>{S.drag=null;cv.style.cursor='default'};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;
+  if(k>='1'&&k<='3')setTab(+k);else if(k==='r'||k==='R')$('reset').click();else if(k==='f'||k==='F')$('fs').click();
+  else if(k===' '&&S.tab===2){e.preventDefault();launch(T().v0>0?'shoot':'drop')}});
+
+let tp=performance.now();
+function loop(t){const dt=Math.min(.05,(t-tp)/1000);tp=t;if(W){if(S.tab===2)step2(dt);if(S.tab===3)step3(dt)}
+  if(S.dirty&&W){S.dirty=false;draw();calc()}requestAnimationFrame(loop)}
+showTabs();syncSegs();renderParams();layout();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
