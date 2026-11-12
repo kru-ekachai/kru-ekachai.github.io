@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ห้องทดลองการเหนี่ยวนำประจุ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>การเหนี่ยวนำประจุไฟฟ้า</h1>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" aria-selected="true" data-t="1">① ขัดสี/สัมผัส</button>
+      <button role="tab" aria-selected="false" data-t="2">② ทรงกลม + สายดิน</button>
+      <button role="tab" aria-selected="false" data-t="3">③ ทรงกลมสองลูก</button>
+      <button role="tab" aria-selected="false" data-t="4">④ ลูกพิธ</button>
+      <button role="tab" aria-selected="false" data-t="5">⑤ จานโลหะ</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="tools">
+      <div class="seg" data-tabs="1" role="group" aria-label="คู่วัตถุที่ขัดสี" id="pairSeg">
+        <button class="g" data-p="glass" aria-pressed="true">แก้ว + ผ้าไหม</button><button class="g" data-p="plastic" aria-pressed="false">พลาสติก + ขนสัตว์</button>
+      </div>
+      <div class="seg" data-tabs="2345" role="group" aria-label="ชนิดประจุของแท่ง" id="signSeg">
+        <button class="p" data-s="1" aria-pressed="false">แท่ง +</button><button class="n" data-s="-1" aria-pressed="false">แท่ง −</button>
+      </div>
+      <button class="btn" data-tabs="2345" id="rodout" disabled>เอาแท่งประจุออก</button>
+      <button class="btn" data-tabs="3" id="split">↔ แยกทรงกลม</button>
+      <button class="btn" data-tabs="125" id="gnd">⏚ สายดิน</button>
+      <button class="btn on" id="flow">e⁻ แสดงการไหล</button>
+      <button class="btn" id="reset">↺ เริ่มใหม่</button>
+      <button class="btn" id="fs">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <div class="panel stage" id="stageBox">
+    <canvas id="cv"></canvas>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div class="bottom">
+    <div class="panel" data-tabs="2">
+      <dl class="nums">
+        <div><dt>ประจุบวก (+)</dt><dd class="cnt" id="qpos" style="color:var(--pos)">20</dd></div>
+        <div><dt>ประจุลบ (−)</dt><dd class="cnt" id="qneg" style="color:var(--neg)">20</dd></div>
+        <div class="big"><dt>ประจุสุทธิบนทรงกลม</dt><dd id="qnet">0</dd></div>
+        <div><dt>อิเล็กตรอนไหล</dt><dd id="qflow">—</dd></div>
+        <div><dt>สายดิน</dt><dd id="qgnd">ไม่ต่อ</dd></div>
+      </dl>
+    </div>
+    <div class="panel" data-tabs="1">
+      <table class="otab">
+        <thead><tr><th></th><th>+</th><th>−</th><th>สุทธิ</th></tr></thead>
+        <tbody>
+          <tr><td id="nmRod">แท่งแก้ว</td><td class="cp" id="rP"></td><td class="cn" id="rN"></td><td id="rQ"></td></tr>
+          <tr><td id="nmCloth">ผ้าไหม</td><td class="cp" id="cP"></td><td class="cn" id="cN"></td><td id="cQ"></td></tr>
+          <tr><td>ทรงกลม</td><td class="cp" id="sP"></td><td class="cn" id="sN"></td><td id="sQ"></td></tr>
+          <tr class="sum"><td>รวมทั้งหมด</td><td></td><td></td><td id="tQ"></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel" data-tabs="3">
+      <table class="otab">
+        <thead><tr><th></th><th>+</th><th>−</th><th>สุทธิ</th></tr></thead>
+        <tbody>
+          <tr><td>ทรงกลม A</td><td class="cp" id="aP"></td><td class="cn" id="aN"></td><td id="aQ"></td></tr>
+          <tr><td>ทรงกลม B</td><td class="cp" id="bP"></td><td class="cn" id="bN"></td><td id="bQ"></td></tr>
+          <tr class="sum"><td>รวม 2 ลูก</td><td class="cp" id="abP"></td><td class="cn" id="abN"></td><td id="abQ"></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel" data-tabs="4">
+      <dl class="nums">
+        <div><dt>ลูกพิธ (+)</dt><dd class="cnt" id="p4P" style="color:var(--pos)">8</dd></div>
+        <div><dt>ลูกพิธ (−)</dt><dd class="cnt" id="p4N" style="color:var(--neg)">8</dd></div>
+        <div class="big"><dt>ประจุสุทธิบนลูกพิธ</dt><dd id="p4Q">0</dd></div>
+        <div><dt>สถานะ</dt><dd id="p4S">ห้อยนิ่ง</dd></div>
+        <div><dt>มุมเอียงของเส้นด้าย</dt><dd id="p4A">0°</dd></div>
+      </dl>
+    </div>
+    <div class="panel" data-tabs="5">
+      <table class="otab">
+        <thead><tr><th></th><th>+</th><th>−</th><th>สุทธิ</th></tr></thead>
+        <tbody>
+          <tr><td>จานโลหะ</td><td class="cp" id="dP"></td><td class="cn" id="dN"></td><td id="dQ"></td></tr>
+          <tr><td>แผ่นโลหะ</td><td class="cp" id="lP"></td><td class="cn" id="lN"></td><td id="lQ"></td></tr>
+          <tr class="sum"><td>ทั้งชุด</td><td class="cp" id="eP"></td><td class="cn" id="eN"></td><td id="eQ"></td></tr>
+          <tr><td>มุมกางแผ่นโลหะ</td><td></td><td></td><td id="eA" style="color:var(--ink)">0°</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel legendbox">
+      <span class="label">สัญลักษณ์</span>
+      <div class="legend">
+        <span><b class="lp">+</b>ประจุบวก (ไม่เคลื่อนที่)</span>
+        <span><b class="ln">−</b>อิเล็กตรอน (เคลื่อนที่ได้)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== สถานะร่วม ===================== */
+const N0=20;                        // จำนวนประจุบวกบนทรงกลม = อิเล็กตรอนตอนเป็นกลาง
+const NEAR=-1.4, MINX=-1.18, ENTER=-2.6;   // แท็บ ②: ตำแหน่งปลายแท่ง (หน่วย = รัศมีทรงกลม)
+const S={tab:1,ground:false,showFlow:true,el:[],transit:[],flowDir:0,lastSpawn:0,relaxKey:'',
+  // แท็บ ②
+  sign:0,lastSign:0,hasRod:false,removing:false,rodX:-20,rodTarget:-20,hideX:-20,drag:false,
+  // แท็บ ①
+  pair:'glass',rb:{fx:.25,fy:.5,eR:0,eC:0,acc:0,lastX:null,fly:[],touchT:0,init:false}};
+const PAIRS={glass:{rod:'แท่งแก้ว',cloth:'ผ้าไหม',dir:-1},plastic:{rod:'แท่งพลาสติก',cloth:'ขนสัตว์',dir:1}}; // dir: อิเล็กตรอนที่แท่งได้ต่อการถู 1 ครั้ง
+const MAXQ=6, BASE=8;               // ถูได้สูงสุด 6 ประจุ · แท่งและผ้ามีคู่ +/− ตั้งต้น 8 คู่
+
+// ประจุบวกบนทรงกลม: วงนอก 12 + ด้านใน 8
+const RING=12,ions=[];
+for(let i=0;i<RING;i++){const a=Math.PI/2+i*2*Math.PI/RING;ions.push({x:.8*Math.cos(a),y:.8*Math.sin(a)})}
+for(let i=0;i<N0-RING;i++){const r=.5*Math.sqrt((i+.5)/(N0-RING)),a=i*2.39996;ions.push({x:r*Math.cos(a),y:r*Math.sin(a)})}
+const OFF={x:.075,y:.06};           // อิเล็กตรอนคู่กับประจุบวก วางเยื้องเล็กน้อยให้เห็นทั้งคู่
+function relaxTargets(n){
+  const T=[];
+  if(n>=N0){ions.forEach(p=>T.push({x:p.x+OFF.x,y:p.y+OFF.y}));const k=n-N0;
+    for(let i=0;i<k;i++){const a=-Math.PI/2+i*2*Math.PI/k+Math.PI/RING;T.push({x:.92*Math.cos(a),y:.92*Math.sin(a)})}}
+  else{const k=N0-n,skip=new Set();for(let i=0;i<k;i++)skip.add(Math.round(i*RING/k)%RING);
+    ions.forEach((p,i)=>{if(!skip.has(i))T.push({x:p.x+OFF.x,y:p.y+OFF.y})})}
+  return T;
+}
+function resetElectrons(n){S.el=relaxTargets(n).map(t=>({x:t.x,y:t.y}));S.relaxKey=''}
+resetElectrons(N0);
+
+/* ===================== ฟิสิกส์ทรงกลม (แบบจำลองเชิงคุณภาพ) ===================== */
+const JR=.85, A=1, B=A*N0/(JR*JR), QROD=50, WALL=.9;
+function rodCharges(){
+  if(S.tab!==1){const r=[],w=S.tab===3?ROD3:1;for(let k=0;k<4;k++)r.push({x:S.rodX-k*.35,y:0,q:S.sign*QROD/4*w});return r}
+  return rubRodCharges();
+}
+function rodActive(){
+  if(S.tab!==1)return S.hasRod&&S.rodX>-3.4;
+  const R=rubRod();if(!R||S.rb.eR===0)return false;
+  return Math.hypot(R.x2-G.cx,R.y-G.cy)<G.R*3.6;
+}
+function physics(){
+  const E=S.el,n=E.length,rc=rodCharges();
+  for(let sub=0;sub<6;sub++){
+    for(let i=0;i<n;i++){
+      const p=E[i];let fx=-B*p.x,fy=-B*p.y;
+      for(let j=0;j<n;j++){if(i===j)continue;const dx=p.x-E[j].x,dy=p.y-E[j].y,d2=dx*dx+dy*dy+.004;fx+=A*dx/d2;fy+=A*dy/d2}
+      for(const c of rc){const dx=c.x-p.x,dy=c.y-p.y,d2=dx*dx+dy*dy+.01;fx+=c.q*A*dx/d2;fy+=c.q*A*dy/d2}
+      let sx=fx*.0012,sy=fy*.0012;const m=Math.hypot(sx,sy);if(m>.012){sx*=.012/m;sy*=.012/m}
+      p.nx=p.x+sx;p.ny=p.y+sy;
+    }
+    for(const p of E){p.x=p.nx;p.y=p.ny;const r=Math.hypot(p.x,p.y);if(r>WALL){p.x*=WALL/r;p.y*=WALL/r}}
+  }
+}
+// ไม่มีแท่งใกล้: ประจุจัดตัวสม่ำเสมอ (คู่ +/− ด้านใน ประจุส่วนเกินเรียงรอบผิว)
+function relax(dt){
+  const n=S.el.length,key='n'+n;
+  if(key!==S.relaxKey){S.relaxKey=key;const T=relaxTargets(n),used=new Set();
+    T.forEach(t=>{let bi=-1,bd=1e9;S.el.forEach((p,i)=>{if(used.has(i))return;const d=(p.x-t.x)**2+(p.y-t.y)**2;if(d<bd){bd=d;bi=i}});if(bi>=0){used.add(bi);S.el[bi].tx=t.x;S.el[bi].ty=t.y}})}
+  const f=Math.min(1,dt*2.6);for(const p of S.el){if(p.tx===undefined)continue;p.x+=(p.tx-p.x)*f;p.y+=(p.ty-p.y)*f}
+}
+function prox(){return S.tab===2&&rodActive()?Math.max(0,Math.min(1,(3.2+S.rodX)/(3.2+NEAR))):0}
+function targetCount(){if(!S.ground)return null;return S.tab===2?N0+Math.round(6*prox())*S.sign:N0}
+
+/* ===================== ผัง ===================== */
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');let W=0,H=0,D=1,G={};
+function layout(){
+  const r=cv.getBoundingClientRect();D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);
+  const narrow=W<640;
+  let R,cx;
+  if(S.tab===1){R=Math.min(narrow?W*.17:W*.12,H*.24);cx=narrow?W*.76:W*.7}
+  else if(S.tab===3){R=Math.min(narrow?W*.15:W*.115,H*.25);cx=narrow?W*.33:W*.42}
+  else if(S.tab===4){R=Math.min(narrow?W*.2:W*.11,H*.2);cx=narrow?W*.5:W*.55}
+  else if(S.tab===5){R=Math.min(narrow?W*.19:W*.11,H*.2);cx=narrow?W*.52:W*.55}
+  else{R=Math.min(narrow?W*.24:W*.15,H*.27);cx=narrow?W*.6:W*.56}
+  const floor=H*.9;let cy=Math.min(H*.42,floor-R*2.3);
+  if(S.tab===4){G4.L=H*.5;G4.py=H*.08;cy=G4.py+G4.L;G4.px=cx;G4.rb=R*.42;G4.post=Math.min(W-R*.35,cx+G4.L*.6+G4.rb*1.4);G4.thMax=Math.asin(Math.min(.95,(G4.post-R*.08-G4.rb-cx)/G4.L))}
+  const ca=.65, px=cx+R*Math.cos(ca), py=cy+R*Math.sin(ca);
+  const gx=Math.min(W-R*.45,cx+R*1.75), gy=floor-R*.05;
+  G={R,cx,cy,floor,px,py,gx,gy,swTop:py+(gy-py)*.35,swBot:py+(gy-py)*.62,narrow};
+  if(S.tab===5){const dy=H*.27;G.cy=dy;G.px=cx+R*1.0;G.py=dy;G.gx=Math.min(W-R*.5,cx+R*2.2);G.gy=floor-R*.05;
+    G.swTop=G.py+(G.gy-G.py)*.35;G.swBot=G.py+(G.gy-G.py)*.55;G5.jarTop=H*.47;G5.stemBot=G5.jarTop+R*.95}
+  // ผ้า/ขนสัตว์ วางบนโต๊ะด้านซ้าย
+  const cw=Math.min(W*(narrow?.48:.3),R*(narrow?3.4:3.6)),ch=R*.62;
+  G.cloth={x:W*.05,y:floor-ch,w:cw,h:ch};
+  G.rodL=Math.min(cw*1.05,(cx-R)-W*.03);G.rodT=R*.34;
+  const old=S.hideX;S.hideX=(-R*.6-cx)/R;
+  if(S.rodX<=old+.001)S.rodX=S.hideX;if(S.rodTarget<=old+.001)S.rodTarget=S.hideX;
+  if(!S.rb.init){S.rb.init=true;resetRub()}
+  G.dMax=Math.max(2.4,Math.min(3.8,(W-R*1.15-cx)/R));if(T3.dT>2.05)T3.dT=Math.min(T3.dT,G.dMax);T3.d=Math.min(T3.d,G.dMax);
+}
+new ResizeObserver(()=>{layout()}).observe(cv);
+const toS=p=>({x:G.cx+p.x*G.R,y:G.cy+p.y*G.R});
+function wirePath(){return [{x:G.px,y:G.py},{x:G.gx,y:G.py},{x:G.gx,y:G.gy}]}
+function along(t){const P=wirePath(),L=[];let tot=0;for(let i=1;i<P.length;i++){const l=Math.hypot(P[i].x-P[i-1].x,P[i].y-P[i-1].y);L.push(l);tot+=l}
+  let d=t*tot;for(let i=0;i<L.length;i++){if(d<=L[i]){const f=d/L[i];return{x:P[i].x+(P[i+1].x-P[i].x)*f,y:P[i].y+(P[i+1].y-P[i].y)*f}}d-=L[i]}return P[P.length-1]}
+
+/* ===================== วาด ===================== */
+function sym(x,y,r,s){
+  if(s>0){ctx.strokeStyle='#d42a2a';ctx.lineWidth=Math.max(1.6,r*.32);ctx.beginPath();ctx.moveTo(x-r*.62,y);ctx.lineTo(x+r*.62,y);ctx.moveTo(x,y-r*.62);ctx.lineTo(x,y+r*.62);ctx.stroke()}
+  else{ctx.fillStyle='#2557d6';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1.4,r*.28);ctx.beginPath();ctx.moveTo(x-r*.5,y);ctx.lineTo(x+r*.5,y);ctx.stroke()}
+}
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+const RS=()=>Math.max(5,G.R*.075);
+function draw(){
+  const {R,cx,cy,floor}=G;ctx.clearRect(0,0,W,H);
+  if(S.tab===3){draw3();return}
+  if(S.tab===4){draw4();return}
+  if(S.tab===5){draw5();return}
+  ctx.fillStyle='#d9d1c2';ctx.fillRect(0,floor,W,H-floor);ctx.fillStyle='#bfb39c';ctx.fillRect(0,floor,W,3);
+  const sw=R*.13;ctx.fillStyle='#c9a46a';ctx.fillRect(cx-sw/2,cy+R*.9,sw,floor-cy-R*.9-R*.12);
+  ctx.fillStyle='#8a6a3a';ctx.beginPath();ctx.ellipse(cx,floor-R*.08,R*.55,R*.1,0,0,7);ctx.fill();
+  font(Math.max(11,R*.13),500,'"Sarabun",sans-serif');ctx.fillStyle='#6b5634';ctx.textAlign='left';ctx.textBaseline='middle';
+  if(G.narrow&&S.tab===1){ctx.textAlign='right';ctx.fillText('ขาตั้งฉนวน',cx-sw,(cy+R+floor)/2)}else ctx.fillText('ขาตั้งฉนวน',cx+sw,(cy+R+floor)/2);
+  drawGround();
+  const g=ctx.createRadialGradient(cx-R*.35,cy-R*.4,R*.1,cx,cy,R);g.addColorStop(0,'#ffffff');g.addColorStop(.6,'#d5dee1');g.addColorStop(1,'#a7b6bc');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();ctx.strokeStyle='#7d8f95';ctx.lineWidth=2;ctx.stroke();
+  const rs=RS();
+  for(const p of ions){const s=toS(p);sym(s.x,s.y,rs*.95,1)}
+  for(const p of S.el){const s=toS(p);sym(s.x,s.y,rs,-1)}
+  if(S.showFlow)for(const e of S.transit){const p=along(e.t);sym(p.x,p.y,rs,-1)}
+  if(S.tab===2)drawRod();else{drawCloth();drawRubRod();drawFly()}
+}
+function drawGround(){
+  const {R,px,py,gx,gy,swTop,swBot}=G;
+  ctx.strokeStyle='#5b6b70';ctx.lineWidth=Math.max(2.5,R*.035);ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(gx,py);ctx.lineTo(gx,swTop);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(gx,swBot);ctx.lineTo(gx,gy-R*.2);ctx.stroke();
+  ctx.fillStyle='#5b6b70';ctx.beginPath();ctx.arc(gx,swTop,R*.04,0,7);ctx.arc(gx,swBot,R*.04,0,7);ctx.fill();
+  ctx.strokeStyle=S.ground?'#0d6e66':'#c2410c';ctx.lineWidth=Math.max(3.5,R*.05);
+  ctx.beginPath();ctx.moveTo(gx,swBot);
+  if(S.ground)ctx.lineTo(gx,swTop);else{const L=swBot-swTop;ctx.lineTo(gx-L*.55,swBot-L*.85)}ctx.stroke();
+  const y0=gy-R*.2;ctx.strokeStyle='#5b6b70';ctx.lineWidth=Math.max(2.5,R*.035);
+  [[.32,0],[.21,.09],[.1,.18]].forEach(([w,dy])=>{ctx.beginPath();ctx.moveTo(gx-R*w,y0+R*dy);ctx.lineTo(gx+R*w,y0+R*dy);ctx.stroke()});
+  font(Math.max(12,R*.15),600);ctx.fillStyle=S.ground?'#0d6e66':'#c2410c';ctx.textBaseline='middle';
+  if(gx+R*.9<W){ctx.textAlign='left';ctx.fillText(S.ground?'ต่อ':'ไม่ต่อ',gx+R*.14,(swTop+swBot)/2)}
+  else{ctx.textAlign='right';ctx.fillText(S.ground?'ต่อ':'ไม่ต่อ',gx-R*.12,swTop-R*.18)}
+  ctx.fillStyle='#4d5f64';ctx.textAlign='left';if(gx+R*1.3<W)ctx.fillText('สายดิน',gx+R*.4,y0+R*.09);
+}
+function rodBody(x0,y,len,th,pos){
+  const g=ctx.createLinearGradient(0,y-th/2,0,y+th/2);
+  if(pos){g.addColorStop(0,'#eaf6fb');g.addColorStop(.5,'#bfe0ec');g.addColorStop(1,'#93c3d6')}else{g.addColorStop(0,'#6b6f78');g.addColorStop(.5,'#3c4048');g.addColorStop(1,'#24272d')}
+  ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(x0,y-th/2,len,th,th/2);ctx.fill();
+  ctx.strokeStyle=pos?'#6aa3b8':'#1a1c20';ctx.lineWidth=1.5;ctx.stroke();
+}
+function drawRod(){
+  if(!S.sign)return;
+  const {R,cy}=G,tx=G.cx+S.rodX*G.R,th=R*.3,len=Math.max(W,R*6);
+  if(tx<-th*.5)return;
+  const pos=S.sign>0;
+  rodBody(tx-len,cy,len,th,pos);
+  const rs=RS();
+  for(let k=0;k<8;k++){const x=tx-th*.55-k*R*.24;if(x<0)break;
+    if(pos){ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.arc(x,cy,rs*1.05,0,7);ctx.fill()}
+    sym(x,cy,rs,pos?1:-1)}
+  font(Math.max(12,R*.15),600);ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillStyle='#16232a';
+  const lx=Math.max(8,tx-R*2.2);ctx.fillText((pos?'แท่งแก้ว (+)':'แท่งพลาสติก (−)')+'   ⇔',lx,cy-th/2-6);
+}
+
+/* ===================== แท็บ ①: ขัดสี/สัมผัส ===================== */
+function resetRub(){
+  const c=G.cloth;S.rb.eR=0;S.rb.eC=0;S.rb.acc=0;S.rb.fly=[];S.rb.lastX=null;
+  S.rb.fx=(c.x+c.w/2)/W;S.rb.fy=(c.y-G.rodT*.5-G.R*.9)/H;
+}
+function rubRod(){if(!G.R)return null;const L=G.rodL,x=S.rb.fx*W,y=S.rb.fy*H;return{x,y,L,th:G.rodT,x1:x-L/2,x2:x+L/2}}
+// ตำแหน่งประจุบนแท่ง/ผ้า: คู่ +/− ตั้งต้น และประจุส่วนเกิน/ที่ขาด
+function slots(n,x0,x1){const a=[];for(let i=0;i<n;i++)a.push(x0+(x1-x0)*(i+.5)/n);return a}
+function evenPick(n,k){const s=new Set();for(let i=0;i<k;i++)s.add(Math.min(n-1,Math.floor((i+.5)*n/k)));return s}
+function midPick(xs,k){const m=[];for(let i=0;i<xs.length-1;i++)m.push((xs[i]+xs[i+1])/2);m.push(xs[xs.length-1]+(xs[1]-xs[0])/2);
+  const out=[];for(let i=0;i<k;i++)out.push(m[Math.min(m.length-1,Math.floor((i+.5)*m.length/k))]);return out}
+function rodChargeList(){
+  const r=rubRod(),e=S.rb.eR,xs=slots(BASE,r.x1+r.th*.5,r.x2-r.th*1.1),out=[];
+  const miss=e<0?evenPick(BASE,-e):new Set(),yT=r.y-r.th*.17,yB=r.y+r.th*.2;
+  xs.forEach((x,i)=>{out.push({x,y:yT,s:1});if(!miss.has(i))out.push({x:x+r.th*.12,y:yB,s:-1})});
+  if(e>0)midPick(xs,e).forEach(x=>out.push({x,y:yT,s:-1}));
+  return out;
+}
+function rubRodCharges(){
+  const r=rubRod();if(!r)return[];const e=S.rb.eR;if(!e)return[];
+  const w=QROD/MAXQ,list=[];
+  if(e<0){const xs=slots(BASE,r.x1,r.x2),miss=evenPick(BASE,-e);xs.forEach((x,i)=>{if(miss.has(i))list.push({x:(x-G.cx)/G.R,y:(r.y-G.cy)/G.R,q:w})})}
+  else slots(e,r.x1,r.x2).forEach(x=>list.push({x:(x-G.cx)/G.R,y:(r.y-G.cy)/G.R,q:-w}));
+  return list;
+}
+function clothChargeList(){
+  const c=G.cloth,e=S.rb.eC,cols=BASE/2,out=[];
+  const xs=slots(cols,c.x+c.w*.06,c.x+c.w*.86),ys=[c.y+c.h*.24,c.y+c.h*.74];
+  const pts=[];ys.forEach(y=>xs.forEach(x=>pts.push({x,y})));
+  const miss=e<0?evenPick(BASE,-e):new Set();
+  pts.forEach((p,i)=>{out.push({x:p.x,y:p.y,s:1});if(!miss.has(i))out.push({x:p.x+G.R*.1,y:p.y+G.R*.03,s:-1})});
+  if(e>0)slots(e,c.x+c.w*.1,c.x+c.w*.92).forEach(x=>out.push({x,y:c.y+c.h*.49,s:-1}));
+  return out;
+}
+function drawCloth(){
+  const c=G.cloth,silk=S.pair==='glass';
+  ctx.save();
+  if(silk){const g=ctx.createLinearGradient(c.x,c.y,c.x+c.w,c.y+c.h);g.addColorStop(0,'#f3e8ff');g.addColorStop(.5,'#ddc7f7');g.addColorStop(1,'#f3e8ff');ctx.fillStyle=g}
+  else{const g=ctx.createLinearGradient(0,c.y,0,c.y+c.h);g.addColorStop(0,'#b07a4a');g.addColorStop(1,'#7a4f2a');ctx.fillStyle=g}
+  ctx.beginPath();ctx.roundRect(c.x,c.y,c.w,c.h,c.h*.25);ctx.fill();
+  if(!silk){ctx.strokeStyle='rgba(60,35,15,.35)';ctx.lineWidth=1.2;for(let x=c.x+6;x<c.x+c.w-4;x+=7){ctx.beginPath();ctx.moveTo(x,c.y+2);ctx.lineTo(x-3,c.y-5);ctx.stroke()}}
+  else{ctx.strokeStyle='rgba(150,110,200,.5)';ctx.lineWidth=1;ctx.stroke()}
+  ctx.restore();
+  const rs=RS()*.85;for(const q of clothChargeList())sym(q.x,q.y,rs,q.s);
+  font(Math.max(12,G.R*.15),600);ctx.fillStyle='#16232a';ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText(PAIRS[S.pair].cloth,c.x,c.y+c.h+6);
+}
+function drawRubRod(){
+  const r=rubRod(),pos=S.pair==='glass';
+  rodBody(r.x1,r.y,r.L,r.th,pos);
+  const rs=RS()*.85;
+  for(const q of rodChargeList()){if(pos&&q.s>0){ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(q.x,q.y,rs*1.05,0,7);ctx.fill()}sym(q.x,q.y,rs,q.s)}
+  font(Math.max(12,G.R*.15),600);ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillStyle='#16232a';
+  ctx.fillText(PAIRS[S.pair].rod+'   ✥',r.x1,r.y-r.th/2-6);
+}
+function drawFly(){const rs=RS()*.85;for(const f of S.rb.fly){const t=Math.min(1,f.t),x=f.x0+(f.x1-f.x0)*t,y=f.y0+(f.y1-f.y0)*t-Math.sin(t*Math.PI)*G.R*.25;sym(x,y,rs,-1)}}
+// การขัดสี: ถูแท่งไปมาบนผ้า
+function rubbing(r){
+  const c=G.cloth;
+  const onCloth=r.y+r.th/2>=c.y-3&&r.x2>c.x+c.w*.1&&r.x1<c.x+c.w*.9;
+  if(!onCloth||!S.rb.dragging){S.rb.lastX=null;return}
+  if(S.rb.lastX!==null)S.rb.acc+=Math.abs(r.x-S.rb.lastX);
+  S.rb.lastX=r.x;
+  const dir=PAIRS[S.pair].dir,pend=S.rb.fly.filter(f=>f.kind==='rub').length;
+  if(S.rb.acc>G.R*.8){S.rb.acc=0;
+    if(Math.abs(S.rb.eR+dir*pend)<MAXQ){
+      const cx0=Math.max(c.x+10,Math.min(c.x+c.w-10,r.x)),from={x:cx0,y:c.y+c.h*.4},to={x:r.x,y:r.y};
+      if(dir>0)S.rb.fly.push({kind:'rub',x0:from.x,y0:from.y,x1:to.x,y1:to.y,t:0,done:()=>{S.rb.eR++;S.rb.eC--}});
+      else S.rb.fly.push({kind:'rub',x0:to.x,y0:to.y,x1:from.x,y1:from.y,t:0,done:()=>{S.rb.eR--;S.rb.eC++}});
+    }else if(!S.rb.maxShown){S.rb.maxShown=true;toast('ประจุเต็มแล้ว (จำลองสูงสุด 6 ประจุ)')}
+  }
+}
+// การสัมผัส: ปลายแท่งแตะทรงกลม → อิเล็กตรอนย้ายจนประจุแบ่งกัน
+function contact(r,now){
+  const d=Math.hypot(r.x2-G.cx,r.y-G.cy);
+  if(d>G.R+4){S.rb.touching=false;return}
+  S.rb.touching=true;
+  if(S.rb.fly.some(f=>f.kind==='touch')||now-S.rb.touchT<260)return;
+  const eS=S.el.length-N0,tot=S.rb.eR+eS,tgt=Math.round(tot/2);
+  const ang=Math.atan2(r.y-G.cy,r.x2-G.cx),cp={x:G.cx+Math.cos(ang)*G.R*.85,y:G.cy+Math.sin(ang)*G.R*.85};
+  if(eS>tgt){ // อิเล็กตรอน: ทรงกลม → แท่ง
+    let bi=-1,bd=1e9;S.el.forEach((p,i)=>{const q=toS(p),dd=Math.hypot(q.x-cp.x,q.y-cp.y);if(dd<bd){bd=dd;bi=i}});
+    if(bi<0)return;const q=toS(S.el[bi]);S.el.splice(bi,1);
+    S.rb.fly.push({kind:'touch',x0:q.x,y0:q.y,x1:r.x2-r.th*.6,y1:r.y,t:0,done:()=>{S.rb.eR++}});S.rb.touchT=now;
+  }else if(eS<tgt){ // อิเล็กตรอน: แท่ง → ทรงกลม
+    S.rb.eR--;
+    S.rb.fly.push({kind:'touch',x0:r.x2-r.th*.6,y0:r.y,x1:cp.x,y1:cp.y,t:0,done:()=>{S.el.push({x:(cp.x-G.cx)/G.R,y:(cp.y-G.cy)/G.R})}});S.rb.touchT=now;
+  }
+}
+function rubStep(dt,now){
+  const r=rubRod();if(!r)return;
+  rubbing(r);contact(r,now);
+  for(const f of S.rb.fly){f.t+=dt*(f.kind==='rub'?2.6:3.2);if(f.t>=1&&!f.fired){f.fired=true;f.done()}}
+  S.rb.fly=S.rb.fly.filter(f=>!f.fired);
+}
+// จำกัดตำแหน่งแท่ง: ไม่จมลงผ้า/โต๊ะ ไม่ทะลุทรงกลม
+function clampRod(x,y){
+  const r={L:G.rodL,th:G.rodT},c=G.cloth;
+  x=Math.max(r.L/2-r.L*.35,Math.min(W-r.L/2,x));y=Math.max(r.th,Math.min(G.floor-r.th/2,y));
+  if(x+r.L/2>c.x&&x-r.L/2<c.x+c.w)y=Math.min(y,c.y-r.th/2+2);
+  const tip=x+r.L/2,dy=y-G.cy;
+  if(Math.abs(dy)<G.R&&tip>G.cx-G.R*1.6&&x<G.cx){const lim=G.cx-Math.sqrt(G.R*G.R-dy*dy)+1;if(tip>lim)x=lim-r.L/2}
+  if(x-r.L/2<G.cx+G.R&&x+r.L/2>G.cx-G.R&&Math.abs(dy)<G.R&&x>=G.cx)x=G.cx+G.R+r.L/2;
+  // ไม่ทับขาตั้ง
+  if(y+r.th/2>G.cy+G.R&&tip>G.cx-G.R*.1&&x<G.cx)x=G.cx-G.R*.1-r.L/2;
+  return{x,y};
+}
+
+/* ===================== การไหลผ่านสายดิน ===================== */
+function groundFlow(dt){
+  const tc=targetCount();S.flowDir=0;
+  const inTransitIn=S.transit.filter(e=>e.dir<0).length;
+  if(tc!==null){
+    const now=performance.now(),projected=S.el.length+inTransitIn;
+    if(projected<tc&&now-S.lastSpawn>220){S.transit.push({t:1,dir:-1});S.lastSpawn=now}
+    else if(S.el.length>tc&&now-S.lastSpawn>220){
+      let bi=-1,bd=1e9;const c={x:Math.cos(.65),y:Math.sin(.65)};S.el.forEach((p,i)=>{const d=Math.hypot(p.x-c.x,p.y-c.y);if(d<bd){bd=d;bi=i}});
+      if(bi>=0){S.el.splice(bi,1);S.transit.push({t:0,dir:1});S.lastSpawn=now}}
+  }
+  for(const e of S.transit)e.t+=e.dir*dt*.9;
+  for(let i=S.transit.length-1;i>=0;i--){const e=S.transit[i];
+    if(e.dir<0&&e.t<=0){S.transit.splice(i,1);S.el.push({x:Math.cos(.65)*.85,y:Math.sin(.65)*.85})}
+    else if(e.dir>0&&e.t>=1)S.transit.splice(i,1)}
+  if(S.transit.length)S.flowDir=S.transit[0].dir;
+}
+
+
+/* ===================== แท็บ ③: ทรงกลมสองลูก ===================== */
+// พิกัด: หน่วย = รัศมี, จุดกำเนิดที่ศูนย์กลางทรงกลม A, ทรงกลม B อยู่ที่ (d,0)
+const ROD3=.5;const T3={d:2,dT:2,e:[],key:'',lastMove:0,dragB:false};
+function reset3(){T3.d=T3.dT=2;T3.e=[];T3.key='';
+  [0,1].forEach(s=>relaxTargets(N0).forEach(t=>T3.e.push({x:t.x+(s?2:0),y:t.y,s})))}
+reset3();
+const touching=()=>T3.d<2.03;
+const cnt3=s=>T3.e.filter(p=>p.s===s).length;
+function confine3(p){
+  const W2=WALL,c0={x:0,y:0},c1={x:T3.d,y:0};
+  if(touching()){
+    const in0=Math.hypot(p.x,p.y)<=W2,in1=Math.hypot(p.x-c1.x,p.y)<=W2,neck=Math.abs(p.y)<.3&&Math.abs(p.x-T3.d/2)<.35;
+    if(!(in0||in1||neck)){const d0=Math.hypot(p.x,p.y),d1=Math.hypot(p.x-c1.x,p.y);
+      if(d0-W2<d1-W2){p.x*=W2/d0;p.y*=W2/d0}else{p.x=c1.x+(p.x-c1.x)*W2/d1;p.y*=W2/d1}}
+    const ns=p.x<T3.d/2?0:1;if(ns!==p.s){p.s=ns;p.hl=performance.now()}
+  }else{const c=p.s?c1:c0,dx=p.x-c.x,dy=p.y-c.y,r=Math.hypot(dx,dy);if(r>W2){p.x=c.x+dx*W2/r;p.y=c.y+dy*W2/r}}
+}
+function physics3(){
+  const E=T3.e,n=E.length,rc=rodCharges();
+  for(let sub=0;sub<6;sub++){
+    for(let i=0;i<n;i++){
+      const p=E[i];let fx=0,fy=0;for(const cx of [0,T3.d]){const dx=p.x-cx,dy=p.y,r2=dx*dx+dy*dy;if(r2<JR*JR){fx-=B*dx;fy-=B*dy}else{fx-=A*N0*dx/r2;fy-=A*N0*dy/r2}}
+      for(let j=0;j<n;j++){if(i===j)continue;const dx=p.x-E[j].x,dy=p.y-E[j].y,d2=dx*dx+dy*dy+.004;fx+=A*dx/d2;fy+=A*dy/d2}
+      for(const c of rc){const dx=c.x-p.x,dy=c.y-p.y,d2=dx*dx+dy*dy+.01;fx+=c.q*A*dx/d2;fy+=c.q*A*dy/d2}
+      let sx=fx*.0012,sy=fy*.0012;const m=Math.hypot(sx,sy);if(m>.012){sx*=.012/m;sy*=.012/m}
+      p.nx=p.x+sx;p.ny=p.y+sy;
+    }
+    for(const p of E){p.x=p.nx;p.y=p.ny;confine3(p)}
+  }
+}
+function relax3(dt,now){
+  // แตะกันและไม่มีแท่ง: อิเล็กตรอนไหลผ่านจุดสัมผัสจนสองลูกเท่ากัน
+  if(touching()){const nA=cnt3(0),nB=cnt3(1);
+    if(nA!==nB&&now-T3.lastMove>170){T3.lastMove=now;const from=nA>nB?0:1,to=1-from,cp={x:1,y:0};
+      let bi=-1,bd=1e9;T3.e.forEach((p,i)=>{if(p.s!==from)return;const d=Math.hypot(p.x-cp.x,p.y-cp.y);if(d<bd){bd=d;bi=i}});
+      if(bi>=0){const p=T3.e[bi];p.s=to;p.x=to?T3.d-.8:.8;p.y=0;p.hl=now;delete p.tx}}}
+  const nA=cnt3(0),nB=cnt3(1),key=nA+'/'+nB;
+  if(key!==T3.key){T3.key=key;[0,1].forEach(s=>{const T=relaxTargets(s?nB:nA),used=new Set(),off=s?T3.d:0,L=T3.e.filter(p=>p.s===s);
+    T.forEach(t=>{let bi=-1,bd=1e9;L.forEach((p,i)=>{if(used.has(i))return;const d=(p.x-off-t.x)**2+(p.y-t.y)**2;if(d<bd){bd=d;bi=i}});if(bi>=0){used.add(bi);L[bi].tx=t.x;L[bi].ty=t.y}})})}
+  const f=Math.min(1,dt*2.6);for(const p of T3.e){if(p.tx===undefined)continue;const off=p.s?T3.d:0;p.x+=(p.tx+off-p.x)*f;p.y+=(p.ty-p.y)*f}
+}
+function step3(dt,now){
+  const prevT=touching();
+  if(!T3.dragB){const dd=T3.dT-T3.d;T3.d+=Math.abs(dd)<.005?dd:dd*Math.min(1,dt*4)}
+  if(prevT&&!touching())T3.e.forEach(p=>{p.s=p.x<1?0:1;confine3(p)}),T3.key='';
+  if(rodActive()){physics3();T3.key='';T3.e.forEach(p=>{delete p.tx})}else relax3(dt,now);
+}
+const onB=p=>Math.hypot(p.x-(G.cx+T3.d*G.R),p.y-G.cy)<G.R;
+function sphereAt(x,label){
+  const {R,cy,floor}=G,sw=R*.13;
+  ctx.fillStyle='#c9a46a';ctx.fillRect(x-sw/2,cy+R*.9,sw,floor-cy-R*.9-R*.12);
+  ctx.fillStyle='#8a6a3a';ctx.beginPath();ctx.ellipse(x,floor-R*.08,R*.5,R*.1,0,0,7);ctx.fill();
+  const g=ctx.createRadialGradient(x-R*.35,cy-R*.4,R*.1,x,cy,R);g.addColorStop(0,'#ffffff');g.addColorStop(.6,'#d5dee1');g.addColorStop(1,'#a7b6bc');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,cy,R,0,7);ctx.fill();ctx.strokeStyle='#7d8f95';ctx.lineWidth=2;ctx.stroke();
+  font(Math.max(14,R*.24),700);ctx.fillStyle='#16232a';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(label,x,cy-R-6);
+}
+function draw3(){
+  const {R,cx,cy,floor}=G;
+  ctx.fillStyle='#d9d1c2';ctx.fillRect(0,floor,W,H-floor);ctx.fillStyle='#bfb39c';ctx.fillRect(0,floor,W,3);
+  const xB=cx+T3.d*R;sphereAt(cx,'A');sphereAt(xB,'B');
+  font(Math.max(11,R*.13),500,'"Sarabun",sans-serif');ctx.fillStyle='#6b5634';ctx.textAlign='left';ctx.textBaseline='middle';
+  if(!G.narrow)ctx.fillText('ขาตั้งฉนวน',xB+R*.1,(cy+R+floor)/2);
+  if(touching()){font(Math.max(11,R*.13),600);ctx.fillStyle='#0d6e66';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('แตะกัน',cx+R,cy+R*1.08)}
+  const rs=RS(),now=performance.now();
+  for(const [off] of [[0],[T3.d]])for(const p of ions)sym(cx+(p.x+off)*R,cy+p.y*R,rs*.95,1);
+  for(const p of T3.e){const x=cx+p.x*R,y=cy+p.y*R;
+    if(S.showFlow&&p.hl&&now-p.hl<1400){ctx.strokeStyle='rgba(234,179,8,.95)';ctx.lineWidth=Math.max(2,rs*.35);ctx.beginPath();ctx.arc(x,y,rs*1.55,0,7);ctx.stroke()}
+    sym(x,y,rs,-1)}
+  drawRod();
+}
+function ui3(){
+  const nA=cnt3(0),nB=cnt3(1),key='3'+nA+'/'+nB;if(key===lastUI)return;lastUI=key;
+  $('aP').textContent=N0;$('aN').textContent=nA;setQ('aQ',N0-nA);
+  $('bP').textContent=N0;$('bN').textContent=nB;setQ('bQ',N0-nB);
+  $('abP').textContent=2*N0;$('abN').textContent=nA+nB;setQ('abQ',2*N0-nA-nB);
+}
+function showTabs(){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(S.tab)))}
+
+
+/* ===================== แท็บ ④: ลูกพิธ ===================== */
+const G4={L:300,px:0,py:0,rb:20};
+const NB=8,ions4=[];for(let i=0;i<6;i++){const a=Math.PI/2+i*Math.PI/3;ions4.push({x:.6*Math.cos(a),y:.6*Math.sin(a)})}ions4.push({x:-.22,y:0},{x:.22,y:0});
+const T4={th:0,w:0,n:NB,fly:[],touchT:0,shift:{x:0,y:0}};
+const K_IND=10,K_C=3.2,ACC=2,OMEGA=3.1,DAMP=1.6;const QBALL=4;
+function reset4(){T4.th=0;T4.w=0;T4.n=NB;T4.fly=[];T4.shift={x:0,y:0}}
+function ball4(){return{x:G4.px+G4.L*Math.sin(T4.th),y:G4.py+G4.L*Math.cos(T4.th)}}
+function rodDist4(b){const tx=G.cx+S.rodX*G.R;return b.x<=tx?Math.abs(b.y-G.cy):Math.hypot(b.x-tx,b.y-G.cy)}
+function max4(){return(-G4.rb*1.02)/G.R}
+function rodPts4(){if(!S.hasRod&&!S.removing)return[];if(!S.sign)return[];const tx=G.cx+S.rodX*G.R,out=[];for(let k=0;k<4;k++)out.push({x:tx-G.R*.12-k*G.R*.35,y:G.cy,q:S.sign});return out}
+function forces4(b){
+  // หน่วยระยะ = G.R · ความเร่งคิดเป็น px/s²
+  let fx=0,fy=0,ex=0,ey=0;const qb=NB-T4.n;
+  for(const c of rodPts4()){const dx=(b.x-c.x)/G.R,dy=(b.y-c.y)/G.R,d=Math.max(.35,Math.hypot(dx,dy)),ux=dx/d,uy=dy/d;
+    fx+=K_C*qb*c.q*ux/(d*d);fy+=K_C*qb*c.q*uy/(d*d);      // คูลอมบ์กับประจุสุทธิ
+    fx-=K_IND*ux/(d*d*d);fy-=K_IND*uy/(d*d*d);            // แรงดูดจากการเหนี่ยวนำ (ดูดเสมอ)
+    ex+=c.q*(-ux)/(d*d);ey+=c.q*(-uy)/(d*d)}               // ทิศที่อิเล็กตรอนถูกดึง (เข้าหาแท่ง + / หนีแท่ง −)
+  return{fx:fx*G.R*ACC,fy:fy*G.R*ACC,ex,ey};
+}
+function step4(dt,now){
+  const sub=4,h=dt/sub;
+  for(let k=0;k<sub;k++){
+    const b=ball4(),F=forces4(b),L=G4.L;
+    const at=F.fx*Math.cos(T4.th)-F.fy*Math.sin(T4.th);
+    const th0=T4.th;
+    T4.w+=(-OMEGA*OMEGA*Math.sin(T4.th)+at/L-DAMP*T4.w)*h;T4.th+=T4.w*h;
+    T4.th=Math.max(-1.1,Math.min(G4.thMax||1.1,T4.th));if(T4.th>=(G4.thMax||9)&&T4.w>0)T4.w=0;
+    // ไม่ทะลุแท่ง: ถ้าชนแท่ง ให้หยุดที่ตำแหน่งเดิม
+    if(S.sign){const lim=G4.rb+G.R*.15,dn=rodDist4(ball4());if(dn<lim){const t1=T4.th;T4.th=th0;const d0=rodDist4(ball4());if(dn>=d0)T4.th=t1;else T4.w=0}}
+  }
+  // การกระจายประจุบนลูกพิธ (เลื่อนตามแรงไฟฟ้าจากแท่ง)
+  const F=forces4(ball4()),m=Math.hypot(F.ex,F.ey),sh=Math.min(.32,m*.9),tgt=m>1e-6?{x:F.ex/m*sh,y:F.ey/m*sh}:{x:0,y:0};
+  const f=Math.min(1,dt*5);T4.shift.x+=(tgt.x-T4.shift.x)*f;T4.shift.y+=(tgt.y-T4.shift.y)*f;
+  // แตะแท่ง → อิเล็กตรอนย้ายจนลูกพิธมีประจุชนิดเดียวกับแท่ง
+  const b=ball4(),tx=G.cx+S.rodX*G.R,touch=S.sign&&S.hasRod&&rodDist4(b)<G4.rb+G.R*.17;
+  if(touch&&!T4.fly.length&&now-T4.touchT>200){const tgtN=NB-S.sign*QBALL;
+    const cx1=Math.min(tx-G.R*.12,b.x);
+    if(T4.n>tgtN){T4.n--;T4.fly.push({x0:b.x,y0:b.y,x1:cx1,y1:G.cy,t:0,done:()=>{}});T4.touchT=now}
+    else if(T4.n<tgtN){T4.fly.push({x0:cx1,y0:G.cy,x1:b.x,y1:b.y,t:0,done:()=>{T4.n++}});T4.touchT=now}}
+  for(const f2 of T4.fly){f2.t+=dt*3.4;if(f2.t>=1&&!f2.fired){f2.fired=true;f2.done()}}T4.fly=T4.fly.filter(f2=>!f2.fired);
+}
+function ballCharges4(b){
+  const out=[],n=T4.n,miss=n<NB?evenPick(6,NB-n):new Set(),r=G4.rb,sh=T4.shift;
+  ions4.forEach((p,i)=>out.push({x:b.x+p.x*r,y:b.y+p.y*r,s:1}));
+  const E=[];ions4.forEach((p,i)=>{if(!miss.has(i))E.push({x:p.x+.1,y:p.y+.08})});
+  for(let i=0;i<n-NB;i++){const a=-Math.PI/2+i*2*Math.PI/(n-NB)+Math.PI/6;E.push({x:.86*Math.cos(a),y:.86*Math.sin(a)})}
+  E.forEach(e=>{let x=e.x+sh.x,y=e.y+sh.y;const rr=Math.hypot(x,y);if(rr>.86){x*=.86/rr;y*=.86/rr}out.push({x:b.x+x*r,y:b.y+y*r,s:-1})});
+  return out;
+}
+function draw4(){
+  const {R,floor}=G,b=ball4();
+  ctx.fillStyle='#d9d1c2';ctx.fillRect(0,floor,W,H-floor);ctx.fillStyle='#bfb39c';ctx.fillRect(0,floor,W,3);
+  // ขาตั้งรูป Γ
+  const postX=G4.post,pw=R*.12;ctx.fillStyle='#c9a46a';
+  ctx.fillRect(postX-pw/2,G4.py-pw/2,pw,floor-G4.py-R*.1);ctx.fillRect(G4.px-pw*.3,G4.py-pw/2,postX-G4.px+pw*.3,pw);
+  ctx.fillStyle='#8a6a3a';ctx.beginPath();ctx.ellipse(postX,floor-R*.08,R*.6,R*.1,0,0,7);ctx.fill();
+  font(Math.max(11,R*.14),500,'"Sarabun",sans-serif');ctx.fillStyle='#6b5634';ctx.textAlign='left';ctx.textBaseline='middle';
+  if(postX+R*1.4<W)ctx.fillText('ขาตั้งฉนวน',postX+pw,(G4.py+floor)/2);
+  // เส้นด้าย + ลูกพิธ
+  ctx.strokeStyle='#8a8f96';ctx.lineWidth=Math.max(1.5,R*.02);ctx.beginPath();ctx.moveTo(G4.px,G4.py);ctx.lineTo(b.x,b.y);ctx.stroke();
+  // เส้นแนวดิ่งอ้างอิง
+  ctx.setLineDash([6,6]);ctx.strokeStyle='rgba(77,95,100,.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(G4.px,G4.py);ctx.lineTo(G4.px,G4.py+G4.L+G4.rb*1.3);ctx.stroke();ctx.setLineDash([]);
+  const rb=G4.rb,g=ctx.createRadialGradient(b.x-rb*.35,b.y-rb*.4,rb*.1,b.x,b.y,rb);g.addColorStop(0,'#ffffff');g.addColorStop(.6,'#d9e1e3');g.addColorStop(1,'#a9b7bc');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,rb,0,7);ctx.fill();ctx.strokeStyle='#7d8f95';ctx.lineWidth=1.5;ctx.stroke();
+  const rs=Math.max(4.5,rb*.15);for(const q of ballCharges4(b))sym(q.x,q.y,rs,q.s);
+  font(Math.max(12,R*.16),600);ctx.fillStyle='#16232a';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('ลูกพิธ',b.x,b.y+rb+8);
+  for(const f of T4.fly){const t=Math.min(1,f.t);sym(f.x0+(f.x1-f.x0)*t,f.y0+(f.y1-f.y0)*t-Math.sin(t*Math.PI)*R*.2,rs,-1)}
+  drawRod();
+}
+function ui4(){
+  const n=T4.n,q=NB-n,deg=Math.round(T4.th*180/Math.PI),st=Math.abs(deg)<2?'ห้อยนิ่ง':deg<0?'ถูกดูด ←':'ถูกผลัก →';
+  const key='4'+n+'/'+deg+st;if(key===lastUI)return;lastUI=key;
+  $('p4P').textContent=NB;$('p4N').textContent=n;
+  $('p4Q').innerHTML=q===0?'0<small>เป็นกลาง</small>':q>0?`+${q}<small>ขาดอิเล็กตรอน ${q} ตัว</small>`:`−${-q}<small>อิเล็กตรอนเกิน ${-q} ตัว</small>`;
+  $('p4Q').style.color=q>0?'var(--pos)':q<0?'var(--neg)':'var(--ink)';
+  $('p4S').textContent=st;$('p4A').textContent=Math.abs(deg)+'°';
+}
+
+
+/* ===================== แท็บ ⑤: อิเล็กโทรสโคปแบบแผ่นโลหะ ===================== */
+const G5={jarTop:0,stemBot:0};const MAX5=-1.04;
+const T5={elD:[],elL:[],wire:[],fly:[],alpha:0,lastMove:0,lastWire:0,lastTouch:0};
+// ตำแหน่งประจุบวกบนจาน (6) และแผ่นโลหะ (3 ต่อแผ่น)
+function discPos(i,n){const R=G.R;return{x:G.cx-R*.84+R*1.68*(i+.5)/n,y:G.cy}}
+function leafPt(side,f){const a=T5.alpha*side,L=G.R*1.15;return{x:G.cx+Math.sin(a)*L*f+side*G.R*.06,y:G5.stemBot+Math.cos(a)*L*f}}
+const LEAF_F=[.35,.6,.85];
+function ionPos5(){const out=[];for(let i=0;i<6;i++)out.push({...discPos(i,6),r:'D'});[-1,1].forEach(sd=>LEAF_F.forEach(f=>out.push({...leafPt(sd,f),r:'L'})));return out}
+function slotsD(n){const R=G.R,out=[],base=Math.min(6,n);const miss=n<6?evenPick(6,6-n):new Set();
+  for(let i=0;i<6;i++)if(!miss.has(i)){const p=discPos(i,6);out.push({x:p.x+R*.07,y:p.y+R*.06})}
+  for(let i=0;i<n-6;i++){const p=discPos(i,n-6);out.push({x:p.x,y:p.y-R*.2})}
+  return out}
+function slotsL(n){const R=G.R,out=[],miss=n<6?evenPick(6,6-n):new Set();let k=0;
+  [-1,1].forEach(sd=>LEAF_F.forEach(f=>{if(!miss.has(k)){const p=leafPt(sd,f);out.push({x:p.x+sd*R*.08,y:p.y+R*.03})}k++}));
+  for(let i=0;i<n-6;i++){const sd=i%2?1:-1,f=[.47,.72,.22][Math.floor(i/2)%3],p=leafPt(sd,f);out.push({x:p.x-sd*R*.13,y:p.y})}
+  return out}
+function reset5(){T5.alpha=0;T5.wire=[];T5.fly=[];if(!G.R){T5.elD=[];T5.elL=[];return}
+  T5.elD=slotsD(6).map(p=>({x:p.x,y:p.y,path:[]}));T5.elL=slotsL(6).map(p=>({x:p.x,y:p.y,path:[]}))}
+const n5=()=>T5.elD.length+T5.elL.length;
+function k5(){if(!S.sign||!S.hasRod)return 0;const g=-S.rodX-1.0;return Math.round(3*Math.max(0,Math.min(1,(2.6-g)/2.3)))}
+function stemPath(down){const t={x:G.cx,y:G.cy+G.R*.15},b={x:G.cx,y:G5.stemBot};return down?[t,b]:[b,t]}
+function step5(dt,now){
+  if(!T5.elD.length&&!T5.elL.length&&G.R)reset5();
+  const s=S.sign||0,k=k5(),Q=12-n5();
+  // 1) แยกขั้วภายใน (เหนี่ยวนำ): อิเล็กตรอนวิ่งขึ้น/ลงตามแกน
+  const QlT=Math.max(-6,Math.min(6,Math.round(Q/2)+s*k)),nLT=6-QlT;
+  if(now-T5.lastMove>110){
+    if(T5.elL.length>nLT&&T5.elL.length){T5.lastMove=now;const e=T5.elL.pop();e.path=stemPath(false);T5.elD.push(e)}
+    else if(T5.elL.length<nLT&&T5.elD.length){T5.lastMove=now;const e=T5.elD.pop();e.path=stemPath(true);T5.elL.push(e)}}
+  // 2) สายดิน: อิเล็กตรอนไหลเข้า/ออกผ่านสาย
+  if(S.ground&&now-T5.lastWire>220){const nT=12+2*s*k,pend=T5.wire.filter(w=>w.dir<0).length;
+    if(n5()+pend<nT){T5.wire.push({t:1,dir:-1});T5.lastWire=now}
+    else if(n5()>nT&&T5.elD.length){T5.elD.pop();T5.wire.push({t:0,dir:1});T5.lastWire=now}}
+  for(const w of T5.wire)w.t+=w.dir*dt*.9;
+  for(let i=T5.wire.length-1;i>=0;i--){const w=T5.wire[i];
+    if(w.dir<0&&w.t<=0){T5.wire.splice(i,1);T5.elD.push({x:G.px,y:G.py,path:[]})}else if(w.dir>0&&w.t>=1)T5.wire.splice(i,1)}
+  // 3) แตะจาน: ได้ประจุชนิดเดียวกับแท่ง
+  const touch=S.hasRod&&s&&S.rodX>=MAX5-.03;
+  if(touch&&!T5.fly.length&&now-T5.lastTouch>200){const nT=12-6*s,tip={x:G.cx+S.rodX*G.R-G.R*.1,y:G.cy};
+    if(n5()>nT&&T5.elD.length){const e=T5.elD.pop();T5.fly.push({x0:e.x,y0:e.y,x1:tip.x,y1:tip.y,t:0,done:()=>{}});T5.lastTouch=now}
+    else if(n5()<nT){T5.fly.push({x0:tip.x,y0:tip.y,x1:G.cx-G.R*.5,y1:G.cy,t:0,done:()=>T5.elD.push({x:G.cx-G.R*.5,y:G.cy,path:[]})});T5.lastTouch=now}}
+  for(const f of T5.fly){f.t+=dt*3.4;if(f.t>=1&&!f.fired){f.fired=true;f.done()}}T5.fly=T5.fly.filter(f=>!f.fired);
+  // 4) มุมกางของแผ่นโลหะตามประจุบนแผ่น
+  const Ql=6-T5.elL.filter(e=>!e.path.length).length-0,aT=(42*Math.PI/180)*(1-Math.exp(-Math.abs(6-T5.elL.length)/2.4));
+  T5.alpha+=(aT-T5.alpha)*Math.min(1,dt*3);
+  // 5) เคลื่อนอิเล็กตรอนไปยังตำแหน่ง
+  const mv=(list,slots)=>{list.forEach((e,i)=>{const sp=G.R*dt*4.5;
+    if(e.path.length){const w=e.path[0],dx=w.x-e.x,dy=w.y-e.y,d=Math.hypot(dx,dy);if(d<sp)e.path.shift();else{e.x+=dx/d*sp;e.y+=dy/d*sp}return}
+    const t=slots[i];if(!t)return;const f=Math.min(1,dt*6);e.x+=(t.x-e.x)*f;e.y+=(t.y-e.y)*f})};
+  mv(T5.elD,slotsD(T5.elD.length));mv(T5.elL,slotsL(T5.elL.length));
+}
+function draw5(){
+  const {R,cx,cy,floor}=G,jt=G5.jarTop,jw=R*1.35;
+  ctx.fillStyle='#d9d1c2';ctx.fillRect(0,floor,W,H-floor);ctx.fillStyle='#bfb39c';ctx.fillRect(0,floor,W,3);
+  drawGround();
+  // ขวดแก้ว
+  ctx.fillStyle='rgba(186,220,235,.35)';ctx.strokeStyle='rgba(90,140,165,.7)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(cx-jw,jt,jw*2,floor-jt-2,[R*.25,R*.25,R*.1,R*.1]);ctx.fill();ctx.stroke();
+  // แกนโลหะ
+  ctx.strokeStyle='#8c9aa0';ctx.lineWidth=Math.max(3,R*.07);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,G5.stemBot);ctx.stroke();
+  // จุกฉนวน
+  ctx.fillStyle='#c9a46a';ctx.fillRect(cx-R*.42,jt-R*.14,R*.84,R*.3);
+  font(Math.max(11,R*.13),500,'"Sarabun",sans-serif');ctx.fillStyle='#6b5634';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('จุกฉนวน',cx-jw-8,jt);
+  // จานโลหะ
+  const g=ctx.createLinearGradient(0,cy-R*.13,0,cy+R*.13);g.addColorStop(0,'#f2f5f6');g.addColorStop(1,'#9fb0b6');
+  ctx.fillStyle=g;ctx.strokeStyle='#7d8f95';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(cx-R,cy-R*.13,R*2,R*.26,R*.1);ctx.fill();ctx.stroke();
+  font(Math.max(12,R*.15),600);ctx.fillStyle='#16232a';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('จานโลหะ',cx,cy-R*.4);
+  // แผ่นโลหะ 2 แผ่น
+  [-1,1].forEach(sd=>{const a=T5.alpha*sd,L=R*1.15,x0=cx+sd*R*.06,y0=G5.stemBot;
+    ctx.save();ctx.translate(x0,y0);ctx.rotate(-a);ctx.fillStyle='rgba(212,175,55,.85)';ctx.strokeStyle='#a8862a';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-R*.09,0,R*.18,L,R*.05);ctx.fill();ctx.stroke();ctx.restore()});
+  ctx.fillStyle='#16232a';ctx.textAlign='right';ctx.textBaseline='middle';font(Math.max(12,R*.14),600);
+  ctx.fillText('แผ่นโลหะ',cx-jw-8,G5.stemBot+R*.7);
+  const rs=Math.max(4.5,R*.07);
+  for(const p of ionPos5())sym(p.x,p.y,rs,1);
+  for(const e of T5.elD)sym(e.x,e.y,rs,-1);for(const e of T5.elL)sym(e.x,e.y,rs,-1);
+  if(S.showFlow)for(const w of T5.wire){const p=along(w.t);sym(p.x,p.y,rs,-1)}
+  for(const f of T5.fly){const t=Math.min(1,f.t);sym(f.x0+(f.x1-f.x0)*t,f.y0+(f.y1-f.y0)*t-Math.sin(t*Math.PI)*R*.2,rs,-1)}
+  drawRod();
+}
+function ui5(){
+  const nD=T5.elD.length,nL=T5.elL.length,deg=Math.round(T5.alpha*2*180/Math.PI),key='5'+nD+'/'+nL+'/'+deg;if(key===lastUI)return;lastUI=key;
+  $('dP').textContent=6;$('dN').textContent=nD;setQ('dQ',6-nD);
+  $('lP').textContent=6;$('lN').textContent=nL;setQ('lQ',6-nL);
+  $('eP').textContent=12;$('eN').textContent=nD+nL;setQ('eQ',12-nD-nL);
+  $('eA').textContent=deg+'°';
+}
+
+/* ===================== UI ===================== */
+const $=id=>document.getElementById(id);
+const fmtQ=q=>q===0?'0':q>0?'+'+q:'−'+(-q);
+function fmtNet(){const net=N0-S.el.length;
+  if(net===0)return '0<small>เป็นกลาง</small>';
+  return net>0?`+${net}<small>ขาดอิเล็กตรอน ${net} ตัว</small>`:`−${-net}<small>อิเล็กตรอนเกิน ${-net} ตัว</small>`}
+let lastUI='';
+function setQ(id,q){const e=$(id);e.textContent=fmtQ(q);e.style.color=q>0?'var(--pos)':q<0?'var(--neg)':'var(--ink)'}
+function ui(){
+  if(S.tab===3){ui3();return}
+  if(S.tab===4){ui4();return}
+  if(S.tab===5){ui5();return}
+  if(S.tab===2){
+    const net=fmtNet(),flow=S.flowDir<0?'ดิน → ทรงกลม':S.flowDir>0?'ทรงกลม → ดิน':'—';
+    const key='2'+net+flow+S.ground+S.el.length;
+    if(key!==lastUI){lastUI=key;const v=N0-S.el.length;$('qnet').innerHTML=net;$('qpos').textContent=N0;$('qneg').textContent=S.el.length;
+      $('qnet').style.color=v>0?'var(--pos)':v<0?'var(--neg)':'var(--ink)';
+      $('qflow').textContent=flow;$('qgnd').textContent=S.ground?'ต่ออยู่':'ไม่ต่อ';$('qgnd').style.color=S.ground?'var(--accent)':'var(--ink)'}
+  }else{
+    const eR=S.rb.eR,eC=S.rb.eC,nS=S.el.length,key='1'+eR+'/'+eC+'/'+nS+S.pair;
+    if(key===lastUI)return;lastUI=key;
+    $('nmRod').textContent=PAIRS[S.pair].rod;$('nmCloth').textContent=PAIRS[S.pair].cloth;
+    $('rP').textContent=BASE;$('rN').textContent=BASE+eR;setQ('rQ',-eR);
+    $('cP').textContent=BASE;$('cN').textContent=BASE+eC;setQ('cQ',-eC);
+    $('sP').textContent=N0;$('sN').textContent=nS;setQ('sQ',N0-nS);
+    // รวมเฉพาะ 3 วัตถุ (ประจุที่ไหลลงดินไม่นับ)
+    const tot=-eR-eC+(N0-nS);setQ('tQ',tot);
+  }
+}
+function renderControls(){
+  document.querySelectorAll('#signSeg button').forEach(x=>x.setAttribute('aria-pressed',S.hasRod&&+x.dataset.s===S.sign));
+  document.querySelectorAll('#pairSeg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.p===S.pair));
+  $('rodout').disabled=!S.hasRod;$('gnd').classList.toggle('on',S.ground);
+  $('split').textContent=T3.dT>2.05?'⇄ ชนทรงกลม':'↔ แยกทรงกลม';$('split').classList.toggle('on',T3.dT>2.05);
+}
+function bringRod(sign,target){
+  if(!S.hasRod){S.rodX=S.hideX}
+  S.sign=sign;S.lastSign=sign;S.hasRod=true;S.removing=false;S.rodTarget=target;renderControls();
+}
+function removeRod(){if(!S.hasRod)return;S.hasRod=false;S.removing=true;S.rodTarget=S.hideX;renderControls()}
+function setGround(v){S.ground=v;renderControls()}
+function fullReset(){
+  S.transit=[];resetElectrons(N0);S.ground=false;
+  S.sign=0;S.lastSign=0;S.hasRod=false;S.removing=false;S.rodX=S.rodTarget=S.hideX;
+  if(G.R)resetRub();S.rb.maxShown=false;reset3();reset4();reset5();lastUI='';renderControls();
+}
+function setTab(t){
+  S.tab=t;document.body.dataset.tab=t;showTabs();
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));
+  layout();fullReset();
+}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+
+$('reset').onclick=fullReset;
+$('gnd').onclick=()=>setGround(!S.ground);
+$('rodout').onclick=removeRod;
+$('split').onclick=()=>{T3.dT=T3.dT>2.05?2:Math.min(G.dMax,3.4);renderControls()};
+$('flow').onclick=()=>{S.showFlow=!S.showFlow;$('flow').classList.toggle('on',S.showFlow)};
+document.querySelectorAll('#signSeg button').forEach(b=>b.onclick=()=>{const s=+b.dataset.s;
+  bringRod(s,S.hasRod?S.rodTarget:S.tab===4?Math.max(S.hideX+.8,max4()-2.2):S.tab===5?Math.max(S.hideX+.8,MAX5-2.4):Math.max(ENTER,(W*.2-G.cx)/G.R));toast(s>0?'แท่งแก้ว (ประจุบวก)':'แท่งพลาสติก (ประจุลบ)')});
+document.querySelectorAll('#pairSeg button').forEach(b=>b.onclick=()=>{if(S.pair===b.dataset.p)return;S.pair=b.dataset.p;fullReset();
+  toast(S.pair==='glass'?'ถูแท่งแก้วกับผ้าไหม':'ถูแท่งพลาสติกกับขนสัตว์')});
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.getAttribute('aria-disabled')==='true'){toast('เร็ว ๆ นี้');return}const t=+b.dataset.t;if(t!==S.tab)setTab(t)});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+
+// ลากแท่ง / แตะสวิตช์
+function pt(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+const onSwitch=p=>Math.abs(p.x-G.gx)<G.R*.5&&p.y>G.swTop-G.R*.3&&p.y<G.swBot+G.R*.2;
+const onRod2=p=>{if(!S.hasRod)return false;const tx=G.cx+S.rodX*G.R,th=G.R*.3;return p.x<tx+th&&Math.abs(p.y-G.cy)<th*1.4};
+const onRod1=p=>{const r=rubRod();return r&&p.x>r.x1-6&&p.x<r.x2+6&&Math.abs(p.y-r.y)<Math.max(r.th*1.3,22)};
+cv.addEventListener('pointerdown',e=>{const p=pt(e);
+  if(S.tab===5&&!onSwitch(p)){if(onRod2(p)){S.drag=true;S.dx=p.x-(G.cx+S.rodX*G.R);cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'}return}
+  if(S.tab===4){if(onRod2(p)){S.drag=true;S.dx=p.x-(G.cx+S.rodX*G.R);cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'}return}
+  if(S.tab===3){if(onRod2(p)){S.drag=true;S.dx=p.x-(G.cx+S.rodX*G.R);cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'}
+    else if(onB(p)){T3.dragB=true;S.dx=p.x-(G.cx+T3.d*G.R);cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'}return}
+  if(onSwitch(p)){setGround(!S.ground);return}
+  if(S.tab===2&&onRod2(p)){S.drag=true;S.dx=p.x-(G.cx+S.rodX*G.R);cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'}
+  if(S.tab===1&&onRod1(p)){const r=rubRod();S.drag=true;S.rb.dragging=true;S.dx=p.x-r.x;S.dy=p.y-r.y;cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'}});
+cv.addEventListener('pointermove',e=>{const p=pt(e);
+  if(T3.dragB){let d=(p.x-S.dx-G.cx)/G.R;d=Math.max(2,Math.min(G.dMax,d));if(d<2.08)d=2;T3.d=T3.dT=d;renderControls();return}
+  if(S.drag&&S.tab!==1){let x=(p.x-S.dx-G.cx)/G.R;x=Math.max(S.hideX+.6,Math.min(S.tab===4?max4():S.tab===5?MAX5:MINX,x));S.rodTarget=x;S.rodX=x;return}
+  if(S.drag&&S.tab===1){const q=clampRod(p.x-S.dx,p.y-S.dy);S.rb.fx=q.x/W;S.rb.fy=q.y/H;return}
+  if(S.tab===3){cv.style.cursor=onRod2(p)||onB(p)?'grab':'default';return}
+  if(S.tab===4){cv.style.cursor=onRod2(p)?'grab':'default';return}
+  if(S.tab===5){cv.style.cursor=onRod2(p)?'grab':onSwitch(p)?'pointer':'default';return}
+  cv.style.cursor=(S.tab===2?onRod2(p):onRod1(p))?'grab':onSwitch(p)?'pointer':'default'});
+const endDrag=()=>{S.drag=false;T3.dragB=false;S.rb.dragging=false;S.rb.lastX=null;cv.style.cursor='default'};
+cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+
+addEventListener('keydown',e=>{
+  const k=e.key;
+  if((k==='g'||k==='G')&&[1,2,5].includes(S.tab)){setGround(!S.ground)}
+  else if(k==='r'||k==='R'){fullReset()}
+  else if(k==='f'||k==='F'){$('fs').click()}
+  else if(S.tab!==1&&(k==='x'||k==='X')){removeRod()}
+  else if(S.tab!==1&&(k==='+'||k==='=')){document.querySelector('#signSeg .p').click()}
+  else if(S.tab!==1&&k==='-'){document.querySelector('#signSeg .n').click()}
+  else if(S.tab===3&&(k==='s'||k==='S')){$('split').click()}
+});
+
+/* ===================== ลูป ===================== */
+let tPrev=performance.now();
+function loop(t){const dt=Math.min(.05,(t-tPrev)/1000);tPrev=t;
+  if(W>0){
+    if(S.tab!==1){
+      if(!S.drag){const d=S.rodTarget-S.rodX;S.rodX+=Math.abs(d)<.01?d:d*Math.min(1,dt*3.2)}
+      if(S.removing&&S.rodX<=S.hideX+.02){S.removing=false;S.sign=0;renderControls()}
+    }else rubStep(dt,t);
+    if(S.tab===3){step3(dt,t)}
+    else if(S.tab===4){step4(dt,t)}
+    else if(S.tab===5){step5(dt,t)}
+    else{if(rodActive()){physics();S.relaxKey='';S.el.forEach(p=>{delete p.tx})}else relax(dt);groundFlow(dt)}
+    draw();ui();
+  }
+  requestAnimationFrame(loop)}
+document.body.dataset.tab=S.tab;showTabs();layout();renderControls();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
