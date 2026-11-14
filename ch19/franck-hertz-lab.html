@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>การทดลองของฟรังก์–เฮิรตซ์</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn{white-space:normal}
+.vslide{position:absolute;left:4%;right:4%;bottom:.7em;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.8em;
+  background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:14px;padding:.45em .9em;z-index:2}
+.vslide .vl{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.9);color:var(--muted)}
+.vslide b{font-family:var(--f-mono);font-size:calc(var(--u)*1.35);color:var(--accent);min-width:5.5ch;text-align:right}
+.vslide .track{position:relative;height:calc(var(--u)*2)}
+.vslide input{position:absolute;inset:0;width:100%;height:100%;margin:0;accent-color:var(--accent);cursor:pointer}
+.vslide i{position:absolute;top:-.35em;bottom:-.35em;width:4px;margin-left:-2px;background:#15803d;border-radius:2px;pointer-events:none}
+.vslide i::after{content:"สมดุล";position:absolute;top:-1.5em;left:50%;transform:translateX(-50%);font-style:normal;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.75);color:#15803d;white-space:nowrap}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+@media (max-width:760px){.vslide{left:2%;right:2%;bottom:.4em;gap:.5em;grid-template-columns:minmax(0,1fr) auto}.vslide .vl{display:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>การทดลองของฟรังก์–เฮิรตซ์</h1>
+    <div class="spacer"></div>
+    <div class="tools">
+      <button class="btn" id="sweep">▶ กวาดแรงดัน</button>
+      <button class="btn" id="reset">↺ เริ่มใหม่</button>
+      <button class="btn" id="fs">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <div class="panel stage" id="stageBox">
+    <canvas id="cv"></canvas>
+    <div class="toast" id="toast"></div>
+    <div class="vslide" id="vslide">
+      <span class="vl">แรงดันเร่ง V</span>
+      <div class="track"><input type="range" id="vRange" min="0" max="30" step="0.1" aria-label="แรงดันเร่ง (โวลต์)"></div>
+      <b id="vVal">0 V</b>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+
+<script>
+/* ===================== ตัวช่วย ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const f1=x=>(Math.round(x*10)/10).toFixed(1);
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2000)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(layout).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+
+/* ===================== ฟิสิกส์ ===================== */
+const EX=4.9,VR=.5,DEL=.4,VMAX=30;                 // พลังงานกระตุ้นปรอท, ศักย์หน่วง, ช่วงพลังงานเกินก่อนชน
+const ss=(x,a,b)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
+const nHit=(V,d)=>V>=EX+d?Math.floor((V-d)/EX):0;
+function frac(V){if(V<=0)return 0;let s=0;const N=300;for(let i=0;i<N;i++){const d=(i+.5)/N*DEL,Ef=V-nHit(V,d)*EX;s+=ss(Ef,VR-.3,VR+.9)}return .12+.88*s/N}
+const Icur=V=>100*(Math.pow(Math.max(V,0)/VMAX,1.4)+.04*V/VMAX)*frac(V);
+const PEAKS=(()=>{const C=[];let a=Icur(0),b=Icur(.02);for(let v=.04;v<=VMAX;v+=.02){const c=Icur(v);if(b>a&&b>=c&&v>3)C.push(v-.02);a=b;b=c}
+  const G=[];for(const v of C){const g=G[G.length-1];if(g&&v-g[g.length-1]<2)g.push(v);else G.push([v])}
+  return G.map(g=>+g.reduce((m,v)=>Icur(v)>Icur(m)?v:m,g[0]).toFixed(2))})();
+const IMAX=(()=>{let m=0;for(let v=0;v<=VMAX;v+=.02)m=Math.max(m,Icur(v));return m})();
+const Hh=6.63e-34,Cc=3e8,EV=1.6e-19;
+
+/* ===================== สถานะ ===================== */
+const T={V:0,vmax:0,sweep:false};
+const S={dirty:true,els:[],flash:[],ping:[],acc:0,lab:0};
+// อะตอมปรอท: เรียงตามแนววิ่งของอิเล็กตรอน 3 แนว + ประดับ
+const LANES=[.3,.5,.7];
+const ATOMS=(()=>{const A=[],r=(a,b)=>{const h=Math.sin(a*12.9898+b*78.233)*43758.5453;return h-Math.floor(h)};
+  LANES.forEach((y,l)=>{for(let i=0;i<6;i++)A.push({x:(i+.55+.35*(r(i,l)-.5))/6.2,y:y+.035*(r(l,i)-.5)*2,lane:l})});
+  for(let i=0;i<7;i++){A.push({x:(i+.5)/7,y:.12+.03*r(i,9),lane:-1});A.push({x:(i+.3)/7,y:.88-.03*r(9,i),lane:-1})}return A})();
+function resetAll(){T.V=0;T.vmax=0;T.sweep=false;S.els=[];S.flash=[];syncSweep();renderP();S.dirty=true}
+function setV(v){T.V=Math.max(0,Math.min(VMAX,Math.round(v*10)/10));T.vmax=Math.max(T.vmax,T.V);const i=document.querySelector('#params input[data-k="V"]');if(i&&document.activeElement!==i)i.value=T.V;S.dirty=true}
+
+/* ===================== ผัง ===================== */
+function geo(){const nr=W<640,u=UU();
+  if(nr)return{nr,u,tx0:W*.04,tx1:W*.96,ty0:H*.09,ty1:H*.34,gx0:W*.12,gx1:W*.94,gy0:H*.79,gy1:H*.53};
+  return{nr,u,tx0:W*.03,tx1:W*.5,ty0:H*.12,ty1:H*.66,gx0:W*.58,gx1:W*.96,gy0:H*.8,gy1:H*.1}}
+function tubeX(g){const L=g.tx1-g.tx0;return{xc:g.tx0+L*.1,xg:g.tx0+L*.8,xa:g.tx0+L*.92}}
+/* อิเล็กตรอนในหลอด */
+function spawn(){const used=S.els.map(e=>e.lane),l=[0,1,2].find(v=>!used.includes(v))??1;S.els.push({x:0,lane:l,y:LANES[l],d:0,k:0,ph:'acc',ke:0,bob:0,t:Math.random()*6,hold:true})}
+function stepEls(dt,g){const V=T.V;S.lab=Math.max(0,S.lab-dt);
+  S.acc+=dt;S.sp=(S.sp||0)+dt;if(S.els.length<3&&S.sp>.8){S.sp=0;spawn()}
+  if(V>=.05&&S.acc>1.8&&!S.els.some(e=>!e.hold&&e.ph==='acc'&&e.x<.3)){const h=S.els.find(e=>e.hold);if(h){h.hold=false;S.acc=0}}   // ปล่อยทีละตัว
+  for(const e of S.els){e.t+=dt;e.bob=Math.max(0,e.bob-dt*2.5);
+    if(e.ph==='acc'){
+      if(V<.05||e.hold){e.x+=(.035-e.x)*Math.min(1,dt*2);e.ke=0;e.y=LANES[e.lane]+.03*Math.sin(e.t*2.3+e.lane);continue}   // ไม่มีแรงเร่ง: ลอยวนใกล้แคโทด
+      const sp=.035+.2*Math.sqrt(Math.max(0,e.ke)/10),x0=e.x;e.x=Math.min(1,e.x+sp*dt);e.y+=(LANES[e.lane]-e.y)*Math.min(1,dt*3);e.ke=V*e.x-e.k*EX;
+      if(e.ke>=EX-1e-9&&V>=EX-1e-9){e.k++;e.ke=Math.max(0,e.ke-EX);if(e.ke<.05){e.ke=0}S.flash.push({x:e.x,y:e.y,t:0})}      // ชนแบบไม่ยืดหยุ่น
+      else for(const a of ATOMS)if(a.lane===e.lane&&x0<a.x&&e.x>=a.x){S.ping.push({x:a.x,y:a.y,t:0,ke:e.ke,lab:S.lab<=0});if(S.lab<=0)S.lab=2.2;e.bob=1;e.y=a.y+(e.y>=a.y?.04:-.04)}   // ชนแบบยืดหยุ่น
+      if(e.x>=1){e.ef=V-e.k*EX;e.ke=e.ef;e.ph='ret';e.r=0}}
+    else{const ok=e.ef>VR;e.r+=dt*.45;if(!ok&&e.r>=1)e.dead=true;if(ok&&e.r>=1.25)e.dead=true}}
+  S.els=S.els.filter(e=>!e.dead);S.flash.forEach(f=>f.t+=dt);S.flash=S.flash.filter(f=>f.t<2.6);S.ping.forEach(f=>f.t+=dt);S.ping=S.ping.filter(f=>f.t<1.6)}
+function draw(){ctx.fillStyle='#f8faf9';ctx.fillRect(0,0,W,H);const g=geo(),u=g.u,{xc,xg,xa}=tubeX(g);
+  // หลอดแก้ว
+  const ty0=g.ty0,ty1=g.ty1,th=ty1-ty0;ctx.fillStyle='#eef4f6';ctx.strokeStyle='#9fb0b6';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(g.tx0,ty0,g.tx1-g.tx0,th,th*.2);ctx.fill();ctx.stroke();
+  const iy0=ty0+th*.12,iy1=ty1-th*.12,Y=f=>iy0+(iy1-iy0)*f;
+  // อะตอมปรอท
+  const ar=Math.max(5,u*.55);for(const a of ATOMS){ctx.fillStyle=a.lane<0?'rgba(100,116,139,.25)':'rgba(100,116,139,.42)';ctx.beginPath();ctx.arc(xc+(xg-xc)*a.x,Y(a.y),ar,0,7);ctx.fill()}
+  // แคโทด / ตะแกรง / แผ่นรับ
+  ctx.strokeStyle='#ea580c';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=8;i++){const y=Y(.2+.6*i/8);ctx.lineTo(xc-u*.9+(i%2?u*.5:0),y)}ctx.stroke();
+  ctx.fillStyle='#475569';ctx.fillRect(xc-u*.25,Y(.08),u*.5,Y(.92)-Y(.08));
+  ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(xg,Y(.02));ctx.lineTo(xg,Y(.98));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#334155';ctx.fillRect(xa-u*.3,Y(.08),u*.6,Y(.92)-Y(.08));
+  // ชนแบบยืดหยุ่น: อะตอมเด้ง ไม่รับพลังงาน
+  for(const f of S.ping){const x=xc+(xg-xc)*f.x,y=Y(f.y),a=Math.max(0,1-f.t/1.6);ctx.strokeStyle=`rgba(71,85,105,${a})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,ar*(1.3+f.t*1.2),0,7);ctx.stroke();
+    if(f.lab){ctx.globalAlpha=a;font(Math.max(10,u*.85),700);ctx.fillStyle='#475569';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('ชนแบบยืดหยุ่น · ไม่เสียพลังงาน',x,y+ar*2.2);ctx.globalAlpha=1}}
+  // ชนแบบไม่ยืดหยุ่น: อะตอมรับ 4.9 eV แล้วปล่อยแสง UV
+  for(const f of S.flash){const x=xc+(xg-xc)*f.x,y=Y(f.y),t=f.t;
+    const glow=t<1.2?1:Math.max(0,1-(t-1.2)/.6),r=ar*2.6;const gr=ctx.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(167,139,250,${.95*glow})`);gr.addColorStop(1,'rgba(167,139,250,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+    ctx.fillStyle=glow>.05?'#7c3aed':'rgba(100,116,139,.42)';ctx.beginPath();ctx.arc(x,y,ar*1.1,0,7);ctx.fill();
+    if(t<1.2){font(Math.max(11,u*.95),700);ctx.fillStyle='#6d28d9';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('อะตอมรับ +4.9 eV',x,y+ar*2)}
+    if(t>1.1&&t<2.6){const p=(t-1.1)/1.5,len=u*4,dx=x+u*1+p*u*5,dy=y-u*1-p*u*5,A=u*.4;ctx.save();ctx.translate(dx,dy);ctx.rotate(-Math.PI/4);ctx.strokeStyle=`rgba(124,58,237,${1-p*.6})`;ctx.lineWidth=2.2;ctx.beginPath();for(let q=0;q<=len;q+=2)ctx.lineTo(q,A*Math.sin(q/len*Math.PI)*Math.sin(q*.9));ctx.stroke();ctx.restore();
+      font(Math.max(10,u*.8),700);ctx.fillStyle=`rgba(109,40,217,${1-p*.6})`;ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText('UV 254 nm',dx+len*.7,dy-len*.5)}}
+  // อิเล็กตรอน (สูงสุด 3 ตัว) พร้อมป้ายพลังงาน
+  const er=Math.max(6,u*.6);
+  for(const e of S.els){let x,ok=e.ef>VR;if(e.ph==='acc')x=xc+(xg-xc)*e.x;else x=ok?xg+(xa-xg)*Math.min(1,e.r):xg+(xa-xg)*Math.sin(Math.PI*Math.min(1,e.r))*Math.min(.85,Math.max(.25,e.ef/VR));
+    const y=Y(e.y);ctx.fillStyle=e.k?'#1e3a8a':'#2563eb';ctx.beginPath();ctx.arc(x,y,er,0,7);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-er*.5,y);ctx.lineTo(x+er*.5,y);ctx.stroke();
+    let lab=e.hold&&T.V<.05?'0 eV · ไม่มีแรงเร่ง':e.hold?'รอปล่อย':f1(Math.max(0,e.ke))+' eV',col='#1e3a8a';if(e.ph==='ret'){if(ok&&e.r>.6){lab='✓ ถึงแผ่นรับ';col='#15803d'}else if(!ok&&e.r>.5){lab='✗ วกกลับ';col='#b91c1c'}}
+    font(Math.max(11,u*.95),700,'"JetBrains Mono","Chakra Petch",monospace');const w=ctx.measureText(lab).width+10,h=u*1.4;ctx.fillStyle='rgba(255,255,255,.92)';ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.beginPath();ctx.roundRect(x-w/2,y-er-h-3,w,h,5);ctx.fill();ctx.stroke();
+    ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lab,x,y-er-h/2-2)}
+  // ป้าย
+  const nr=g.nr;font(Math.max(10,u*.8),700);ctx.fillStyle='#475569';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('แคโทด',xc,ty1+u*.4);ctx.fillText('ตะแกรง',xg,ty1+u*.4);if(!nr)ctx.fillText('แผ่นรับ',xa,ty1+u*.4);
+  tag('V เร่ง = '+f1(T.V)+' V',(xc+xg)/2,ty1+u*2.4,'#c2410c');tag('หน่วง 0.5 V',(xg+xa)/2+(nr?-u*1.5:u),ty1+u*2.4,'#475569');
+  tag('Ⓐ I = '+f3(Icur(T.V))+(nr?'':' (หน่วยสัมพัทธ์)'),g.tx1,ty0-u*1.3,'#b45309','right');
+  // แถบแสดงจุดชน (เส้นประบอกตำแหน่ง Eₖ = 4.9 eV)
+  if(T.V>=EX){ctx.strokeStyle='rgba(124,58,237,.5)';ctx.setLineDash([3,5]);ctx.lineWidth=1.4;for(let k=1;k*EX<=T.V;k++){const x=xc+(xg-xc)*(k*EX/T.V);ctx.beginPath();ctx.moveTo(x,iy0);ctx.lineTo(x,iy1);ctx.stroke()}ctx.setLineDash([])}
+  if(!nr){font(Math.max(10,u*.75),600);ctx.fillStyle='#7c3aed';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText('เส้นประม่วง = ตำแหน่งที่อิเล็กตรอนมีพลังงานครบ 4.9 eV',g.tx0,ty0-u*.2)}
+  // ---- กราฟ I–V ----
+  const X=v=>g.gx0+(g.gx1-g.gx0)*v/VMAX,Imax=IMAX*1.1,Yg=i=>g.gy0-(g.gy0-g.gy1)*i/Imax;
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;for(let v=5;v<=VMAX;v+=5){ctx.beginPath();ctx.moveTo(X(v),g.gy0);ctx.lineTo(X(v),g.gy1);ctx.stroke()}
+  ctx.strokeStyle='#4d5f64';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(g.gx0,g.gy1);ctx.lineTo(g.gx0,g.gy0);ctx.lineTo(g.gx1,g.gy0);ctx.stroke();
+  font(Math.max(11,u*.9),700);ctx.fillStyle='#4d5f64';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText('กระแส I',g.gx0+6,g.gy1-4);if(!nr){ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('แรงดันเร่ง V (โวลต์)',g.gx1,g.gy0+u*1.3)}
+  font(Math.max(10,u*.8),600,'"JetBrains Mono",monospace');ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.textBaseline='top';for(let v=0;v<=VMAX;v+=5)ctx.fillText(v,X(v),g.gy0+3);
+  if(T.vmax>0){ctx.strokeStyle='#0d6e66';ctx.lineWidth=2.6;ctx.beginPath();for(let v=0;v<=T.vmax;v+=.05)ctx.lineTo(X(v),Yg(Icur(v)));ctx.stroke()}
+  // ยอดกราฟที่ผ่านแล้ว
+  const seen=PEAKS.filter(p=>p<=T.vmax);
+  seen.forEach((p,i)=>{ctx.strokeStyle='rgba(124,58,237,.55)';ctx.setLineDash([4,4]);ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(X(p),Yg(Icur(p)));ctx.lineTo(X(p),g.gy0);ctx.stroke();ctx.setLineDash([]);
+    if(i>0){const a=X(seen[i-1]),b=X(p),y=g.gy0-(g.gy0-g.gy1)*(.08+.06*(i%2));ctx.strokeStyle='#7c3aed';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(a,y);ctx.lineTo(b,y);ctx.stroke();
+      [a,b].forEach(x=>{ctx.beginPath();ctx.moveTo(x,y-4);ctx.lineTo(x,y+4);ctx.stroke()});if(!nr||i===1)tag('ΔV = '+f1(p-seen[i-1])+' V',(a+b)/2,y-u*1.2,'#6d28d9')}});
+  ctx.fillStyle='#ea7a0c';ctx.beginPath();ctx.arc(X(T.V),Yg(Icur(T.V)),u*.5,0,7);ctx.fill();
+  if(T.vmax===0){font(Math.max(11,u*.9),600);ctx.fillStyle='#94a3b8';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('กด ▶ กวาดแรงดัน หรือเลื่อนแถบด้านล่าง',(g.gx0+g.gx1)/2,(g.gy0+g.gy1)/2)}
+}
+
+/* ===================== แผงล่าง ===================== */
+function calc(){const V=T.V,seen=PEAKS.filter(p=>p<=T.vmax);let h='';
+  h+=`<div class="cl"><span class="lab">พลังงานอิเล็กตรอน</span>Eₖ = eV → อิเล็กตรอนได้พลังงานสูงสุด <b>${f1(V)} eV</b> เมื่อถึงตะแกรง (ถ้าไม่ชนเสียพลังงาน)</div>`;
+  h+=V<EX?`<div class="cl note">V &lt; 4.9 V · อิเล็กตรอนชนอะตอมปรอทแบบยืดหยุ่น ไม่เสียพลังงาน กระแสจึงเพิ่มขึ้นตาม V</div>`
+    :`<div class="cl note">V ≥ 4.9 V · อิเล็กตรอนที่มีพลังงานครบ 4.9 eV ชนแบบไม่ยืดหยุ่น ให้พลังงาน 4.9 eV แก่อะตอม (ชนได้สูงสุด ${Math.floor(V/EX)} ครั้ง) · ตัวที่เหลือพลังงานไม่ถึง 0.5 eV ข้ามศักย์หน่วงไม่ได้ กระแสจึงลด</div>`;
+  if(seen.length>=2){const d=seen.slice(1).map((p,i)=>p-seen[i]),avg=d.reduce((a,b)=>a+b,0)/d.length,E=EX*EV,l=Hh*Cc/E;
+    h+=`<div class="cl"><span class="lab">ยอดกราฟ</span>${seen.map(p=>f1(p)+' V').join(' · ')} · ระยะห่าง ΔV = <b>${d.map(f1).join(', ')} V</b> (เฉลี่ย ${f1(avg)} V)</div>`;
+    h+=`<div class="cl"><span class="lab">พลังงานที่อะตอมรับ</span>ΔE = eΔV = 4.9 eV = (4.9)(1.6×10⁻¹⁹) = <span class="res">7.84×10⁻¹⁹ J</span></div>`;
+    h+=`<div class="cl"><span class="lab">แสงที่ปล่อยออกมา</span>λ = hc/ΔE = (6.63×10⁻³⁴)(3×10⁸)/(7.84×10⁻¹⁹) = <span class="res">${f3(l*1e9)} nm</span> (อัลตราไวโอเลต)</div>`;
+    h+=`<div class="cl ok">✓ อะตอมปรอทรับพลังงานได้ทีละ 4.9 eV เท่านั้น → ระดับพลังงานของอะตอมไม่ต่อเนื่อง สนับสนุนแบบจำลองอะตอมของโบร์</div>`}
+  else h+=`<div class="cl note">${seen.length?'พบยอดแรกที่ '+f1(seen[0])+' V · เพิ่ม V ต่อไปเพื่อหายอดถัดไป แล้ววัดระยะห่างระหว่างยอด':'เพิ่ม V จนกราฟผ่านยอด 2 ยอดขึ้นไป แล้ววัดระยะห่างระหว่างยอด ΔV'}</div>`;
+  return h}
+
+/* ===================== แผงปรับค่า ===================== */
+function renderP(){$('params').innerHTML=`<span class="label">ปรับค่า</span><div class="prow"><span class="pl">แรงดันเร่ง V</span><button class="mini" data-d="-1">−</button><input data-k="V" type="number" inputmode="decimal" value="${T.V}"><button class="mini" data-d="1">+</button><span class="unit">V</span></div>
+  <span class="hint2">แก๊สในหลอด: ไอปรอท · ศักย์หน่วงระหว่างตะแกรงกับแผ่นรับ 0.5 V</span>`}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-d]');if(b)setV(T.V+.1*(+b.dataset.d)*(e.shiftKey?10:1))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setV(v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i)i.value=T.V});
+$('vRange').addEventListener('input',e=>{T.sweep=false;syncSweep();setV(+e.target.value)});
+function syncSlider(){const r=$('vRange');if(document.activeElement!==r)r.value=T.V;$('vVal').textContent=f1(T.V)+' V'}
+
+/* ===================== ปุ่ม ===================== */
+function syncSweep(){$('sweep').textContent=T.sweep?'⏸ หยุดกวาด':'▶ กวาดแรงดัน';$('sweep').classList.toggle('on',T.sweep)}
+$('sweep').onclick=()=>{if(!T.sweep&&T.V>=VMAX)setV(0);T.sweep=!T.sweep;syncSweep()};
+$('reset').onclick=resetAll;
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(k===' '){e.preventDefault();$('sweep').click()}
+  else if(k==='ArrowRight')setV(T.V+.1);else if(k==='ArrowLeft')setV(T.V-.1)});
+
+let tp=performance.now();
+function loop(t){const dt=Math.min(.05,(t-tp)/1000);tp=t;
+  if(W){if(T.sweep){T.V=Math.min(VMAX,T.V+dt*.8);T.vmax=Math.max(T.vmax,T.V);const ip=document.querySelector('#params input[data-k="V"]');if(ip&&document.activeElement!==ip)ip.value=f1(T.V);if(T.V>=VMAX){T.sweep=false;syncSweep()}}stepEls(dt,geo());S.dirty=true}
+  if(S.dirty&&W){S.dirty=false;draw();setCalc(calc());syncSlider()}requestAnimationFrame(loop)}
+syncSweep();renderP();layout();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
