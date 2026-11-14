@@ -1,1 +1,377 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ห้องทดลองการค้นพบอิเล็กตรอน</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
 
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.vslide{position:absolute;left:4%;right:4%;bottom:.7em;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.8em;
+  background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:14px;padding:.45em .9em;z-index:2}
+.vslide .vl{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.9);color:var(--muted)}
+.vslide b{font-family:var(--f-mono);font-size:calc(var(--u)*1.35);color:var(--accent);min-width:5.5ch;text-align:right}
+.vslide .track{position:relative;height:calc(var(--u)*2)}
+.vslide input{position:absolute;inset:0;width:100%;height:100%;margin:0;accent-color:var(--accent);cursor:pointer}
+.vslide i{position:absolute;top:-.35em;bottom:-.35em;width:4px;margin-left:-2px;background:#15803d;border-radius:2px;pointer-events:none}
+.vslide i::after{content:"สมดุล";position:absolute;top:-1.5em;left:50%;transform:translateX(-50%);font-style:normal;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.75);color:#15803d;white-space:nowrap}
+@media (max-width:760px){.vslide{left:2%;right:2%;bottom:.4em;gap:.5em;grid-template-columns:minmax(0,1fr) auto}.vslide .vl{display:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>การค้นพบอิเล็กตรอน</h1>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" aria-selected="true" data-t="1">① ทอมสัน (e/m)</button>
+      <button role="tab" aria-selected="false" data-t="2">② มิลลิแกน (e)</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="tools">
+      <button class="btn on" data-tabs="1" id="eBtn">⚡ สนาม E: เปิด</button>
+      <button class="btn" data-tabs="1" id="bBtn">🧲 สนาม B: ปิด</button>
+      <div class="seg" data-tabs="1" id="bDir" role="group" aria-label="ทิศสนามแม่เหล็ก">
+        <button data-d="in" aria-pressed="true">⊗ เข้า</button><button data-d="out" aria-pressed="false">⊙ ออก</button>
+      </div>
+      <button class="btn" data-tabs="2" id="tickBtn">ขีดจุดสมดุล</button>
+      <button class="btn" id="reset">↺ เริ่มใหม่</button>
+      <button class="btn" id="fs">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <div class="panel stage" id="stageBox">
+    <canvas id="cv"></canvas>
+    <div class="toast" id="toast"></div>
+    <div class="vslide" id="vslide" hidden>
+      <span class="vl">ความต่างศักย์</span>
+      <div class="track"><input type="range" id="vRange" min="0" max="200" step="0.5" aria-label="ความต่างศักย์ (โวลต์)"><i id="vTick" hidden></i></div>
+      <b id="vVal">0 V</b>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+
+<script>
+/* ===================== ตัวช่วย ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-30)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+String(e).split('').map(c=>SUPd[c]).join('')}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(layout).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+const S={tab:1,dirty:true,ph:0};
+
+/* ===================== แท็บ ①: ทอมสัน ===================== */
+const QM=1.76e11,ME=9.11e-31,QE=1.6e-19;
+const GEO={x0:-.05,p0:0,p1:.2,scr:.205,half:.07,gL:.045,gH:.006};   // m: ผนังซ้าย, แผ่นเริ่ม–จบ, จอ, ครึ่งความสูงหลอด, ปืนยาว/สูงครึ่ง
+const T1={Va:100,Vp:890,d:10,B:1.2,eOn:true,bOn:false,bIn:true};
+const DEF1={...T1};
+const vel=()=>Math.sqrt(2*QM*T1.Va);
+const isBal=()=>T1.eOn&&T1.bOn&&T1.bIn&&T1.B>0&&Math.abs(T1.Vp/(T1.d/100)-vel()*T1.B*1e-3)/Math.max(T1.Vp/(T1.d/100),1e-9)<.005;
+function sim1(){const v0=vel(),d=T1.d/100,E0=T1.eOn?T1.Vp/d:0,Bz=T1.bOn?(T1.bIn?-1:1)*T1.B*1e-3:0;
+  let x=0,y=0,vx=v0,vy=0,t=0,hit=null,loop=false;const pts=[[x,y]];
+  const Tc=Bz?2*Math.PI/(QM*Math.abs(Bz)):Infinity,tmax=E0?6*GEO.p1/v0:Math.min(Tc*1.002,6*GEO.p1/v0),n=3000,dt=tmax/n;
+  const acc=(px,a,b)=>{const E=(px>=GEO.p0&&px<=GEO.p1)?E0:0;return[-QM*(b*Bz),-QM*(-E-a*Bz)]};   // q/m = −QM, E ชี้ลง
+  for(let i=0;i<n;i++){const[a1x,a1y]=acc(x,vx,vy),mx=vx+a1x*dt/2,my=vy+a1y*dt/2,[a2x,a2y]=acc(x+vx*dt/2,mx,my);
+    x+=mx*dt;y+=my*dt;vx+=a2x*dt;vy+=a2y*dt;t+=dt;if(i%3===0)pts.push([x,y]);
+    if(x>=GEO.p0&&x<=GEO.p1&&Math.abs(y)>=d/2){hit={y:Math.sign(y)*d/2,plate:true};pts.push([x,hit.y]);break}
+    if(Math.abs(y)>=GEO.half||x<=GEO.x0){hit={wall:true};pts.push([x,y]);break}
+    if(x<0&&x>-GEO.gL&&Math.abs(y)<GEO.gH&&t>dt*20){hit={gun:true};pts.push([x,y]);break}
+    if(x>=GEO.p1)break}
+  if(!hit&&x<GEO.p1&&!E0&&Bz)loop=true;
+  let ys=null;
+  if(!hit&&!loop){pts.push([x,y]);ys=y+vy/vx*(GEO.scr-x);pts.push([GEO.scr,ys])}
+  const r=Bz?v0/(QM*Math.abs(Bz)):Infinity;
+  return{v0,E:E0,B:Math.abs(Bz),d,pts,hit,ys,r,loop}}
+function draw1(){ctx.fillStyle='#f8faf9';ctx.fillRect(0,0,W,H);
+  const s=sim1(),nr=W<640,u=UU(),d=s.d;
+  const top=nr?u*3.2:u*1.2,avail=H-top-u*1.2,span=GEO.scr+.008-GEO.x0,sc=Math.min((W-u*2)/span,avail/(2*GEO.half+.006));
+  const X0=W-u-sc*(GEO.scr+.008),cy=top+avail/2,X=m=>X0+m*sc,Y=m=>cy-m*sc;
+  // ตัวหลอด
+  ctx.fillStyle='#eef4f6';ctx.strokeStyle='#9fb0b6';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(X(GEO.x0),Y(GEO.half),X(GEO.scr+.008)-X(GEO.x0),2*GEO.half*sc,u*1.4);ctx.fill();ctx.stroke();
+  // สนาม B (ขดลวดครอบทั้งหลอด)
+  if(T1.bOn){const xa=X(GEO.x0)+u*.4,xb=X(GEO.p1),ya=Y(GEO.half)+u*.6,yb=Y(-GEO.half)-u*.6,st=Math.max(u*2.2,(xb-xa)/12);ctx.fillStyle='rgba(124,58,237,.05)';ctx.fillRect(xa,ya,xb-xa,yb-ya);
+    ctx.strokeStyle='rgba(124,58,237,.4)';ctx.fillStyle='rgba(124,58,237,.4)';ctx.lineWidth=1.4;const rr=u*.38;
+    for(let xx=xa+st/2;xx<xb;xx+=st)for(let yy=ya+st/2;yy<yb;yy+=st){ctx.beginPath();ctx.arc(xx,yy,rr,0,7);ctx.stroke();if(T1.bIn){ctx.beginPath();ctx.moveTo(xx-rr*.7,yy-rr*.7);ctx.lineTo(xx+rr*.7,yy+rr*.7);ctx.moveTo(xx+rr*.7,yy-rr*.7);ctx.lineTo(xx-rr*.7,yy+rr*.7);ctx.stroke()}else{ctx.beginPath();ctx.arc(xx,yy,rr*.25,0,7);ctx.fill()}}}
+  // ปืนอิเล็กตรอน (อยู่ในหลอด)
+  {const gx=X(-GEO.gL),gw=X(0)-gx,gy=Y(GEO.gH),gh=2*GEO.gH*sc;ctx.fillStyle='#cbd5e1';ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(gx,gy,gw,gh,3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#475569';ctx.fillRect(gx+u*.3,gy+gh*.2,u*.5,gh*.6);ctx.fillRect(X(0)-u*.4,gy-u*.4,u*.4,gh+u*.8);
+    if(!nr){font(Math.max(11,u*.85),600);ctx.fillStyle='#475569';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('ปืนอิเล็กตรอน',gx+gw/2,gy-u*.4)}
+    tag('Vₐ = '+f3(T1.Va)+' V',gx+gw/2,gy-(nr?u*1.3:u*2.9),'#475569')}
+  // แผ่นโลหะคู่ขนาน
+  const pt=Math.max(4,u*.45);ctx.fillStyle=T1.eOn?'#d42a2a':'#94a3b8';ctx.fillRect(X(GEO.p0),Y(d/2)-pt,X(GEO.p1)-X(GEO.p0),pt);ctx.fillStyle=T1.eOn?'#2557d6':'#94a3b8';ctx.fillRect(X(GEO.p0),Y(-d/2),X(GEO.p1)-X(GEO.p0),pt);
+  if(T1.eOn){font(Math.max(13,u*1.2),700);ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillStyle='#c81e1e';ctx.fillText('+',X(GEO.p0)-u*.3,Y(d/2)-pt/2);ctx.fillStyle='#1d4ed8';ctx.fillText('−',X(GEO.p0)-u*.3,Y(-d/2)+pt/2);
+    for(let i=1;i<8;i++){const xx=X(GEO.p0)+(X(GEO.p1)-X(GEO.p0))*i/8;arrow(xx,Y(d/2)+u*.6,xx,Y(-d/2)-u*.6,'rgba(212,42,42,.28)',1.3)}}
+  // ระยะ d
+  {const xd=X(GEO.p1)+u*.2;ctx.strokeStyle='#64748b';ctx.lineWidth=1.2;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(xd,Y(d/2));ctx.lineTo(xd,Y(-d/2));ctx.stroke();ctx.setLineDash([])}
+  // จอเรืองแสง
+  ctx.fillStyle='#bbf7d0';ctx.fillRect(X(GEO.scr)-u*.25,Y(GEO.half)+u*.6,u*.6,2*GEO.half*sc-u*1.2);ctx.strokeStyle='#15803d';ctx.lineWidth=1.5;ctx.strokeRect(X(GEO.scr)-u*.25,Y(GEO.half)+u*.6,u*.6,2*GEO.half*sc-u*1.2);
+  ctx.strokeStyle='rgba(21,128,61,.45)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(X(GEO.scr)-u*1.6,cy);ctx.lineTo(X(GEO.scr)+u*.4,cy);ctx.stroke();ctx.setLineDash([]);
+  // วงกลมเต็มวง (เส้นประ) เมื่อเหลือแต่ B
+  if(T1.bOn&&!T1.eOn&&isFinite(s.r)){const sg=T1.bIn?-1:1,ccx=X(0),ccy=Y(sg*s.r);ctx.strokeStyle='rgba(124,58,237,.75)';ctx.lineWidth=1.8;ctx.setLineDash([7,6]);ctx.beginPath();ctx.arc(ccx,ccy,s.r*sc,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#6d28d9';ctx.beginPath();ctx.arc(ccx,ccy,3.5,0,7);ctx.fill();ctx.strokeStyle='#6d28d9';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ccx,ccy);ctx.lineTo(ccx+s.r*sc*.7071,ccy-sg*s.r*sc*.7071);ctx.stroke();
+    tag('r = '+f3(s.r*100)+' cm',ccx+s.r*sc*.36+u*1.6,ccy-sg*s.r*sc*.36,'#6d28d9','left')}
+  // ลำอิเล็กตรอน
+  const P=s.pts.map(([a,b])=>({x:X(a),y:Y(b)}));
+  ctx.strokeStyle='rgba(37,87,214,.25)';ctx.lineWidth=u*.85;ctx.lineJoin='round';ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.strokeStyle='#2557d6';ctx.lineWidth=2;ctx.stroke();
+  let L=0;const seg=[];for(let i=1;i<P.length;i++){const l=Math.hypot(P[i].x-P[i-1].x,P[i].y-P[i-1].y);seg.push(l);L+=l}
+  const dd=u*2.2,o=S.ph%dd;for(let q=o;q<L;q+=dd){let r=q,i=0;while(i<seg.length&&r>seg[i]){r-=seg[i];i++}if(i>=seg.length)break;const a=P[i],b=P[i+1],t=seg[i]?r/seg[i]:0;
+    ctx.fillStyle='#2557d6';ctx.beginPath();ctx.arc(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,u*.3,0,7);ctx.fill()}
+  const end=P[P.length-1];
+  if(!s.hit&&!s.loop){const g=ctx.createRadialGradient(end.x,end.y,0,end.x,end.y,u*1.5);g.addColorStop(0,'rgba(34,197,94,1)');g.addColorStop(1,'rgba(34,197,94,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(end.x,end.y,u*1.5,0,7);ctx.fill();
+    tag('y = '+(s.ys>=0?'+':'')+f3(s.ys*100)+' cm',X(GEO.scr)-u*1.4,end.y+(s.ys>0?u*1.9:-u*1.9),'#15803d','right')}
+  else if(s.hit&&s.hit.plate)tag('ลำอิเล็กตรอนชนแผ่น'+(s.hit.y>0?'บวก':'ลบ'),end.x,end.y+(s.hit.y>0?u*1.9:-u*1.9),'#b45309');
+  // ลูกศรแรง ณ ตำแหน่งต้นสนาม
+  if(T1.eOn||T1.bOn){const xm=X(GEO.p0+.03),ym=Y(0),k=Math.min(u*3.2,d/2*sc*.6),FE=T1.eOn?QE*s.E:0,FB=T1.bOn?QE*s.v0*s.B:0,Fm=Math.max(FE,FB,1e-30);
+    font(Math.max(11,u*.9),700);ctx.textBaseline='middle';
+    if(FE>0){arrow(xm-u*.6,ym,xm-u*.6,ym-k*FE/Fm-u*.3,'#ea7a0c',3);ctx.fillStyle='#c2410c';ctx.textAlign='right';ctx.fillText('แรงไฟฟ้า',xm-u*1.1,ym-k*FE/Fm*.6-u*.3)}
+    if(FB>0){const sg=T1.bIn?1:-1;arrow(xm+u*.6,ym,xm+u*.6,ym+sg*(k*FB/Fm+u*.3),'#7c3aed',3);ctx.fillStyle='#6d28d9';ctx.textAlign='left';ctx.fillText('แรงแม่เหล็ก',xm+u*1.1,ym+sg*(k*FB/Fm*.6+u*.3))}}
+  // ป้ายสนาม
+  const xc=X((GEO.p0+GEO.p1)/2);
+  tag(T1.eOn?'V = '+f3(T1.Vp)+' V · d = '+f3(T1.d)+' cm · E = '+fs(s.E)+' V/m':'E ปิด',xc,Y(d/2)-pt-u*1.3,T1.eOn?'#c2410c':'#64748b');
+  tag(T1.bOn?'B = '+f3(T1.B)+' mT '+(T1.bIn?'⊗':'⊙'):'B ปิด',xc,Y(-d/2)+pt+u*1.3,T1.bOn?'#6d28d9':'#64748b');
+  // กล่องค่าคงที่
+  const cst=['e = 1.6×10⁻¹⁹ C','m = 9.11×10⁻³¹ kg','v = '+fs(s.v0)+' m/s'];
+  if(nr){tag('ค่าคงที่ · '+cst.join(' · '),W/2,u*1.1,'#0f172a')}
+  else{font(Math.max(13,u*1.15),700);const lh=u*1.75,bw=Math.max(...cst.map(c=>ctx.measureText(c).width))+u*1.6,bx=u*.8,by=u*.8,bh=lh*(cst.length+1)+u*.6;
+    ctx.fillStyle='rgba(255,255,255,.96)';ctx.strokeStyle='#0f172a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,bw,bh,8);ctx.fill();ctx.stroke();
+    ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#64748b';font(Math.max(11,u*.9),700);ctx.fillText('ค่าคงที่',bx+u*.8,by+lh*.65);
+    font(Math.max(13,u*1.15),700);cst.forEach((c,i)=>{ctx.fillStyle=i===2?'#1d4ed8':'#0f172a';ctx.fillText(c,bx+u*.8,by+lh*(i+1.55))})}
+  if(isBal()&&!s.hit)tag('✓ สมดุล: แรงไฟฟ้า = แรงแม่เหล็ก ลำวิ่งตรง',W/2,nr?u*2.9:u*1.4,'#15803d');
+  else if(T1.bOn&&!T1.eOn&&isFinite(s.r))tag('ลำโค้งเป็นวงกลม รัศมี r = '+f3(s.r*100)+' cm',W/2,nr?u*2.9:u*1.4,'#6d28d9');
+}
+function calc1(){const s=sim1(),d=T1.d/100,E=T1.Vp/d,B=T1.B*1e-3,bal=isBal();let h='';
+  h+=`<div class="cl"><span class="lab">สนามไฟฟ้า</span>E = V/d = ${f3(T1.Vp)}/${f3(d)} = <b>${fs(E)} V/m</b> ${T1.eOn?'':'<span class="note">(ปิดอยู่)</span>'}</div>`;
+  if(T1.eOn&&T1.bOn){const FE=QE*E,FB=QE*s.v0*B;
+    h+=`<div class="cl"><span class="lab">ขั้นที่ 1</span>เปิด E และ B · แรงไฟฟ้า qE = ${fs(FE)} N · แรงแม่เหล็ก qvB = ${fs(FB)} N</div>`;
+    h+=bal?`<div class="cl ok">✓ สมดุลแล้ว qvB = qE = qV/d → v = V/(Bd) = ${f3(T1.Vp)}/((${fs(B)})(${f3(d)})) = ${fs(T1.Vp/(B*d))} m/s</div>`
+      :`<div class="cl warn">ยังไม่สมดุล ลำ${s.hit&&s.hit.plate?'เบนไปชนแผ่น'+(s.hit.y>0?'บวก':'ลบ'):'ไม่ตรง (เบน'+(FE>FB?'ขึ้น':'ลง')+'ก่อน แล้วโค้งกลับเป็นคลื่น)'} · ${T1.bIn?(FE>FB?'แรงไฟฟ้ามากกว่า ให้เพิ่ม B':'แรงแม่เหล็กมากกว่า ให้ลด B'):'B ออกจากกระดาษ แรงทั้งสองชี้ทางเดียวกัน สมดุลไม่ได้ ให้สลับเป็น ⊗'}</div>`}
+  else if(T1.eOn)h+=`<div class="cl note">ขั้นที่ 1 · เปิดสนาม B แล้วปรับจนลำวิ่งตรง จะได้ qvB = qE = qV/d → v = V/(Bd)</div>`;
+  if(T1.bOn&&!T1.eOn){h+=`<div class="cl"><span class="lab">ขั้นที่ 2</span>ปิด E เหลือ B · ลำโค้งเป็นวงกลม qvB = mv²/r · วัดรัศมีได้ r = <b>${f3(s.r*100)} cm = ${f3(s.r)} m</b></div>`;
+    const em=E/(B*B*s.r),vb=T1.Vp/(B*d);
+    h+=`<div class="cl"><span class="lab">หา q/m</span>mv²/r = qvB → <b>q/m = v/(Br)</b> = (${fs(vb)})/((${fs(B)})(${f3(s.r)})) = <span class="res">${fs(vb/(B*s.r))} C/kg</span></div>`;
+    h+=`<div class="cl note">v = ${fs(vb)} m/s มาจากขั้นที่ 1 (v = V/(Bd)) · เขียนรวมได้ q/m = V/(B²dr) = ${f3(T1.Vp)}/((${fs(B)})²(${f3(d)})(${f3(s.r)})) = ${fs(em)} C/kg</div>`;
+    h+=Math.abs(em/QM-1)<.03?`<div class="cl ok">✓ ใกล้เคียงค่าจริง q/m = 1.76×10¹¹ C/kg</div>`:`<div class="cl warn">ค่าคลาดเคลื่อนจาก 1.76×10¹¹ C/kg · ต้องใช้ B, V และ d ชุดเดียวกับตอนที่ปรับสมดุลในขั้นที่ 1</div>`}
+  else if(T1.bOn)h+=`<div class="cl note">ขั้นที่ 2 · เมื่อสมดุลแล้ว ปิด E (คง B ไว้) ลำจะโค้งเป็นวงกลม วัดรัศมี r แล้วใช้ mv²/r = qvB → q/m = v/(Br)</div>`;
+  else h+=`<div class="cl note">อิเล็กตรอนมีประจุลบ จึงเบนเข้าหาแผ่นบวก · เปิดสนาม B (⊗) เพื่อสร้างแรงต้าน</div>`;
+  h+=`<div class="cl note">ตรวจ: ความเร็วจากแรงดันเร่ง ½mv² = eVₐ → v = √(2eVₐ/m) = ${fs(s.v0)} m/s</div>`;
+  return h}
+$('eBtn').onclick=()=>{T1.eOn=!T1.eOn;syncBtn();S.dirty=true};
+$('bBtn').onclick=()=>{T1.bOn=!T1.bOn;syncBtn();S.dirty=true};
+$('bDir').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;T1.bIn=b.dataset.d==='in';syncBtn();S.dirty=true});
+function syncBtn(){$('eBtn').textContent='⚡ สนาม E: '+(T1.eOn?'เปิด':'ปิด');$('eBtn').classList.toggle('on',T1.eOn);$('bBtn').textContent='🧲 สนาม B: '+(T1.bOn?'เปิด':'ปิด');$('bBtn').classList.toggle('on',T1.bOn);
+  document.querySelectorAll('#bDir button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.d==='in')===T1.bIn))}
+function reset1(){Object.assign(T1,DEF1);syncBtn();renderP()}
+
+/* ===================== แท็บ ②: มิลลิแกน (ย้ายมาจาก ch13/plates-lab) ===================== */
+const E_CH=1.6e-19,G=10;
+const SUPm={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+const supm=n=>String(n).split('').map(c=>SUPm[c]||c).join('');
+const trimM=s=>s.includes('.')&&!s.includes('e')?s.replace(/\.?0+$/,''):s;
+function fmt(x,sig=3){if(!isFinite(x))return '—';if(x===0)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(sig));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=3)return trimM(Number(x.toPrecision(sig)).toString()).replace('-','−');return trimM(m.toPrecision(sig)).replace('-','−')+'×10'+supm(e)}
+const UM=()=>Math.max(12,Math.min(W,H*1.6)*.016);
+function arrowM(x1,y1,x2,y2,col,w=4){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const ux=(x2-x1)/L,uy=(y2-y1)/L,h=Math.min(L*.5,Math.max(9,w*3));
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-ux*h*.8,y2-uy*h*.8);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-ux*h-uy*h*.55,y2-uy*h+ux*h*.55);ctx.lineTo(x2-ux*h+uy*h*.55,y2-uy*h-ux*h*.55);ctx.closePath();ctx.fill()}
+function tagM(text,x,y,col,side=1){font(Math.max(13,UM()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(20,UM()*1.6);
+  let bx=side<0?x-w-6:x+6,by=y-h/2;bx=Math.max(4,Math.min(W-w-4,bx));by=Math.max(4,Math.min(H-h-4,by));
+  ctx.fillStyle='rgba(255,255,255,.93)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function symM(x,y,r,s){ctx.lineWidth=Math.max(1.8,r*.32);
+  if(s>0){ctx.strokeStyle='#d42a2a';ctx.beginPath();ctx.moveTo(x-r*.6,y);ctx.lineTo(x+r*.6,y);ctx.moveTo(x,y-r*.6);ctx.lineTo(x,y+r*.6);ctx.stroke()}
+  else{ctx.strokeStyle='#2557d6';ctx.beginPath();ctx.moveTo(x-r*.6,y);ctx.lineTo(x+r*.6,y);ctx.stroke()}}
+function platesH(x0,x1,yt,yb){const th=Math.max(10,UM()*.9);
+  ctx.fillStyle='#e9d2d2';ctx.strokeStyle='#b91c1c';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x0,yt-th,x1-x0,th,3);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#d3dcf2';ctx.strokeStyle='#1d4ed8';ctx.beginPath();ctx.roundRect(x0,yb,x1-x0,th,3);ctx.fill();ctx.stroke();
+  const n=Math.max(4,Math.round((x1-x0)/(UM()*3.2)));for(let i=0;i<n;i++){const x=x0+(x1-x0)*(i+.5)/n;symM(x,yt-th/2,th*.42,1);symM(x,yb+th/2,th*.42,-1)}
+  const nf=Math.max(3,Math.round((x1-x0)/(UM()*5)));for(let i=0;i<nf;i++){const x=x0+(x1-x0)*(i+.5)/nf;ctx.globalAlpha=.55;arrowM(x,yt+4,x,yb-4,'#0d6e66',1.8);ctx.globalAlpha=1}}
+const T2={V:60,d:.8,m:9.6,n:5,y:.5,tick:false};      // ข้อ 59: d 0.8 cm, E 12000 V/m, q 8×10⁻¹⁹ C → V = 96 V
+const DEF2={...T2};
+function oil(){const d=T2.d/100,E=T2.V/d,q=T2.n*E_CH,m=T2.m*1e-16,mg=m*G,qE=q*E;return{d,E,q,m,mg,qE,net:qE-mg,Vb:mg*d/q}}
+function step2(dt){const o=oil(),r=o.net/o.mg;if(Math.abs(r)<.015)return;const v=Math.max(-.6,Math.min(.6,r*.35));const ny=Math.max(.06,Math.min(.94,T2.y+v*dt));if(ny!==T2.y){T2.y=ny;S.dirty=true}}
+function draw2(){ctx.fillStyle='#f8faf9';ctx.fillRect(0,0,W,H);
+  const o=oil(),cxo=W<640?W*.5:W*.42,gw=Math.min(W*(W<640?.8:.6),H*1.2),gh=H*.56,x0=cxo-gw/2,x1=x0+gw,yt=H*.14,yb=yt+gh;
+  platesH(x0,x1,yt,yb);
+  const x=cxo-(W<640?gw*.15:0),y=yb-(yb-yt)*T2.y,r=Math.max(12,UM()*1.1);
+  const g=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.1,x,y,r);g.addColorStop(0,'#fff5c2');g.addColorStop(1,'#d9a300');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+  symM(x,y,r*.55,-1);
+  const sc=Math.min(gh*.32,UM()*7)/Math.max(o.mg,o.qE),Lg=o.mg*sc,Lq=o.qE*sc;
+  arrowM(x,y+r,x,y+r+Lg,'#16232a',5);tagM('mg = '+fmt(o.mg)+' N',x+r,y+r+Lg,'#16232a',1);
+  arrowM(x,y-r,x,y-r-Lq,'#c2410c',5);tagM('qE = '+fmt(o.qE)+' N',x+r,y-r-Lq,'#c2410c',1);
+  const still=Math.abs(o.net/o.mg)<.015;font(Math.max(16,UM()*1.6),700);ctx.textAlign='center';ctx.textBaseline='bottom';
+  const atEdge=(T2.y<=.061&&o.net<0)||(T2.y>=.939&&o.net>0);ctx.fillStyle=still?'#15803d':'#4d5f64';ctx.fillText(still?'ลอยนิ่ง ✓  qE = mg':atEdge?'ชนแผ่นแล้ว · กด ↺ เริ่มใหม่':o.net>0?'ลอยขึ้น ↑':'ตกลง ↓',x,yt-UM()*1.1)}
+function calc2(){const o=oil(),still=Math.abs(o.net/o.mg)<.015;
+  return `<div class="cl"><span class="lab">สนาม</span>E = V/d = ${fmt(T2.V)}/${fmt(o.d)} = <b>${fmt(o.E)} V/m</b> (ทิศลง)</div>
+  <div class="cl"><span class="lab">หยดน้ำมัน</span>q = ne = (${T2.n})(1.6×10⁻¹⁹) = ${fmt(o.q)} C (ประจุลบ แรงไฟฟ้าชี้ขึ้น) · m = ${fmt(o.m)} kg</div>
+  <div class="cl"><span class="lab">แรง</span>mg = ${fmt(o.mg)} N · qE = ${fmt(o.qE)} N</div>
+  <div class="cl"><span class="lab">ลอยนิ่งเมื่อ</span>qE = mg → V = mgd/q = <span class="res">${fmt(o.Vb)} V</span> ${still?'<span class="ok">✓ ลอยนิ่งแล้ว</span>':''}</div>
+  <div class="cl note">ใช้ g = 10 m/s² · ปรับ V จนหยดน้ำมันลอยนิ่ง · ประจุของทุกหยดเป็นจำนวนเท่าของ e = 1.6×10⁻¹⁹ C</div>`}
+function syncSlider(){const show=S.tab===2;$('vslide').hidden=!show;$('tickBtn').hidden=!show;if(!show)return;
+  const o=oil(),mx=Math.max(50,Math.ceil(o.Vb*2/10)*10);const r=$('vRange');r.max=mx;if(document.activeElement!==r)r.value=T2.V;
+  $('vVal').textContent=fmt(T2.V)+' V';$('tickBtn').classList.toggle('on',T2.tick);const tk=$('vTick');tk.hidden=!T2.tick||o.Vb>mx;tk.style.left=(o.Vb/mx*100)+'%'}
+$('vRange').addEventListener('input',e=>{const o=oil(),mx=+e.target.max;let v=+e.target.value;if(Math.abs(v-o.Vb)<mx*.02)v=+o.Vb.toFixed(2);T2.V=v;
+  const inp=document.querySelector('#params input[data-k="V"]');if(inp)inp.value=v;S.dirty=true});
+$('tickBtn').onclick=()=>{T2.tick=!T2.tick;S.dirty=true};
+function reset2(){Object.assign(T2,DEF2);renderP()}
+
+/* ===================== แผงปรับค่า ===================== */
+const SP={1:[['Va','แรงดันเร่ง Vₐ','V',10,50,500,T1],['Vp','แรงดันแผ่น V','V',10,0,3000,T1],['d','ระยะห่างแผ่น d','cm',.5,2,13,T1],['B','สนามแม่เหล็ก B','mT',.01,0,5,T1]],
+  2:[['V','ความต่างศักย์ V','V',1,0,1000,T2],['d','ระยะห่างแผ่น d','cm',.1,.2,5,T2],['m','มวลหยดน้ำมัน','×10⁻¹⁶ kg',.1,.1,100,T2],['n','อิเล็กตรอนเกิน','ตัว',1,1,50,T2]]};
+function renderP(){const L=SP[S.tab];if(!L)return;$('params').innerHTML='<span class="label">ปรับค่า</span>'+L.map(([k,l,u,,,,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div>`).join('')}
+function setP(k,v){const sp=SP[S.tab].find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;S.dirty=true}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SP[S.tab].find(x=>x[0]===b.dataset.k);setP(b.dataset.k,sp[6][b.dataset.k]+sp[3]*+b.dataset.d)});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setP(i.dataset.k,v)});
+
+/* ===================== รวม ===================== */
+$('reset').onclick=()=>{if(S.tab===1)reset1();else reset2();S.dirty=true};
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.getAttribute('aria-disabled')==='true'){toast('แท็บนี้กำลังทำ');return}setTab(+b.dataset.t)});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')$('reset').click();
+  else if(S.tab===1&&(k==='e'||k==='E'))$('eBtn').click();else if(S.tab===1&&(k==='b'||k==='B'))$('bBtn').click()});
+function showTabs(){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(S.tab)))}
+function setTab(t){S.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));showTabs();renderP();layout()}
+let tp=performance.now();
+function loop(t){const dt=Math.min(.05,(t-tp)/1000);tp=t;if(W){S.ph+=dt*UU()*7;if(S.tab===1)S.dirty=true;else step2(dt)}
+  if(S.dirty&&W){S.dirty=false;if(S.tab===1){draw1();setCalc(calc1())}else{draw2();setCalc(calc2())}syncSlider()}requestAnimationFrame(loop)}
+syncBtn();showTabs();renderP();layout();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
