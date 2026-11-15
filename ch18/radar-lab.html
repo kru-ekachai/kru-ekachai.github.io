@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เรดาร์</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn,.calc .cl{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.prange{width:100%;accent-color:var(--accent);margin:0 0 .2em}
+.params{gap:calc(var(--u)*.15)!important}
+.nuc{display:inline-flex;align-items:center;white-space:nowrap}.nuc .az{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:.95;font-size:.62em;margin-right:.08em}.nuc .az sup,.nuc .az sub{vertical-align:baseline;position:static}
+.calc table{border-collapse:collapse;font-size:.95em;margin:.15em 0}.calc td,.calc th{padding:.05em .9em .05em 0;text-align:left;white-space:nowrap}.calc th{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em}
+.calc tr.hit td{color:#15803d;font-weight:700}
+
+@media (max-width:760px){.calc td{white-space:normal!important}}
+@media (max-width:760px) and (orientation:portrait){.app{grid-template-rows:auto 56vh auto}}
+.btn[aria-pressed="true"]{background:#0d6e66;color:#fff;border-color:#0d6e66}
+.qrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.qrow input{width:7em;font-size:1.1em;padding:.3em .5em;border:2px solid #0d6e66;border-radius:8px;font-family:var(--f-mono,monospace)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>เรดาร์</h1>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" aria-selected="true" data-t="1">① วัดระยะ</button>
+      <button role="tab" aria-selected="false" data-t="2">② หาความเร็วเครื่องบิน</button>
+      <button role="tab" aria-selected="false" data-t="3">③ โจทย์ฝึกคิด</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="tools">
+      <button class="btn" data-tabs="1" id="ping">▶ ส่งสัญญาณ</button>
+      <button class="btn" data-tabs="2" id="ping2">▶ วัด 2 ครั้ง</button>
+      <button class="btn" data-tabs="3" id="ping3">▶ ส่งสัญญาณ</button>
+      <button class="btn" id="reset">↺ เริ่มใหม่</button>
+      <button class="btn" id="fs">⛶ เต็มจอ</button>
+    </div>
+  </div>
+  <div class="panel stage" id="stageBox"><canvas id="cv"></canvas><div class="toast" id="toast"></div></div>
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+<script>
+/* ===================== ตัวช่วยร่วม ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const fN=(x,d)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺'};
+const SUBd={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const sup=s=>String(s).split('').map(c=>SUPd[c]||c).join(''),sub=s=>String(s).split('').map(c=>SUBd[c]||c).join('');
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-40)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+sup(e)}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(()=>layout()).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw=3){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3.2);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+function wave(x1,y1,x2,y2,col,u,lp){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const a=Math.atan2(y2-y1,x2-x1),A=u*.42;lp=lp||u*1.1;
+  ctx.save();ctx.translate(x1,y1);ctx.rotate(a);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();for(let s=0;s<=L;s+=1.2)ctx.lineTo(s,A*Math.sin(2*Math.PI*s/lp)*Math.min(1,s/(lp*.6),(L-s)/(lp*.6)));ctx.stroke();ctx.restore()}
+/* สัญลักษณ์นิวไคลด์ ᴬ_Z X */
+function nucSym(x,y,A,Z,X,size,col='#0f172a',ax='center'){font(size,700);const wX=ctx.measureText(X).width;font(size*.5,700,'"JetBrains Mono",monospace');const wn=Math.max(ctx.measureText(String(A)).width,ctx.measureText(String(Z)).width);
+  const tw=wn+3+wX;let x0=ax==='center'?x-tw/2:ax==='left'?x:x-tw;ctx.fillStyle=col;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+  ctx.fillText(String(A),x0+wn,y-size*.38);ctx.fillText(String(Z),x0+wn,y+size*.12);font(size,700);ctx.textAlign='left';ctx.fillText(X,x0+wn+3,y+size*.12);return tw}
+const nucTxt=(A,Z,X)=>`<span class="nuc"><span class="az"><sup>${A}</sup><sub>${Z}</sub></span>${X}</span>`;
+/* ปุ่มกลุ่ม (seg) */
+function segSync(id,attr,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+function segOn(id,fn){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(b)fn(b)})}
+/* แผงปรับค่าทั่วไป: [key,label,unit,step,min,max,obj] */
+let SPEC=[];
+function renderParams(spec,hint=''){SPEC=spec;$('params').innerHTML='<span class="label">ปรับค่า</span>'+spec.map(([k,l,u,st,a,b,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div><input class="prange" type="range" data-r="${k}" min="${a}" max="${b}" step="${st}" value="${o[k]}" aria-label="${l}">`).join('')+(hint?`<span class="hint2">${hint}</span>`:'')}
+function setParam(k,v){const sp=SPEC.find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;const r=document.querySelector(`#params input[data-r="${k}"]`);if(r&&document.activeElement!==r)r.value=v;S.dirty=true;if(typeof onParam==='function')onParam(k)}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SPEC.find(x=>x[0]===b.dataset.k);setParam(b.dataset.k,sp[6][b.dataset.k]+sp[3]*(+b.dataset.d))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k],input[data-r]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k||i.dataset.r,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i){const sp=SPEC.find(x=>x[0]===i.dataset.k);if(sp)i.value=sp[6][i.dataset.k]}});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
+
+const C=3e8,PC='#7c3aed',EC='#0d9488',TC=['#dc2626','#2563eb'];
+const DEF={tab:1,n:1,d:[60,110],v2:250,dir2:1,dt2:40,d20:80};
+const T=JSON.parse(JSON.stringify(DEF));
+const S={dirty:true,pulse:null,echo:[],seq:null,q:null,ans:'',res:null,show:false,res2:null};
+function resetAll(){Object.assign(T,JSON.parse(JSON.stringify(DEF)));S.pulse=null;S.echo=[];S.seq=null;S.res2=null;newQ();setTab(1)}
+const DMAX=()=>T.tab===2?100:160;
+/* ===================== ผัง ===================== */
+function geo(){const nr=W<640,u=UU();return{nr,u,x0:W*(nr?.12:.09),x1:W*.95,gy:H*(nr?.4:.42),sy:H*(nr?.66:.68),sh:H*(nr?.2:.2)}}
+const xOf=(g,d)=>g.x0+(g.x1-g.x0)*d/DMAX();
+const vpx=g=>(g.x1-g.x0)/2.6;                                    // px/s ของพัลส์ในภาพ
+const realT=(g,px)=>px/(g.x1-g.x0)*DMAX()*1e3/C;                 // วินาทีจริงที่พัลส์ใช้เดินทาง px
+function station(g){const u=g.u,x=g.x0,y=g.gy;ctx.fillStyle='#94a3b8';ctx.fillRect(x-u*2.2,y,u*3,u*1.2);ctx.strokeStyle='#475569';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-u*.7,y);ctx.lineTo(x-u*.2,y-u*1.6);ctx.stroke();
+  ctx.fillStyle='#e2e8f0';ctx.strokeStyle='#334155';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y-u*2.2,u*.6,u*1.6,-.35,0,7);ctx.fill();ctx.stroke();font(Math.max(11,u*.85),700);ctx.fillStyle='#334155';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('สถานีเรดาร์',x-u*.7,y+u*1.5)}
+function plane(x,y,u,col,lab){ctx.save();ctx.translate(x,y);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(-u*1.8,0);ctx.lineTo(u*1.6,-u*.3);ctx.lineTo(u*2,0);ctx.lineTo(u*1.6,u*.3);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(u*.2,0);ctx.lineTo(-u*.6,-u*1.4);ctx.lineTo(-u*.1,-u*1.4);ctx.lineTo(u*.9,0);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(u*.2,0);ctx.lineTo(-u*.6,u*1.4);ctx.lineTo(-u*.1,u*1.4);ctx.lineTo(u*.9,0);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(-u*1.5,0);ctx.lineTo(-u*2,-u*.8);ctx.lineTo(-u*1.6,-u*.8);ctx.lineTo(-u*1.1,0);ctx.closePath();ctx.fill();ctx.restore();if(lab)tag(lab,x,y-u*2.6,col)}
+function arc(x,y,r,col,a){ctx.strokeStyle=col;ctx.globalAlpha=a;ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(x,y,Math.max(1,r-k*7),-.35,.35);ctx.stroke()}ctx.globalAlpha=1}
+function arcL(x,y,r,col,a){ctx.strokeStyle=col;ctx.globalAlpha=a;ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(x,y,Math.max(1,r-k*7),Math.PI-.35,Math.PI+.35);ctx.stroke()}ctx.globalAlpha=1}
+/* ยิงพัลส์: targets = [{x,col}] */
+function startPulse(g,targets){S.pulse={t:0,tg:targets.map(o=>({...o,back:false,done:false})),run:true};S.echo=[];sync()}
+function stepPulse(g,dt){const p=S.pulse;if(!p||!p.run)return;p.t+=dt;const v=vpx(g),front=v*p.t;
+  for(const o of p.tg){const dpx=o.x-g.x0;if(!o.done&&front>=2*dpx){o.done=true;S.echo.push({t:realT(g,2*dpx),col:o.col,d:o.d});if(p.onEcho)p.onEcho(o)}}
+  const far=Math.max(...p.tg.map(o=>o.x-g.x0));if(front>2*far+20){p.run=false;if(p.onEnd)p.onEnd();sync()}S.dirty=true}
+function drawPulse(g){const p=S.pulse;if(!p)return;const v=vpx(g),front=v*p.t,far=Math.max(...p.tg.map(o=>o.x-g.x0));
+  if(p.run&&front<far+30)arc(g.x0,g.gy-g.u*2.2,front,PC,1);
+  for(const o of p.tg){const dpx=o.x-g.x0;if(p.run&&front>dpx&&front<2*dpx)arcL(o.x,g.gy-g.u*2.2+(g.gy-g.u*2.2-(g.gy-g.u*2.2)),front-dpx,o.col,.9)}}
+function stopwatch(g){const p=S.pulse,v=vpx(g),t=p?realT(g,Math.min(v*p.t,2*Math.max(...p.tg.map(o=>o.x-g.x0)))):0,u=g.u,x=g.x1-u*8,y=H*.08;
+  ctx.fillStyle='#0f172a';ctx.beginPath();ctx.roundRect(x-u*4,y-u*1.2,u*11,u*2.6,8);ctx.fill();font(Math.max(14,u*1.5),700,'"JetBrains Mono",monospace');ctx.fillStyle='#4ade80';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⏱ '+(t*1e6).toFixed(1)+' μs',x+u*1.5,y+u*.1)}
+function scope(g){const u=g.u,x0=g.x0,x1=g.x1,y=g.sy,h=g.sh,tmax=2*DMAX()*1e3/C;ctx.fillStyle='#0f172a';ctx.beginPath();ctx.roundRect(x0-u,y-h/2-u*.6,x1-x0+u*2,h+u*3,10);ctx.fill();
+  ctx.strokeStyle='rgba(74,222,128,.25)';ctx.lineWidth=1;for(let i=0;i<=10;i++){const x=x0+(x1-x0)*i/10;ctx.beginPath();ctx.moveTo(x,y-h/2);ctx.lineTo(x,y+h/2);ctx.stroke()}
+  ctx.strokeStyle='#4ade80';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,y+h*.35);ctx.lineTo(x1,y+h*.35);ctx.stroke();
+  const spike=(t,col,a)=>{const x=x0+(x1-x0)*t/tmax;ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-5,y+h*.35);ctx.lineTo(x,y+h*.35-h*.75*a);ctx.lineTo(x+5,y+h*.35);ctx.stroke();return x};
+  if(S.pulse)spike(0,'#4ade80',1);for(const e of S.echo){const x=spike(e.t,({'#475569':'#fbbf24','#dc2626':'#f87171','#2563eb':'#60a5fa','#15803d':'#4ade80','#94a3b8':'#94a3b8'})[e.col]||'#60a5fa',.55);font(Math.max(11,u*.85),700);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText((e.t*1e6).toFixed(0)+' μs',x,y-h*.45)}
+  font(Math.max(10,u*.8),600);ctx.fillStyle='#86efac';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('จอเรดาร์: เวลา t (μs) →  0',x0,y+h/2+u*.4);ctx.textAlign='right';ctx.fillText((tmax*1e6).toFixed(0)+' μs',x1,y+h/2+u*.4)}
+function distAxis(g){const u=g.u;ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(g.x0,g.gy+u*3.4);ctx.lineTo(g.x1,g.gy+u*3.4);ctx.stroke();font(Math.max(10,u*.8),600);ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.textBaseline='top';
+  const st=DMAX()>120?20:10;for(let d=0;d<=DMAX();d+=st){const x=xOf(g,d);ctx.beginPath();ctx.moveTo(x,g.gy+u*3.1);ctx.lineTo(x,g.gy+u*3.7);ctx.stroke();if(!g.nr||d%(2*st)===0)ctx.fillText(d+(d===0?'':' km'),x,g.gy+u*3.9)}}
+/* ===================== ① ===================== */
+function targets1(){return T.d.slice(0,T.n).map((d,i)=>({d,col:TC[i]}))}
+function draw1(){const g=geo(),u=g.u;distAxis(g);station(g);targets1().forEach((o,i)=>plane(xOf(g,o.d),g.gy-u*2.2,u,o.col,(T.n>1?'ลำที่ '+(i+1)+' · ':'')+o.d+' km'));drawPulse(g);stopwatch(g);scope(g);
+  if(!S.pulse)tag(g.nr?'ลากเครื่องบิน แล้วกด ▶':'ลากเครื่องบินเพื่อเปลี่ยนระยะ แล้วกด ▶ ส่งสัญญาณ',W/2,H*.08,'#0d6e66')}
+/* ===================== ② ===================== */
+function draw2(){const g=geo(),u=g.u;distAxis(g);station(g);const sq=S.seq;let d=sq?sq.d:T.d20;
+  plane(xOf(g,d),g.gy-u*2.2,u,'#475569',f3(d)+' km');if(sq&&sq.ghost!=null){ctx.globalAlpha=.3;plane(xOf(g,sq.ghost),g.gy-u*2.2,u,'#475569');ctx.globalAlpha=1}
+  if(sq&&sq.ph==='move')tag('เวลาผ่านไป '+f3(sq.tm/2.5*T.dt2)+' / '+T.dt2+' s',W/2,g.gy-u*6,'#b45309');
+  drawPulse(g);stopwatch(g);scope(g);if(!sq)tag('กด ▶ วัด 2 ครั้ง',W/2,H*.08,'#0d6e66')}
+function run2(){if(S.seq&&S.seq.ph!=='end')return;const g=geo(),d1=T.d20,d2=T.d20-T.dir2*T.v2*T.dt2/1000;S.res2=null;
+  S.seq={ph:'p1',d:d1,d1,d2,ghost:null,tm:0};const fire=d=>{startPulse(g,[{x:xOf(g,d),col:'#475569',d}]);};fire(d1);
+  S.pulse.onEnd=()=>{S.seq.t1=S.echo[0].t;S.seq.ph='move';S.seq.ghost=d1;S.seq.tm=0}}
+function step2(dt){const g=geo(),sq=S.seq;stepPulse(g,dt);if(!sq)return;if(sq.ph==='move'){sq.tm+=dt;sq.d=sq.d1+(sq.d2-sq.d1)*Math.min(1,sq.tm/2.5);S.dirty=true;
+    if(sq.tm>=2.5){sq.ph='p2';const keep=S.echo.slice();startPulse(g,[{x:xOf(g,sq.d2),col:'#475569',d:sq.d2}]);S.echo=keep.map(e=>({...e,col:'#94a3b8'}));
+      S.pulse.onEnd=()=>{sq.t2=S.echo[S.echo.length-1].t;sq.ph='end';S.res2={t1:sq.t1,t2:sq.t2};sync()}}}}
+/* ===================== ③ ===================== */
+function newQ(){const k=4+Math.floor(Math.random()*101);S.q={d:1.5*k,t:10*k*1e-6};S.ans='';S.res=null;S.show=false;S.pulse=null;S.echo=[]}
+function draw3(){const g=geo(),u=g.u;distAxis(g);station(g);const q=S.q;
+  if(S.show)plane(xOf(g,q.d),g.gy-u*2.2,u,'#15803d',q.d+' km');else{font(Math.max(28,u*3),800);ctx.fillStyle='#94a3b8';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('? km',W*.6,g.gy-u*2.2)}
+  drawPulse(g);stopwatch(g);scope(g);if(!S.pulse)tag('กด ▶ ส่งสัญญาณ เพื่อวัดเวลา',W/2,H*.08,'#0d6e66')}
+/* ===================== วาด/ขั้น ===================== */
+function draw(){ctx.fillStyle='#f8faf9';ctx.fillRect(0,0,W,H);T.tab===1?draw1():T.tab===2?draw2():draw3()}
+function step(dt){if(T.tab===2)step2(dt);else stepPulse(geo(),dt)}
+/* ===================== แผงล่าง ===================== */
+const us=t=>(t*1e6).toFixed(1);
+function calc(){if(T.tab===1){if(!S.echo.length)return `<div class="cl"><span class="lab">หลักการ</span>เรดาร์ส่งคลื่นไมโครเวฟเป็นพัลส์สั้น ๆ ไปกระทบวัตถุ แล้ววัดเวลา t ที่คลื่นสะท้อนกลับมา</div><div class="cl">s = ct/2 · หาร 2 เพราะคลื่นเดินทาง<b>ไปและกลับ</b> ระยะทางทั้งหมด 2s</div><div class="cl note">ภาพเคลื่อนที่ช้ากว่าจริงมาก แต่เวลาบนนาฬิกาเป็นค่าจริง (คลื่นเร็ว 3×10⁸ m/s)</div>`;
+    return S.echo.map((e,i)=>`<div class="cl"><span class="lab" style="color:${e.col}">${S.echo.length>1||T.n>1?'ลำที่ '+(TC.indexOf(e.col)+1):'ระยะ'}</span>t = ${us(e.t)} μs → s = ct/2 = (3×10⁸)(${us(e.t)}×10⁻⁶)/2 = <span class="res">${fN(C*e.t/2/1000,1)} km</span></div>`).join('')+`<div class="cl note">หาร 2 เพราะคลื่นเดินทางไปและกลับ · เป้าที่ไกลกว่า พัลส์สะท้อนกลับมาช้ากว่า</div>`}
+  if(T.tab===2){const r=S.res2;if(!r)return `<div class="cl"><span class="lab">วิธีหาความเร็ว</span>วัดระยะเครื่องบินสองครั้ง ห่างกัน Δt = ${T.dt2} s แล้ว v = (ระยะที่เปลี่ยน)/Δt</div><div class="cl note">ครั้งที่ 1 ได้ t₁ → s₁ · ครั้งที่ 2 ได้ t₂ → s₂</div>`;
+    const s1=C*r.t1/2,s2=C*r.t2/2,v=(s1-s2)/T.dt2;
+    return `<div class="cl"><span class="lab">ครั้งที่ 1</span>t₁ = ${us(r.t1)} μs → s₁ = ct₁/2 = <b>${fN(s1/1000,2)} km</b></div><div class="cl"><span class="lab">ครั้งที่ 2</span>t₂ = ${us(r.t2)} μs → s₂ = ct₂/2 = <b>${fN(s2/1000,2)} km</b></div>
+    <div class="cl"><span class="lab">ความเร็ว</span>v = |s₁ − s₂|/Δt = |${fN(s1,0)} − ${fN(s2,0)}|/${T.dt2} = <span class="res">${f3(Math.abs(v))} m/s</span> · ${v>0?'เครื่องบิน<b>เข้าใกล้</b>สถานี (t₂ < t₁)':'เครื่องบิน<b>ออกห่าง</b>สถานี (t₂ > t₁)'}</div>`}
+  const q=S.q;let h=`<div class="cl"><span class="lab">โจทย์</span>เรดาร์ส่งสัญญาณไปกระทบเครื่องบิน วัดเวลาที่สัญญาณสะท้อนกลับมาได้ ${S.echo.length?'<b>'+us(q.t)+' μs</b>':'(กด ▶ ส่งสัญญาณ ก่อน)'} เครื่องบินอยู่ห่างกี่กิโลเมตร</div>`;
+  if(S.res)h+=`<div class="cl ${S.res==='ok'?'ok':'warn'}">${S.res==='ok'?'✓ ถูกต้อง':'✗ ยังไม่ถูก ลองใหม่ (อย่าลืมหาร 2 และแปลง μs)'}</div>`;
+  if(S.show)h+=`<div class="cl"><span class="lab">เฉลย</span>s = ct/2 = (3×10⁸)(${us(q.t)}×10⁻⁶)/2 = ${fN(C*q.t/2,0)} m = <span class="res">${q.d} km</span></div>`;return h}
+/* ===================== แผงปรับค่า ===================== */
+function renderP(){const t=T.tab;
+  if(t===1){$('params').innerHTML=`<span class="label">จำนวนเครื่องบิน</span><div class="seg" id="nSeg"><button data-v="1" aria-pressed="${T.n===1}">1 ลำ</button><button data-v="2" aria-pressed="${T.n===2}">2 ลำ</button></div><span class="hint2">ลากเครื่องบินบนจอเพื่อเปลี่ยนระยะ (10–150 km)</span>`;
+    segOn('nSeg',b=>{T.n=+b.dataset.v;segSync('nSeg','v',b.dataset.v);S.pulse=null;S.echo=[];sync()});SPEC=[];return}
+  if(t===2){$('params').innerHTML=`<span class="label">ทิศการบิน</span><div class="seg" id="dSeg"><button data-v="1" aria-pressed="${T.dir2>0}">บินเข้าหาสถานี</button><button data-v="-1" aria-pressed="${T.dir2<0}">บินออกจากสถานี</button></div>
+    <div class="prow"><span class="pl">อัตราเร็วเครื่องบิน</span><button class="mini" data-k="v2" data-d="-1">−</button><input data-k="v2" type="number" value="${T.v2}"><button class="mini" data-k="v2" data-d="1">+</button><span class="unit">m/s</span></div>
+    <span class="label">วัดห่างกัน Δt</span><div class="seg" id="tSeg">${[20,40,60].map(v=>`<button data-v="${v}" aria-pressed="${T.dt2===v}">${v} s</button>`).join('')}</div>`;
+    SPEC=[['v2','v','m/s',50,100,300,T]];segOn('dSeg',b=>{T.dir2=+b.dataset.v;segSync('dSeg','v',b.dataset.v);S.seq=null;S.pulse=null;S.echo=[];S.res2=null;sync()});segOn('tSeg',b=>{T.dt2=+b.dataset.v;segSync('tSeg','v',b.dataset.v);S.dirty=true});return}
+  $('params').innerHTML=`<span class="label">คำตอบของนักเรียน</span><div class="qrow"><input id="ans" type="number" inputmode="decimal" placeholder="s"><span>km</span><button class="btn" id="chk">ตรวจ</button></div><div class="qrow"><button class="btn" id="sol">ดูเฉลย</button><button class="btn" id="nq">ข้อใหม่</button></div>`;SPEC=[];
+  $('chk').onclick=()=>{const v=parseFloat($('ans').value);if(!isFinite(v)){toast('พิมพ์คำตอบก่อน');return}if(!S.echo.length){toast('กด ▶ ส่งสัญญาณ ก่อน');return}S.res=Math.abs(v-S.q.d)<=S.q.d*.02?'ok':'no';if(S.res==='ok')S.show=true;S.dirty=true};
+  $('sol').onclick=()=>{if(!S.echo.length){toast('กด ▶ ส่งสัญญาณ ก่อน');return}S.show=true;S.dirty=true};$('nq').onclick=()=>{newQ();$('ans').value='';sync()}}
+function onParam(){S.dirty=true}
+function sync(){const r=S.pulse&&S.pulse.run;$('ping').disabled=!!r;$('ping3').disabled=!!r;$('ping2').disabled=!!(S.seq&&S.seq.ph!=='end');document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===T.tab));S.dirty=true}
+function setTab(t){T.tab=t;S.pulse=null;S.echo=[];S.seq=null;S.res2=null;showTabs(t);renderP();sync()}
+$('ping').onclick=()=>{const g=geo();startPulse(g,targets1().map(o=>({...o,x:xOf(g,o.d)})))};
+$('ping2').onclick=run2;$('ping3').onclick=()=>{const g=geo();startPulse(g,[{x:xOf(g,S.q.d),col:'#15803d',d:S.q.d}])};
+$('reset').onclick=resetAll;
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+/* ลากเครื่องบิน (แท็บ ①) */
+let dg=-1;cv.addEventListener('pointerdown',e=>{if(T.tab!==1)return;const g=geo(),r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;targets1().forEach((o,i)=>{if(Math.abs(x-xOf(g,o.d))<g.u*3&&Math.abs(y-(g.gy-g.u*2.2))<g.u*3)dg=i});if(dg>=0){cv.setPointerCapture(e.pointerId);S.pulse=null;S.echo=[];sync()}});
+cv.addEventListener('pointermove',e=>{if(dg<0)return;const g=geo(),r=cv.getBoundingClientRect(),d=Math.round(((e.clientX-r.left)-g.x0)/(g.x1-g.x0)*DMAX()/5)*5;T.d[dg]=Math.max(10,Math.min(150,d));S.dirty=true});
+cv.addEventListener('pointerup',()=>dg=-1);cv.addEventListener('pointercancel',()=>dg=-1);
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if('123'.includes(k)&&k.length===1)setTab(+k)});
+let tp=performance.now();
+function loop(t){const dt=Math.min(.05,(t-tp)/1000);tp=t;if(W)step(dt);if(S.dirty&&W){S.dirty=false;draw();setCalc(calc())}requestAnimationFrame(loop)}
+newQ();setTab(1);layout();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
