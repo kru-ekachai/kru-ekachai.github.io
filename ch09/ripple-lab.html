@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ถาดคลื่น (คลื่นผิวน้ำ)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn,.calc .cl{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.prange{width:100%;accent-color:var(--accent);margin:0 0 .2em}
+.params{gap:calc(var(--u)*.15)!important}
+.nuc{display:inline-flex;align-items:center;white-space:nowrap}.nuc .az{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:.95;font-size:.62em;margin-right:.08em}.nuc .az sup,.nuc .az sub{vertical-align:baseline;position:static}
+.calc table{border-collapse:collapse;font-size:.95em;margin:.15em 0}.calc td,.calc th{padding:.05em .9em .05em 0;text-align:left;white-space:nowrap}.calc th{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em}
+.calc tr.hit td{color:#15803d;font-weight:700}
+
+@media (max-width:760px){.calc td{white-space:normal!important}}
+@media (max-width:760px) and (orientation:portrait){.app{grid-template-rows:auto 56vh auto}}
+.seg{flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>ถาดคลื่น (คลื่นผิวน้ำ)</h1>
+    <div class="tabs" role="tablist" id="tabs"><button role="tab" aria-selected="true" data-t="1">① การสะท้อน</button><button role="tab" aria-selected="false" data-t="2">② การหักเห</button><button role="tab" aria-selected="false" data-t="3">③ การแทรกสอด</button><button role="tab" aria-selected="false" data-t="4">④ การเลี้ยวเบน</button><button role="tab" aria-selected="false" data-t="5">⑤ หลักของฮอยเกนส์</button></div>
+    <div class="spacer"></div>
+    <div class="tools"><button class="btn" id="reset">↺ เริ่มใหม่</button><button class="btn" id="fs">⛶ เต็มจอ</button></div>
+  </div>
+  <div class="panel stage" id="stageBox"><canvas id="cv"></canvas><div class="toast" id="toast"></div></div>
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+<script>
+/* ===================== ตัวช่วยร่วม ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const fN=(x,d)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺'};
+const SUBd={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const sup=s=>String(s).split('').map(c=>SUPd[c]||c).join(''),sub=s=>String(s).split('').map(c=>SUBd[c]||c).join('');
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-40)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+sup(e)}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(()=>layout()).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw=3){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3.2);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+function wave(x1,y1,x2,y2,col,u,lp){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const a=Math.atan2(y2-y1,x2-x1),A=u*.42;lp=lp||u*1.1;
+  ctx.save();ctx.translate(x1,y1);ctx.rotate(a);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();for(let s=0;s<=L;s+=1.2)ctx.lineTo(s,A*Math.sin(2*Math.PI*s/lp)*Math.min(1,s/(lp*.6),(L-s)/(lp*.6)));ctx.stroke();ctx.restore()}
+/* สัญลักษณ์นิวไคลด์ ᴬ_Z X */
+function nucSym(x,y,A,Z,X,size,col='#0f172a',ax='center'){font(size,700);const wX=ctx.measureText(X).width;font(size*.5,700,'"JetBrains Mono",monospace');const wn=Math.max(ctx.measureText(String(A)).width,ctx.measureText(String(Z)).width);
+  const tw=wn+3+wX;let x0=ax==='center'?x-tw/2:ax==='left'?x:x-tw;ctx.fillStyle=col;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+  ctx.fillText(String(A),x0+wn,y-size*.38);ctx.fillText(String(Z),x0+wn,y+size*.12);font(size,700);ctx.textAlign='left';ctx.fillText(X,x0+wn+3,y+size*.12);return tw}
+const nucTxt=(A,Z,X)=>`<span class="nuc"><span class="az"><sup>${A}</sup><sub>${Z}</sub></span>${X}</span>`;
+/* ปุ่มกลุ่ม (seg) */
+function segSync(id,attr,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+function segOn(id,fn){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(b)fn(b)})}
+/* แผงปรับค่าทั่วไป: [key,label,unit,step,min,max,obj] */
+let SPEC=[];
+function renderParams(spec,hint=''){SPEC=spec;$('params').innerHTML='<span class="label">ปรับค่า</span>'+spec.map(([k,l,u,st,a,b,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div><input class="prange" type="range" data-r="${k}" min="${a}" max="${b}" step="${st}" value="${o[k]}" aria-label="${l}">`).join('')+(hint?`<span class="hint2">${hint}</span>`:'')}
+function setParam(k,v){const sp=SPEC.find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;const r=document.querySelector(`#params input[data-r="${k}"]`);if(r&&document.activeElement!==r)r.value=v;S.dirty=true;if(typeof onParam==='function')onParam(k)}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SPEC.find(x=>x[0]===b.dataset.k);setParam(b.dataset.k,sp[6][b.dataset.k]+sp[3]*(+b.dataset.d))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k],input[data-r]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k||i.dataset.r,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i){const sp=SPEC.find(x=>x[0]===i.dataset.k);if(sp)i.value=sp[6][i.dataset.k]}});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
+
+const DEF={tab:1,run:true,th:35,rv:.6,th2:40,d:4,lam:2,P:1,a:1.5,lam4:2,hug:false,hm:'plane'};
+
+/* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
+const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
+const R2D=180/Math.PI,D2R=Math.PI/180;
+const T={...DEF};
+const S={dirty:true,drag:null};
+function ray(x1,y1,x2,y2,col,dash,arw,lw=3){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.setLineDash(dash?[8,6]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  if(arw){const mx=x1+(x2-x1)*.55,my=y1+(y2-y1)*.55,a=Math.atan2(y2-y1,x2-x1),L=12;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*L*.6,my+Math.sin(a)*L*.6);ctx.lineTo(mx+Math.cos(a+2.5)*L*.6,my+Math.sin(a+2.5)*L*.6);ctx.lineTo(mx+Math.cos(a-2.5)*L*.6,my+Math.sin(a-2.5)*L*.6);ctx.closePath();ctx.fill()}}
+function arcAng(cx,cy,r,a0,a1,col,lab,u){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();let d=a1-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;ctx.arc(cx,cy,r,a0,a0+d,d<0);ctx.stroke();if(lab){const am=a0+d/2;tag(lab,cx+Math.cos(am)*(r+u*2.4),cy+Math.sin(am)*(r+u*2.4),col)}}
+function dashLine(x1,y1,x2,y2,col,lw=2){ray(x1,y1,x2,y2,col,true,false,lw)}
+function dot(x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function txt(s,x,y,col,px,al='center',bl='middle',w=700){font(px,w);ctx.fillStyle=col;ctx.textAlign=al;ctx.textBaseline=bl;ctx.fillText(s,x,y)}
+/* ---------- อนิเมชันทีละขั้น ---------- */
+const A={p:99,tg:99,N:6,last:0,spd:1.25};
+function replay(){A.p=0;A.tg=99;S.dirty=true}
+function instant(){A.p=99;S.dirty=true}
+function stepA(){if(A.p>=A.N-1e-3){A.p=0;A.tg=1}else A.tg=Math.floor(A.p+1e-6)+1;S.dirty=true}
+const fr=k=>Math.max(0,Math.min(1,A.p-k));
+function aseg(k,x1,y1,x2,y2,col,dash,arw,lw){const f=fr(k);if(f<=0)return;ray(x1,y1,x1+(x2-x1)*f,y1+(y2-y1)*f,col,dash,arw&&f>=1,lw)}
+function apoly(k,pts,col,dash,arw){/* วาดเส้นหลายช่วงตามสัดส่วนความยาว */const f=fr(k);if(f<=0||pts.length<2)return;let L=0;const d=[];for(let i=1;i<pts.length;i++){d.push(Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));L+=d[i-1]}
+  let rem=L*f;for(let i=1;i<pts.length&&rem>0;i++){const t=Math.min(1,rem/d[i-1]);const a=pts[i-1],b=pts[i];ray(a.x,a.y,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,col,dash,arw&&f>=1&&i===Math.ceil(pts.length/2));rem-=d[i-1]}}
+function toEdge(x,y,dx,dy){let t=1e9;if(dx>0)t=Math.min(t,(W-x)/dx);if(dx<0)t=Math.min(t,-x/dx);if(dy>0)t=Math.min(t,(H-y)/dy);if(dy<0)t=Math.min(t,-y/dy);if(t>1e8)t=0;return{x:x+dx*t,y:y+dy*t}}
+function stageTag(list,y){A.N=list.length;const i=Math.min(A.N,Math.floor(A.p+1e-6)+1);tag('ขั้น '+i+'/'+A.N+' : '+list[i-1],W/2,y===undefined?UU()*1.4:y,TC)}
+const aniDone=()=>!animTab()||A.p>=A.N-1e-3;
+const WAIT='<div class="cl note">ดูรังสีให้ครบทุกขั้น แล้วคำตอบจะขึ้นตรงนี้</div>';
+/* ภาพลูกศรค่อย ๆ งอก + กะพริบที่ปลาย */
+function growImg(k,x,y0,y1,col,alpha=1){const f=fr(k);if(f<=0)return 0;const u=UU();if(f<1){ctx.fillStyle=`rgba(37,99,235,${.4*(1-f)})`;ctx.beginPath();ctx.arc(x,y1,u*(1+2.5*(1-f)),0,7);ctx.fill()}
+  ctx.globalAlpha=alpha;if(Math.abs(y1-y0)*f>6)arrow(x,y0,x,y0+(y1-y0)*f,col,5);ctx.globalAlpha=1;return f}
+/* ---------- เลนส์บาง ---------- */
+function drawLens(x,ay,h,cvx,u,col='#7dd3fc'){const w=u*1.6;ctx.fillStyle='rgba(125,211,252,.35)';ctx.strokeStyle='#0284c7';ctx.lineWidth=2.5;ctx.beginPath();
+  if(cvx){ctx.moveTo(x,ay-h);ctx.quadraticCurveTo(x+w*1.6,ay,x,ay+h);ctx.quadraticCurveTo(x-w*1.6,ay,x,ay-h)}
+  else{ctx.moveTo(x-w,ay-h);ctx.lineTo(x+w,ay-h);ctx.quadraticCurveTo(x+w*.15,ay,x+w,ay+h);ctx.lineTo(x-w,ay+h);ctx.quadraticCurveTo(x-w*.15,ay,x-w,ay-h)}ctx.closePath();ctx.fill();ctx.stroke()}
+function axisMarks(ay,list,u){list.forEach(([x,l])=>{if(x<2||x>W-2)return;dot(x,ay,4,'#0f172a');txt(l,x,ay+6,'#0f172a',Math.max(13,u*1.05),'center','top',800)})}
+/* หาภาพเลนส์บาง: s>0 หน้าเลนส์, f เลนส์นูน + เว้า − */
+function thin(s,f){if(Math.abs(s-f)<1e-9)return{inf:true};const sp=s*f/(s-f);return{sp,m:sp/s}}
+/* ---------- แผงปรับค่า ---------- */
+const segH=(id,key,list)=>`<div class="seg" id="${id}" data-key="${key}">${list.map(([v,l])=>`<button data-v="${v}" aria-pressed="${String(T[key])===String(v)}">${l}</button>`).join('')}</div>`;
+const prow=(k,l,un)=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${T[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${un}</span></div><input class="prange" type="range" data-r="${k}" value="${T[k]}" aria-label="${l}">`;
+const ANI='<span class="label">อนิเมชัน</span><div class="seg" id="aniSeg"><button data-a="play">▶ เล่นอีกครั้ง</button><button data-a="step">⏭ ทีละขั้น</button></div>';
+function finishP(h,spec){SPEC=spec||[];$('params').innerHTML=h;SPEC.forEach(([k,,,st,a,b])=>{const r=document.querySelector(`#params input[data-r="${k}"]`);if(r){r.min=a;r.max=b;r.step=st;r.value=T[k]}})}
+function syncInputs(){document.querySelectorAll('#params input[data-k],#params input[data-r]').forEach(x=>{if(x!==document.activeElement){const k=x.dataset.k||x.dataset.r;if(T[k]!==undefined)x.value=T[k]}})}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sg=b.closest('.seg');if(!sg)return;
+  if(sg.id==='aniSeg'){b.dataset.a==='play'?replay():stepA();return}
+  const key=sg.dataset.key;if(key&&b.dataset.v!==undefined){const o=T[key],v=b.dataset.v;T[key]=typeof o==='boolean'?v==='true':(v!==''&&!isNaN(+v)?+v:v);if(typeof onSeg==='function')onSeg(key);renderP();replay()}});
+$('params').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.r)replay()});
+function onParam(k){if(typeof onP==='function')onP(k);if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.r)instant();else replay();syncInputs()}
+/* ---------- แท็บ / ลาก / วงรอบ ---------- */
+function setTab(t){T.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));if(typeof onTab==='function')onTab(t);renderP();replay()}
+function resetAll(){const t=T.tab;Object.keys(T).forEach(k=>delete T[k]);Object.assign(T,DEF);setTab(t)}
+$('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
+cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
+const endDrag=()=>{if(S.drag){S.drag=null;replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
+function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
+  if(typeof tick==='function'&&tick(dt))S.dirty=true;
+  if(S.dirty&&W){S.dirty=false;ctx.fillStyle=typeof BG==='function'?BG():'#f8faf9';ctx.fillRect(0,0,W,H);draw();setCalc(calc())}requestAnimationFrame(loop)}
+function start(){setTab(T.tab);layout();requestAnimationFrame(loop)}
+/* ---------- สีจากความยาวคลื่น (nm) ---------- */
+function lamRGB(l){let r=0,g=0,b=0;if(l<440){r=-(l-440)/60;b=1}else if(l<490){g=(l-440)/50;b=1}else if(l<510){g=1;b=-(l-510)/20}else if(l<580){r=(l-510)/70;g=1}else if(l<645){r=1;g=-(l-645)/65}else r=1;
+  const f=l<420?.3+.7*(l-380)/40:l>700?.3+.7*(780-l)/80:1;return[r*f,g*f,b*f]}
+const lamCol=(l,a=1)=>{const[r,g,b]=lamRGB(l);return `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`};
+function lamName(l){return l<450?'ม่วง':l<495?'น้ำเงิน':l<570?'เขียว':l<590?'เหลือง':l<620?'แสด':'แดง'}
+
+
+const animTab=()=>T.tab===5;
+const ST={t:0};
+function tick(dt){if(T.run){ST.t+=dt;return true}return false}
+/* ---------- พื้นผิวน้ำ: คำนวณความสูงบนกริด แล้ววาดเป็นภาพ ---------- */
+const OC=document.createElement('canvas'),OX=OC.getContext('2d');
+function surface(fn,mask){/* fn(x,y) → ความสูง −1..1 (พิกัดจอ) */const cs=Math.max(4,Math.round(Math.min(W,H)/150)),gw=Math.ceil(W/cs),gh=Math.ceil(H/cs);if(OC.width!==gw||OC.height!==gh){OC.width=gw;OC.height=gh}
+  const img=OX.createImageData(gw,gh),d=img.data;for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){const x=(i+.5)*cs,y=(j+.5)*cs,o=(j*gw+i)*4;if(mask&&mask(x,y)){d[o]=71;d[o+1]=85;d[o+2]=105;d[o+3]=255;continue}let h=fn(x,y);h=Math.max(-1.2,Math.min(1.2,h));const b=.5+.4*h;d[o]=Math.round(30+190*b*b);d[o+1]=Math.round(90+150*b);d[o+2]=Math.round(150+105*b);d[o+3]=255}
+  OX.putImageData(img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(OC,0,0,gw*cs,gh*cs)}
+const LP=()=>Math.min(W,H)*.075;/* ความยาวคลื่นบนจอ (px) สำหรับแท็บ 1–2 */
+/* ===================== ① การสะท้อน ===================== */
+function draw1(){const u=UU(),lp=LP(),k=2*Math.PI/lp,w=2*Math.PI*.7*ST.t,by=H*.78,th=T.th*D2R,di={x:Math.sin(th),y:Math.cos(th)},dr={x:Math.sin(th),y:-Math.cos(th)},cx=W*.5;
+  const bw=Math.min(W,H)*.13,beam=(x,y,d)=>{const px=x-cx,py=y-by,along=px*d.x+py*d.y,perp=Math.abs(px*d.y-py*d.x);return Math.exp(-((perp/bw)**4))};
+  surface((x,y)=>{if(y>by)return 0;const pi=k*(di.x*(x-cx)+di.y*(y-by))-w,pr=k*(dr.x*(x-cx)+dr.y*(y-by))-w;return Math.sin(pi)*beam(x,y,di)*(((x-cx)*di.x+(y-by)*di.y)<0?1:0)+Math.sin(pr)*beam(x,y,dr)*(((x-cx)*dr.x+(y-by)*dr.y)>0?1:0)},(x,y)=>y>by&&y<by+u*1.4);
+  ctx.fillStyle='#475569';ctx.fillRect(0,by,W,u*1.4);txt('แผ่นกั้น',u,by+u*2.2,'#e2e8f0',Math.max(12,u),'left','top');
+  const L=Math.min(W*.4,H*.6),P={x:cx,y:by},A={x:cx-di.x*L,y:by-di.y*L},R={x:cx+dr.x*-(-L),y:by+dr.y*L};
+  dashLine(cx,by,cx,by-L*.9,'#fef08a',2);txt('เส้นปกติ',cx+u*.5,by-L*.9,'#fef08a',Math.max(12,u),'left','top');
+  ray(A.x,A.y,P.x,P.y,'#dc2626',false,true,4);ray(P.x,P.y,P.x+dr.x*L,P.y+dr.y*L,'#f97316',false,true,4);
+  arcAng(cx,by,u*5,-Math.PI/2,-Math.PI/2-th,'#b91c1c','θᵢ = '+T.th+'°',u);arcAng(cx,by,u*6.5,-Math.PI/2,-Math.PI/2+th,'#c2410c','θᵣ = '+T.th+'°',u);
+  tag('รังสีคลื่นตกกระทบ',A.x,A.y-u*1.2,'#b91c1c');tag('รังสีคลื่นสะท้อน',P.x+dr.x*L,P.y+dr.y*L-u*1.2,'#c2410c');
+  tag('สันคลื่น = แถบสว่าง · ท้องคลื่น = แถบมืด · รังสีคลื่นตั้งฉากกับหน้าคลื่น',W/2,u*1.4,'#0f172a')}
+/* ===================== ② การหักเห ===================== */
+function draw2(){const u=UU(),l1=LP()*1.25,l2=l1*T.rv,w=2*Math.PI*.7*ST.t,yb=H*.48,th1=T.th2*D2R,s2=Math.sin(th1)*T.rv,th2=Math.asin(Math.min(1,s2)),k1=2*Math.PI/l1,k2=2*Math.PI/l2,cx=W*.45;
+  const kx=k1*Math.sin(th1);surface((x,y)=>y<yb?Math.sin(kx*(x-cx)+k1*Math.cos(th1)*(y-yb)-w):.8*Math.sin(kx*(x-cx)+k2*Math.cos(th2)*(y-yb)-w));
+  ctx.fillStyle='rgba(15,23,42,.18)';ctx.fillRect(0,yb,W,H-yb);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(0,yb);ctx.lineTo(W,yb);ctx.stroke();ctx.setLineDash([]);
+  tag('น้ำลึก (v₁, λ₁ มาก)',u*.8,yb-u*1.6,'#0369a1','left');tag('น้ำตื้น (v₂, λ₂ น้อย)',u*.8,yb+u*1.6,'#0f766e','left');
+  const L=Math.min(W*.35,H*.42);dashLine(cx,yb-L,cx,yb+L,'#fef08a',2);txt('เส้นปกติ',cx+u*.5,yb-L,'#fef08a',Math.max(12,u),'left','top');
+  ray(cx-Math.sin(th1)*L,yb-Math.cos(th1)*L,cx,yb,'#dc2626',false,true,4);ray(cx,yb,cx+Math.sin(th2)*L,yb+Math.cos(th2)*L,'#f97316',false,true,4);
+  arcAng(cx,yb,u*5,-Math.PI/2,-Math.PI/2-th1,'#b91c1c','θ₁ = '+T.th2+'°',u);arcAng(cx,yb,u*5,Math.PI/2,Math.PI/2-th2,'#c2410c','θ₂ = '+fN(th2*R2D,1)+'°',u);
+  /* วัด λ ในแต่ละบริเวณตามแนวเส้นปกติ */const m=(y0,lam,lab,col)=>{const x=W*.86;ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x,y0+lam);ctx.moveTo(x-6,y0);ctx.lineTo(x+6,y0);ctx.moveTo(x-6,y0+lam);ctx.lineTo(x+6,y0+lam);ctx.stroke();txt(lab,x+u*.8,y0+lam/2,col,Math.max(12,u),'left','middle',800)};
+  m(yb-l1/Math.cos(th1)*1.0-u*2,l1/Math.cos(th1),'λ₁','#fef3c7');m(yb+u*2,l2/Math.cos(th2),'λ₂','#fef3c7');
+  tag('ความถี่คงที่ · อัตราเร็วและความยาวคลื่นลดลงในน้ำตื้น → รังสีคลื่นหักเหเข้าหาเส้นปกติ',W/2,u*1.4,'#0f172a')}
+/* ===================== ③ การแทรกสอด ===================== */
+function g3(){const lp=Math.min(W,H)*.05*(T.lam/2),cx=W*.5,sy=H*.86,dp=T.d/T.lam*lp;return{lp,cx,sy,dp,S1:{x:cx-dp/2,y:sy},S2:{x:cx+dp/2,y:sy}}}
+function draw3(){const u=UU(),g=g3(),k=2*Math.PI/g.lp,w=2*Math.PI*.8*ST.t;
+  surface((x,y)=>{if(y>g.sy+u)return 0;const r1=Math.hypot(x-g.S1.x,y-g.S1.y),r2=Math.hypot(x-g.S2.x,y-g.S2.y);return .7*Math.sin(k*r1-w)+.7*Math.sin(k*r2-w)});
+  dot(g.S1.x,g.S1.y,u*.6,'#fbbf24');dot(g.S2.x,g.S2.y,u*.6,'#fbbf24');txt('S₁',g.S1.x-u*.8,g.S1.y+u*.6,'#fde68a',Math.max(13,u*1.1),'right','top',800);txt('S₂',g.S2.x+u*.8,g.S2.y+u*.6,'#fde68a',Math.max(13,u*1.1),'left','top',800);
+  /* ป้ายแนว A / N ที่ขอบบน (ใช้ hyperbola ไกล ≈ ทิศ sinθ = mλ/d) */const labs=[];const R=Math.hypot(W,H);for(let n=-6;n<=6;n++)for(const dk of [false,true]){if(dk&&n<=0)continue;const ms=dk?[n-.5,-(n-.5)]:[n];ms.forEach(m=>{const s=m*T.lam/T.d;if(Math.abs(s)>=.98)return;const th=Math.asin(s);const ex=g.cx+Math.sin(th)*R,ey=g.sy-Math.cos(th)*R;/* จุดตัดขอบจอ */let t=1;if(ey<u*3)t=Math.min(t,(g.sy-u*3)/(g.sy-ey));if(ex<u*2)t=Math.min(t,(g.cx-u*2)/(g.cx-ex));if(ex>W-u*2)t=Math.min(t,(W-u*2-g.cx)/(ex-g.cx));const px=g.cx+(ex-g.cx)*t,py=g.sy+(ey-g.sy)*t;
+      ctx.strokeStyle=dk?'rgba(15,23,42,.35)':'rgba(255,255,255,.35)';ctx.setLineDash(dk?[3,6]:[8,6]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(g.cx,g.sy);ctx.lineTo(px,py);ctx.stroke();ctx.setLineDash([]);const lab=(dk?'N':'A')+sub(Math.abs(dk?Math.abs(m)+.5:m));tag(lab,px,py,dk?'#334155':'#b45309');labs.push([px,py,m])})}
+  S.labs=labs;const sel=labs.find(l=>l[2]===T.P);if(sel){const th=Math.asin(T.P*T.lam/T.d),Rr=Math.min(H*.55,W*.4),P={x:g.cx+Math.sin(th)*Rr,y:g.sy-Math.cos(th)*Rr};ray(g.S1.x,g.S1.y,P.x,P.y,'#f472b6',false,false,2.5);ray(g.S2.x,g.S2.y,P.x,P.y,'#38bdf8',false,false,2.5);dot(P.x,P.y,u*.6,'#fff');txt('P',P.x+u*.8,P.y,'#fff',Math.max(14,u*1.2),'left','middle',800)}
+  tag(W<640?'กดป้าย A / N เพื่อเลือก P':'แนวปฏิบัพ (A) กระเพื่อมแรง · แนวบัพ (N) ผิวน้ำเกือบนิ่ง · กดป้าย A / N เพื่อเลือกจุด P',W/2,H-u*1.4,'#0f172a')}
+/* ===================== ④ การเลี้ยวเบน ===================== */
+function draw4(){const u=UU(),lp=Math.min(W,H)*.05*(T.lam4/2),k=2*Math.PI/lp,w=2*Math.PI*.7*ST.t,by=H*.62,cx=W*.5,a=T.a/T.lam4*lp*T.lam4,ap=T.a*Math.min(W,H)*.05;/* ช่องกว้าง (หน่วยเดียวกับ λ: cm) */
+  const gap=T.a/T.lam4*lp,N=Math.max(3,Math.min(24,Math.round(gap/(lp/5)))),src=[];for(let i=0;i<N;i++)src.push(cx-gap/2+gap*(i+.5)/N);
+  surface((x,y)=>{if(y>by)return Math.sin(k*(by-y)-w);if(y>by-u*.2)return 0;let s=0,c=0;for(const sx of src){const r=Math.hypot(x-sx,y-by);s+=Math.sin(k*r-w)/Math.sqrt(Math.max(r,lp*.3)/lp);c++}return s/c*Math.min(1.6,Math.sqrt(N)*.9)},(x,y)=>y>by-u*.5&&y<by+u*.5&&Math.abs(x-cx)>gap/2);
+  txt('คลื่นหน้าตรงเคลื่อนที่ขึ้น ↑',u,H-u*1.2,'#e2e8f0',Math.max(12,u),'left','bottom');
+  if(T.hug){const ph=(w/(2*Math.PI))%1,hs=N<=7?src:src.filter((_,i)=>i%Math.ceil(N/7)===0);hs.forEach(sx=>{dot(sx,by,u*.6,'#fde047');for(let m=0;m<3;m++){const r=(m+ph)*lp;ctx.strokeStyle='rgba(253,224,71,.95)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(sx,by,r,Math.PI,2*Math.PI);ctx.stroke()}});tag('หลักของฮอยเกนส์: ทุกจุดบนหน้าคลื่นที่ช่องเป็นแหล่งกำเนิดคลื่นวงกลมใหม่ (สีเหลือง) · คลื่นใหม่รวมกันเป็นหน้าคลื่นที่เลี้ยวเบน',W/2,u*1.4,'#0f172a')}
+  else tag(T.a<=T.lam4?'ช่องแคบกว่าหรือพอ ๆ กับ λ → เลี้ยวเบนมาก คลื่นแผ่ออกเกือบเป็นวงกลม':'ช่องกว้างกว่า λ มาก → เลี้ยวเบนน้อย คลื่นส่วนใหญ่ผ่านตรงไป',W/2,u*1.4,'#0f172a');
+  const yb=by+u*2.4;ctx.strokeStyle='#fde68a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-gap/2,yb);ctx.lineTo(cx+gap/2,yb);ctx.stroke();tag('ช่องกว้าง '+T.a+' cm',cx,yb+u*1.4,'#b45309')}
+/* ===================== ⑤ หลักของฮอยเกนส์ ===================== */
+function draw5(){const u=UU(),m=T.hm,rmax=Math.min(H*.2,W*.12),r=rmax*fr(1),fe=fr(2),sh=fr(3);ctx.fillStyle='#0c4a6e';ctx.fillRect(0,0,W,H);
+  const FC='#93c5fd',WL='#fde047',NF='#f87171';let pts=[],L;
+  const wl=(p,ang0,ang1)=>{if(r<=1)return;ctx.strokeStyle=WL;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,r,ang0,ang1);ctx.stroke()};
+  if(m==='plane'){const y0=H*.78-sh*rmax,x0=W*.14,x1=W*.86;for(let k=1;k<=2;k++){ctx.strokeStyle='rgba(147,197,253,.25)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x0,y0+k*rmax);ctx.lineTo(x1,y0+k*rmax);ctx.stroke()}
+    ctx.strokeStyle=FC;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y0);ctx.stroke();for(let i=0;i<9;i++)pts.push({x:x0+(x1-x0)*i/8,y:y0});
+    pts.forEach(p=>{dot(p.x,p.y,u*.6,WL);wl(p,Math.PI,2*Math.PI)});if(fe>0){ctx.strokeStyle=NF;ctx.lineWidth=4;ctx.setLineDash([12,8]);ctx.beginPath();ctx.moveTo(x0,y0-r);ctx.lineTo(x0+(x1-x0)*fe,y0-r);ctx.stroke();ctx.setLineDash([])}
+    arrow(W*.92,y0+rmax*.3,W*.92,y0-rmax*.7,'#e2e8f0',3);txt('ทิศของคลื่น',W*.93,y0-rmax*.2,'#e2e8f0',Math.max(12,u),'left')}
+  if(m==='circle'){const c={x:W*.5,y:H*.98},R0=H*.42+sh*rmax;dot(c.x,c.y,u*.8,'#fbbf24');for(let k=1;k<=2;k++){ctx.strokeStyle='rgba(147,197,253,.25)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(c.x,c.y,Math.max(1,R0-k*rmax),-Math.PI*.82,-Math.PI*.18);ctx.stroke()}
+    ctx.strokeStyle=FC;ctx.lineWidth=5;ctx.beginPath();ctx.arc(c.x,c.y,R0,-Math.PI*.82,-Math.PI*.18);ctx.stroke();for(let i=0;i<9;i++){const a=-Math.PI*.78+Math.PI*.56*i/8;pts.push({x:c.x+Math.cos(a)*R0,y:c.y+Math.sin(a)*R0,a})}
+    pts.forEach(p=>{dot(p.x,p.y,u*.6,WL);wl(p,p.a-Math.PI/2,p.a+Math.PI/2)});if(fe>0){ctx.strokeStyle=NF;ctx.lineWidth=4;ctx.setLineDash([12,8]);ctx.beginPath();ctx.arc(c.x,c.y,R0+r,-Math.PI*.78,-Math.PI*.78+Math.PI*.56*fe);ctx.stroke();ctx.setLineDash([])}}
+  if(m==='slit'){const by=H*.62,cx=W*.5,g=W*.06;ctx.fillStyle='#64748b';ctx.fillRect(0,by-u*.5,cx-g/2,u);ctx.fillRect(cx+g/2,by-u*.5,W,u);ctx.strokeStyle=FC;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(W*.1,by+u*2.5);ctx.lineTo(W*.9,by+u*2.5);ctx.stroke();
+    for(let k=1;k<=2;k++){ctx.strokeStyle='rgba(147,197,253,.25)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(W*.1,by+u*2.5+k*rmax*.6);ctx.lineTo(W*.9,by+u*2.5+k*rmax*.6);ctx.stroke()}
+    pts=[{x:cx-g/4,y:by},{x:cx+g/4,y:by}];const r2=r*1.6;pts.forEach(p=>{dot(p.x,p.y,u*.6,WL);if(r2>1){ctx.strokeStyle=WL;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,r2,Math.PI,2*Math.PI);ctx.stroke()}});
+    if(fe>0){ctx.strokeStyle=NF;ctx.lineWidth=4;ctx.setLineDash([12,8]);ctx.beginPath();ctx.arc(cx,by,r2+g/4,Math.PI,Math.PI+Math.PI*fe);ctx.stroke();ctx.setLineDash([])}
+    if(fe>=1){[-1,1].forEach(s=>arrow(cx,by-u,cx+s*(r2+g/4)*.75,by-(r2+g/4)*.66,'#e2e8f0',2.5));arrow(cx,by-u,cx,by-r2-g/4-u*.5,'#e2e8f0',2.5)}}
+  const n=W<640;stageTag(m==='slit'?[n?'คลื่นมาถึงช่องแคบ':'หน้าคลื่นมาถึงช่องแคบ เหลือจุดในช่องเพียงไม่กี่จุด (สีเหลือง)',n?'จุดในช่องส่งคลื่นวงกลม':'แต่ละจุดในช่องส่งคลื่นวงกลมใหม่ออกไป',n?'หน้าคลื่นใหม่โค้งออก':'หน้าคลื่นใหม่ (สีแดง) โค้งอ้อมไปด้านข้าง → การเลี้ยวเบน']:[n?'ทุกจุดบนหน้าคลื่น':'ทุกจุดบนหน้าคลื่น (สีฟ้า) เป็นแหล่งกำเนิดแบบจุด (สีเหลือง)',n?'ส่งคลื่นวงกลมเล็ก ๆ':'แต่ละจุดส่งคลื่นวงกลมเล็ก ๆ ออกไป ด้วยอัตราเร็วและความถี่เท่าคลื่นเดิม',n?'เส้นสัมผัส = หน้าคลื่นใหม่':'เส้นที่สัมผัสขอบหน้าของทุกวง = หน้าคลื่นใหม่ (สีแดง)',n?'หน้าคลื่นเลื่อนไป':'หน้าคลื่นใหม่กลายเป็นหน้าคลื่นเดิม แล้วทำซ้ำต่อไป']);
+  if(T.run&&A.p>=A.N-1e-3&&m!=='slit'){S.again=(S.again||0)+1;if(S.again>90){S.again=0;replay()}}}
+function draw(){[draw1,draw2,draw3,draw4,draw5][T.tab-1]()}
+/* ===================== แผงล่าง ===================== */
+function calc(){const t=T.tab;
+  if(t===1)return `<div class="cl"><span class="lab">กฎการสะท้อน</span>1. รังสีคลื่นตกกระทบ รังสีคลื่นสะท้อน และเส้นปกติ อยู่ในระนาบเดียวกัน · 2. มุมตกกระทบเท่ากับมุมสะท้อน θᵢ = θᵣ = <span class="res">${T.th}°</span></div><div class="cl note">การสะท้อนไม่เปลี่ยนอัตราเร็ว ความยาวคลื่น และความถี่ เพราะคลื่นยังอยู่ในตัวกลางเดิม</div>`;
+  if(t===2){const s2=Math.sin(T.th2*D2R)*T.rv;return `<div class="cl"><span class="lab">กฎการหักเห</span>sinθ₁/sinθ₂ = v₁/v₂ = λ₁/λ₂ → sinθ₂ = sin${T.th2}° × ${T.rv} = ${fN(s2,3)} → θ₂ = <span class="res">${fN(Math.asin(Math.min(1,s2))*R2D,1)}°</span></div><div class="cl"><span class="lab">เปรียบเทียบ</span>v₂/v₁ = λ₂/λ₁ = ${T.rv} · ความถี่ f เท่าเดิม</div><div class="cl note">คลื่นผิวน้ำในน้ำลึกเคลื่อนที่เร็วกว่าในน้ำตื้น</div>`}
+  if(t===3){const m=T.P,dk=!Number.isInteger(m),n=dk?Math.abs(m)+.5:Math.abs(m);return `<div class="cl"><span class="lab">ค่าที่ใช้</span>S₁S₂ = d = ${T.d} cm · λ = ${T.lam} cm</div><div class="cl"><span class="lab">จุด P อยู่บน${dk?'แนวบัพ N'+sub(n):'แนวปฏิบัพ A'+sub(n)}</span>|S₁P − S₂P| = ${dk?`(n − ½)λ = (${n} − ½)(${T.lam}) = <span class="res">${fN((n-.5)*T.lam,1)} cm</span>`:`nλ = ${n} × ${T.lam} = <span class="res">${n*T.lam} cm</span>`}</div><div class="cl note">d sinθ = nλ (ปฏิบัพ) · d sinθ = (n − ½)λ (บัพ) · จำนวนแนวปฏิบัพทั้งหมด: n ≤ d/λ = ${fN(T.d/T.lam,1)}</div>`}
+  if(t===5)return `<div class="cl"><span class="lab">หลักของฮอยเกนส์</span>“แต่ละจุดบนหน้าคลื่นเป็นแหล่งกำเนิดแบบจุด ส่งคลื่นวงกลมออกไป โดยคลื่นใหม่มีอัตราเร็วและความถี่เท่ากับคลื่นเดิม”</div><div class="cl note">เส้นที่สัมผัสคลื่นวงกลมทุกวงคือหน้าคลื่นใหม่ · ใช้อธิบายการเคลื่อนที่ การสะท้อน การหักเห และการเลี้ยวเบนของคลื่น</div>`;
+  return `<div class="cl"><span class="lab">การเลี้ยวเบน</span>ช่องกว้าง ${T.a} cm · λ = ${T.lam4} cm · ช่องกว้าง/λ = ${fN(T.a/T.lam4,2)}</div><div class="cl note">คลื่นแผ่อ้อมไปด้านหลังสิ่งกีดขวางได้ · ช่องยิ่งแคบเมื่อเทียบกับ λ ยิ่งเลี้ยวเบนมาก · อธิบายได้ด้วยหลักของฮอยเกนส์</div>`}
+/* ===================== แผงปรับค่า ===================== */
+function runSeg(){return `<span class="label">อนิเมชัน</span>${segH('sr','run',[[true,'▶ เคลื่อนที่'],[false,'⏸ หยุด']])}`}
+function renderP(){const t=T.tab;
+  if(t===1)return finishP(prow('th','มุมตกกระทบ θᵢ','°')+runSeg(),[['th','','',1,0,70,T]]);
+  if(t===2)return finishP(prow('th2','มุมตกกระทบ θ₁','°')+prow('rv','v₂/v₁ (น้ำตื้น/น้ำลึก)','')+runSeg(),[['th2','','',1,0,70,T],['rv','','',.05,.4,1,T]]);
+  if(t===3)return finishP(prow('d','ระยะห่าง S₁S₂ = d','cm')+prow('lam','ความยาวคลื่น λ','cm')+runSeg(),[['d','','',.5,2,12,T],['lam','','',.5,1,4,T]]);
+  if(t===5)return finishP(`<span class="label">หน้าคลื่น</span>${segH('s5','hm',[['plane','หน้าคลื่นตรง'],['circle','หน้าคลื่นวงกลม'],['slit','ผ่านช่องแคบ']])}`+ANI+`<span class="label">เล่นวนอัตโนมัติ</span>${segH('sr5','run',[[true,'เปิด'],[false,'ปิด']])}`,[]);
+  finishP(prow('a','ความกว้างช่อง','cm')+prow('lam4','ความยาวคลื่น λ','cm')+`<span class="label">หลักของฮอยเกนส์</span>${segH('sh','hug',[[false,'ซ่อน'],[true,'แสดง']])}`+runSeg(),[['a','','',.5,.5,10,T],['lam4','','',.5,1,4,T]])}
+function onP(k){if(k==='d'||k==='lam'){const mx=Math.floor(T.d/T.lam);if(Math.abs(T.P)>mx)T.P=Math.min(1,mx)}}
+function dragStart(p){if(T.tab!==3)return null;const u=UU();let b=null,bd=1e9;(S.labs||[]).forEach(l=>{const d=Math.hypot(p.x-l[0],p.y-l[1]);if(d<bd){bd=d;b=l}});if(b&&bd<u*3){T.P=b[2];S.dirty=true}return null}
+function dragMove(){}
+
+start();
+</script>
+</body>
+</html>
