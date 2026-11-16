@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ทัศนอุปกรณ์</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn,.calc .cl{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.prange{width:100%;accent-color:var(--accent);margin:0 0 .2em}
+.params{gap:calc(var(--u)*.15)!important}
+.nuc{display:inline-flex;align-items:center;white-space:nowrap}.nuc .az{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:.95;font-size:.62em;margin-right:.08em}.nuc .az sup,.nuc .az sub{vertical-align:baseline;position:static}
+.calc table{border-collapse:collapse;font-size:.95em;margin:.15em 0}.calc td,.calc th{padding:.05em .9em .05em 0;text-align:left;white-space:nowrap}.calc th{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em}
+.calc tr.hit td{color:#15803d;font-weight:700}
+
+@media (max-width:760px){.calc td{white-space:normal!important}}
+@media (max-width:760px) and (orientation:portrait){.app{grid-template-rows:auto 56vh auto}}
+.seg{flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>ทัศนอุปกรณ์</h1>
+    <div class="tabs" role="tablist" id="tabs"><button role="tab" aria-selected="true" data-t="1">① แว่นขยาย</button><button role="tab" aria-selected="false" data-t="2">② กล้องจุลทรรศน์</button><button role="tab" aria-selected="false" data-t="3">③ กล้องโทรทรรศน์</button></div>
+    <div class="spacer"></div>
+    <div class="tools"><button class="btn" id="reset">↺ เริ่มใหม่</button><button class="btn" id="fs">⛶ เต็มจอ</button></div>
+  </div>
+  <div class="panel stage" id="stageBox"><canvas id="cv"></canvas><div class="toast" id="toast"></div></div>
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+<script>
+/* ===================== ตัวช่วยร่วม ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const fN=(x,d)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺'};
+const SUBd={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const sup=s=>String(s).split('').map(c=>SUPd[c]||c).join(''),sub=s=>String(s).split('').map(c=>SUBd[c]||c).join('');
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-40)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+sup(e)}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(()=>layout()).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw=3){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3.2);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+function wave(x1,y1,x2,y2,col,u,lp){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const a=Math.atan2(y2-y1,x2-x1),A=u*.42;lp=lp||u*1.1;
+  ctx.save();ctx.translate(x1,y1);ctx.rotate(a);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();for(let s=0;s<=L;s+=1.2)ctx.lineTo(s,A*Math.sin(2*Math.PI*s/lp)*Math.min(1,s/(lp*.6),(L-s)/(lp*.6)));ctx.stroke();ctx.restore()}
+/* สัญลักษณ์นิวไคลด์ ᴬ_Z X */
+function nucSym(x,y,A,Z,X,size,col='#0f172a',ax='center'){font(size,700);const wX=ctx.measureText(X).width;font(size*.5,700,'"JetBrains Mono",monospace');const wn=Math.max(ctx.measureText(String(A)).width,ctx.measureText(String(Z)).width);
+  const tw=wn+3+wX;let x0=ax==='center'?x-tw/2:ax==='left'?x:x-tw;ctx.fillStyle=col;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+  ctx.fillText(String(A),x0+wn,y-size*.38);ctx.fillText(String(Z),x0+wn,y+size*.12);font(size,700);ctx.textAlign='left';ctx.fillText(X,x0+wn+3,y+size*.12);return tw}
+const nucTxt=(A,Z,X)=>`<span class="nuc"><span class="az"><sup>${A}</sup><sub>${Z}</sub></span>${X}</span>`;
+/* ปุ่มกลุ่ม (seg) */
+function segSync(id,attr,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+function segOn(id,fn){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(b)fn(b)})}
+/* แผงปรับค่าทั่วไป: [key,label,unit,step,min,max,obj] */
+let SPEC=[];
+function renderParams(spec,hint=''){SPEC=spec;$('params').innerHTML='<span class="label">ปรับค่า</span>'+spec.map(([k,l,u,st,a,b,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div><input class="prange" type="range" data-r="${k}" min="${a}" max="${b}" step="${st}" value="${o[k]}" aria-label="${l}">`).join('')+(hint?`<span class="hint2">${hint}</span>`:'')}
+function setParam(k,v){const sp=SPEC.find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;const r=document.querySelector(`#params input[data-r="${k}"]`);if(r&&document.activeElement!==r)r.value=v;S.dirty=true;if(typeof onParam==='function')onParam(k)}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SPEC.find(x=>x[0]===b.dataset.k);setParam(b.dataset.k,sp[6][b.dataset.k]+sp[3]*(+b.dataset.d))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k],input[data-r]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k||i.dataset.r,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i){const sp=SPEC.find(x=>x[0]===i.dataset.k);if(sp)i.value=sp[6][i.dataset.k]}});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
+
+const DEF={tab:1,f:5,s:4,fo:1.5,s1:1.8,fe:4,L:12,tfo:50,tfe:5};
+
+/* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
+const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
+const R2D=180/Math.PI,D2R=Math.PI/180;
+const T={...DEF};
+const S={dirty:true,drag:null};
+function ray(x1,y1,x2,y2,col,dash,arw,lw=3){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.setLineDash(dash?[8,6]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  if(arw){const mx=x1+(x2-x1)*.55,my=y1+(y2-y1)*.55,a=Math.atan2(y2-y1,x2-x1),L=12;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*L*.6,my+Math.sin(a)*L*.6);ctx.lineTo(mx+Math.cos(a+2.5)*L*.6,my+Math.sin(a+2.5)*L*.6);ctx.lineTo(mx+Math.cos(a-2.5)*L*.6,my+Math.sin(a-2.5)*L*.6);ctx.closePath();ctx.fill()}}
+function arcAng(cx,cy,r,a0,a1,col,lab,u){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();let d=a1-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;ctx.arc(cx,cy,r,a0,a0+d,d<0);ctx.stroke();if(lab){const am=a0+d/2;tag(lab,cx+Math.cos(am)*(r+u*2.4),cy+Math.sin(am)*(r+u*2.4),col)}}
+function dashLine(x1,y1,x2,y2,col,lw=2){ray(x1,y1,x2,y2,col,true,false,lw)}
+function dot(x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function txt(s,x,y,col,px,al='center',bl='middle',w=700){font(px,w);ctx.fillStyle=col;ctx.textAlign=al;ctx.textBaseline=bl;ctx.fillText(s,x,y)}
+/* ---------- อนิเมชันทีละขั้น ---------- */
+const A={p:99,tg:99,N:6,last:0,spd:1.25};
+function replay(){A.p=0;A.tg=99;S.dirty=true}
+function instant(){A.p=99;S.dirty=true}
+function stepA(){if(A.p>=A.N-1e-3){A.p=0;A.tg=1}else A.tg=Math.floor(A.p+1e-6)+1;S.dirty=true}
+const fr=k=>Math.max(0,Math.min(1,A.p-k));
+function aseg(k,x1,y1,x2,y2,col,dash,arw,lw){const f=fr(k);if(f<=0)return;ray(x1,y1,x1+(x2-x1)*f,y1+(y2-y1)*f,col,dash,arw&&f>=1,lw)}
+function apoly(k,pts,col,dash,arw){/* วาดเส้นหลายช่วงตามสัดส่วนความยาว */const f=fr(k);if(f<=0||pts.length<2)return;let L=0;const d=[];for(let i=1;i<pts.length;i++){d.push(Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));L+=d[i-1]}
+  let rem=L*f;for(let i=1;i<pts.length&&rem>0;i++){const t=Math.min(1,rem/d[i-1]);const a=pts[i-1],b=pts[i];ray(a.x,a.y,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,col,dash,arw&&f>=1&&i===Math.ceil(pts.length/2));rem-=d[i-1]}}
+function toEdge(x,y,dx,dy){let t=1e9;if(dx>0)t=Math.min(t,(W-x)/dx);if(dx<0)t=Math.min(t,-x/dx);if(dy>0)t=Math.min(t,(H-y)/dy);if(dy<0)t=Math.min(t,-y/dy);if(t>1e8)t=0;return{x:x+dx*t,y:y+dy*t}}
+function stageTag(list,y){A.N=list.length;const i=Math.min(A.N,Math.floor(A.p+1e-6)+1);tag('ขั้น '+i+'/'+A.N+' : '+list[i-1],W/2,y===undefined?UU()*1.4:y,TC)}
+const aniDone=()=>!animTab()||A.p>=A.N-1e-3;
+const WAIT='<div class="cl note">ดูรังสีให้ครบทุกขั้น แล้วคำตอบจะขึ้นตรงนี้</div>';
+/* ภาพลูกศรค่อย ๆ งอก + กะพริบที่ปลาย */
+function growImg(k,x,y0,y1,col,alpha=1){const f=fr(k);if(f<=0)return 0;const u=UU();if(f<1){ctx.fillStyle=`rgba(37,99,235,${.4*(1-f)})`;ctx.beginPath();ctx.arc(x,y1,u*(1+2.5*(1-f)),0,7);ctx.fill()}
+  ctx.globalAlpha=alpha;if(Math.abs(y1-y0)*f>6)arrow(x,y0,x,y0+(y1-y0)*f,col,5);ctx.globalAlpha=1;return f}
+/* ---------- เลนส์บาง ---------- */
+function drawLens(x,ay,h,cvx,u,col='#7dd3fc'){const w=u*1.6;ctx.fillStyle='rgba(125,211,252,.35)';ctx.strokeStyle='#0284c7';ctx.lineWidth=2.5;ctx.beginPath();
+  if(cvx){ctx.moveTo(x,ay-h);ctx.quadraticCurveTo(x+w*1.6,ay,x,ay+h);ctx.quadraticCurveTo(x-w*1.6,ay,x,ay-h)}
+  else{ctx.moveTo(x-w,ay-h);ctx.lineTo(x+w,ay-h);ctx.quadraticCurveTo(x+w*.15,ay,x+w,ay+h);ctx.lineTo(x-w,ay+h);ctx.quadraticCurveTo(x-w*.15,ay,x-w,ay-h)}ctx.closePath();ctx.fill();ctx.stroke()}
+function axisMarks(ay,list,u){list.forEach(([x,l])=>{if(x<2||x>W-2)return;dot(x,ay,4,'#0f172a');txt(l,x,ay+6,'#0f172a',Math.max(13,u*1.05),'center','top',800)})}
+/* หาภาพเลนส์บาง: s>0 หน้าเลนส์, f เลนส์นูน + เว้า − */
+function thin(s,f){if(Math.abs(s-f)<1e-9)return{inf:true};const sp=s*f/(s-f);return{sp,m:sp/s}}
+/* ---------- แผงปรับค่า ---------- */
+const segH=(id,key,list)=>`<div class="seg" id="${id}" data-key="${key}">${list.map(([v,l])=>`<button data-v="${v}" aria-pressed="${String(T[key])===String(v)}">${l}</button>`).join('')}</div>`;
+const prow=(k,l,un)=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${T[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${un}</span></div><input class="prange" type="range" data-r="${k}" value="${T[k]}" aria-label="${l}">`;
+const ANI='<span class="label">อนิเมชัน</span><div class="seg" id="aniSeg"><button data-a="play">▶ เล่นอีกครั้ง</button><button data-a="step">⏭ ทีละขั้น</button></div>';
+function finishP(h,spec){SPEC=spec||[];$('params').innerHTML=h;SPEC.forEach(([k,,,st,a,b])=>{const r=document.querySelector(`#params input[data-r="${k}"]`);if(r){r.min=a;r.max=b;r.step=st;r.value=T[k]}})}
+function syncInputs(){document.querySelectorAll('#params input[data-k],#params input[data-r]').forEach(x=>{if(x!==document.activeElement){const k=x.dataset.k||x.dataset.r;if(T[k]!==undefined)x.value=T[k]}})}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sg=b.closest('.seg');if(!sg)return;
+  if(sg.id==='aniSeg'){b.dataset.a==='play'?replay():stepA();return}
+  const key=sg.dataset.key;if(key&&b.dataset.v!==undefined){const o=T[key],v=b.dataset.v;T[key]=typeof o==='boolean'?v==='true':(v!==''&&!isNaN(+v)?+v:v);if(typeof onSeg==='function')onSeg(key);renderP();replay()}});
+$('params').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.r)replay()});
+function onParam(k){if(typeof onP==='function')onP(k);if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.r)instant();else replay();syncInputs()}
+/* ---------- แท็บ / ลาก / วงรอบ ---------- */
+function setTab(t){T.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));if(typeof onTab==='function')onTab(t);renderP();replay()}
+function resetAll(){const t=T.tab;Object.keys(T).forEach(k=>delete T[k]);Object.assign(T,DEF);setTab(t)}
+$('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
+cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
+const endDrag=()=>{if(S.drag){S.drag=null;replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
+function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
+  if(typeof tick==='function'&&tick(dt))S.dirty=true;
+  if(S.dirty&&W){S.dirty=false;ctx.fillStyle=typeof BG==='function'?BG():'#f8faf9';ctx.fillRect(0,0,W,H);draw();setCalc(calc())}requestAnimationFrame(loop)}
+function start(){setTab(T.tab);layout();requestAnimationFrame(loop)}
+
+
+const animTab=()=>true;
+/* วาดรังสีหลัก 2 เส้นของเลนส์บาง: จาก P (ปลายวัตถุ) ผ่านเลนส์ที่ x=lx → ไปยังภาพ I */
+function lensRays(k,P,lx,ay,f,sc,I,virt,inCol,outCol){/* ขนานแกน → ผ่าน F */aseg(k,P.x,P.y,lx,P.y,inCol||RC,false,true);
+  const Fx=lx+f*sc;let d1={x:Fx-lx,y:ay-P.y};if(f<0)d1={x:lx-Fx,y:P.y-ay};let e=toEdge(lx,P.y,d1.x,d1.y);aseg(k+1,lx,P.y,e.x,e.y,outCol||RC2,false,true);
+  /* ผ่านกึ่งกลาง */const d2={x:lx-P.x,y:ay-P.y},e2=toEdge(P.x,P.y,d2.x,d2.y);aseg(k,P.x,P.y,lx,ay,inCol||RC,false,true);aseg(k+1,lx,ay,e2.x,e2.y,outCol||RC2,false,true);
+  if(virt){aseg(k+2,lx,P.y,I.x,I.y,outCol||RC2,true);aseg(k+2,lx,ay,I.x,I.y,outCol||RC2,true)}}
+function eyeIcon(x,y,u){ctx.fillStyle='#fff';ctx.strokeStyle='#0f172a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,u*1.1,u*1.6,0,0,7);ctx.fill();ctx.stroke();dot(x-u*.3,y,u*.5,'#0f172a');txt('ตา',x,y+u*2.2,'#0f172a',Math.max(12,u),'center','top')}
+/* ===================== ① แว่นขยาย ===================== */
+function draw1(){const u=UU(),nr=W<640,lx=W*(nr?.72:.7),ay=H*.6,sc=(lx-W*.04)/30,f=T.f,im=thin(T.s,f),X=c=>lx-c*sc;
+  ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(W*.01,ay);ctx.lineTo(W*.99,ay);ctx.stroke();drawLens(lx,ay,H*.4,true,u);axisMarks(ay,[[X(f),'F'],[lx+f*sc,'F']],u);
+  const m=im.inf?99:im.m,oy=Math.min(H*.1,H*.5/Math.max(1,Math.abs(m))),ox=X(T.s),P={x:ox,y:ay-oy};
+  const virt=!im.inf&&im.sp<0,I=im.inf?null:{x:lx+im.sp*sc,y:ay+oy*im.m};
+  eyeIcon(lx+u*5,ay-u*.5,u);
+  if(T.s<f){lensRays(0,P,lx,ay,f,sc,I,true);}else lensRays(0,P,lx,ay,f,sc,I,false);
+  arrow(ox,ay,ox,P.y,RC,5);tag('วัตถุ',ox,ay+u*1.6,RC);
+  if(I&&virt){const f2=growImg(3,I.x,ay,I.y,IC,.6);if(f2>.6)tag('ภาพเสมือน หัวตั้ง ขยาย',I.x,Math.max(u*3.6,I.y-u*1.6),IC)}
+  if(I&&I.x>W*.02&&virt){const dd=(lx-I.x)/sc;if(fr(3)>.6){ctx.strokeStyle='#7c3aed';ctx.lineWidth=1.5;const yb=ay+u*2.6;ctx.beginPath();ctx.moveTo(I.x,yb);ctx.lineTo(lx,yb);ctx.stroke();tag('ภาพห่างเลนส์ '+fN(dd,1)+' cm',(I.x+lx)/2,yb,'#7c3aed')}}
+  stageTag(T.s<f?['รังสีจากวัตถุ (อยู่ใกล้กว่า F) ตกกระทบเลนส์นูน','หักเหกระจายออก เข้าตา','ตามองย้อนแนวรังสี (เส้นประ)','เกิดภาพเสมือน หัวตั้ง ขนาดขยาย']:['รังสีจากวัตถุตกกระทบเลนส์','หักเหผ่านเลนส์','วัตถุต้องอยู่ใกล้กว่า F จึงใช้เป็นแว่นขยายได้','—'])}
+/* ===================== ② กล้องจุลทรรศน์ ===================== */
+function mic(){const s1p=T.s1*T.fo/(T.s1-T.fo),m1=s1p/T.s1,s2=T.L-s1p,i2=thin(s2,T.fe);return{s1p,m1,s2,i2}}
+function draw2(){const u=UU(),M=mic(),ay=H*.5,tot=T.L+T.s1+6,sc=W*.9/tot,lo=W*.04+(T.s1+.5)*sc,le=lo+T.L*sc;
+  ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(W*.01,ay);ctx.lineTo(W*.99,ay);ctx.stroke();
+  drawLens(lo,ay,H*.18,true,u*.7);drawLens(le,ay,H*.3,true,u);txt('เลนส์ใกล้วัตถุ',lo,ay-H*.18-u*.5,'#0369a1',Math.max(12,u),'center','bottom');txt('เลนส์ใกล้ตา',le,ay-H*.3-u*.5,'#0369a1',Math.max(12,u),'center','bottom');
+  axisMarks(ay,[[lo+T.fo*sc,'Fo'],[le-T.fe*sc,'Fe']],u);eyeIcon(le+u*5,ay-u*.5,u);
+  const mt=Math.abs(M.m1*(M.i2.inf?20:M.i2.m)),oy=Math.max(4,Math.min(H*.05,H*.36/Math.max(1,mt))),ox=lo-T.s1*sc,P={x:ox,y:ay-oy};
+  const I1={x:lo+M.s1p*sc,y:ay+oy*M.m1};lensRays(0,P,lo,ay,T.fo,sc,I1,false,RC,RC2);
+  arrow(ox,ay,ox,P.y,RC,4);tag('วัตถุ',ox,ay-oy-u*1.6,RC);
+  const f1=growImg(2,I1.x,ay,I1.y,'#16a34a');if(f1>.6)tag('ภาพที่ 1 (ภาพจริง หัวกลับ)',I1.x,I1.y+u*1.8,'#15803d');
+  if(!M.i2.inf){const virt=M.i2.sp<0,I2={x:le+M.i2.sp*sc,y:ay+(ay-I1.y)*M.i2.m};const ctx2=I2;
+    /* เลนส์ใกล้ตา: ใช้ภาพที่ 1 เป็นวัตถุ */if(fr(3)>0){lensRaysAt(3,{x:I1.x,y:I1.y},le,ay,T.fe,sc,I2,virt)}
+    if(virt&&I2.x>0){const f2=growImg(5,I2.x,ay,I2.y,IC,.6);if(f2>.6)tag('ภาพสุดท้าย (เสมือน ขยายมาก)',I2.x,Math.max(u*3.6,Math.min(H-u*1.5,I2.y+(I2.y>ay?u*1.8:-u*1.8))),IC)}}
+  stageTag(['รังสีจากวัตถุผ่านเลนส์ใกล้วัตถุ','หักเหไปตัดกัน','เกิดภาพที่ 1: ภาพจริง หัวกลับ ขยาย (อยู่ใกล้กว่า Fe)','ภาพที่ 1 เป็นวัตถุของเลนส์ใกล้ตา','ตามองย้อนแนวรังสี (เส้นประ)','เกิดภาพสุดท้าย: ภาพเสมือน ขยายมาก'])}
+function lensRaysAt(k,P,lx,ay,f,sc,I,virt){/* ให้ขั้นแรกของเลนส์ที่สอง = k */const sh=k;aseg(sh,P.x,P.y,lx,P.y,'#16a34a',false,true);const Fx=lx+f*sc,d1={x:Fx-lx,y:ay-P.y},e=toEdge(lx,P.y,d1.x,d1.y);aseg(sh,lx,P.y,e.x,e.y,RC2,false,true);
+  const d2={x:lx-P.x,y:ay-P.y},e2=toEdge(P.x,P.y,d2.x,d2.y);aseg(sh,P.x,P.y,lx,ay,'#16a34a',false,true);aseg(sh,lx,ay,e2.x,e2.y,RC2,false,true);
+  if(virt){aseg(sh+1,lx,P.y,I.x,I.y,RC2,true);aseg(sh+1,lx,ay,I.x,I.y,RC2,true)}}
+/* ===================== ③ กล้องโทรทรรศน์ ===================== */
+function draw3(){const u=UU(),ay=H*.55,tot=T.tfo+T.tfe,sc=W*.7/tot,lo=W*.16,le=lo+tot*sc,a=Math.atan(.06*(50/T.tfo)),fo=T.tfo,fe=T.tfe;
+  ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(W*.01,ay);ctx.lineTo(W*.99,ay);ctx.stroke();
+  /* ลำกล้อง */ctx.fillStyle='rgba(148,163,184,.12)';ctx.fillRect(lo,ay-H*.3,le-lo,H*.6);
+  drawLens(lo,ay,H*.3,true,u*1.2);drawLens(le,ay,H*.16,true,u*.7);txt('เลนส์ใกล้วัตถุ fo = '+fo+' cm',lo,ay-H*.3-u*.5,'#0369a1',Math.max(12,u),'center','bottom');txt('เลนส์ใกล้ตา fe = '+fe+' cm',le,ay-H*.16-u*.5,'#0369a1',Math.max(12,u),'center','bottom');
+  axisMarks(ay,[[lo+fo*sc,'F']],u);eyeIcon(le+u*5,ay-u*.5,u);
+  const yi=Math.tan(a)*fo*sc;/* ภาพที่ 1 ต่ำกว่าแกน */const I1={x:lo+fo*sc,y:ay+yi};const hs=[-.6,0,.6].map(v=>v*H*.24);
+  hs.forEach((h,i)=>{const yL=ay+h,x0=W*.01,y0=yL-Math.tan(a)*(lo-x0);aseg(0,x0,y0,lo,yL,RC,false,i===1);aseg(1,lo,yL,I1.x,I1.y,RC2,false,false);
+    /* ต่อไปยังเลนส์ใกล้ตา */const yE=yL+(I1.y-yL)*(le-lo)/(I1.x-lo);aseg(2,I1.x,I1.y,le,yE,RC2,false,false);
+    /* หลังเลนส์ใกล้ตา: ขนานกับรังสีผ่านกึ่งกลางเลนส์ใกล้ตาจาก I1 */const dx=le-I1.x,dy=ay-I1.y,e=toEdge(le,yE,dx,dy);aseg(3,le,yE,Math.min(e.x,le+u*14),yE+dy*(Math.min(e.x,le+u*14)-le)/dx,'#16a34a',false,i===1)});
+  const f1=growImg(2,I1.x,ay,I1.y,'#16a34a');if(f1>.6)tag('ภาพที่ 1 (จริง หัวกลับ) อยู่ที่จุดโฟกัสของเลนส์ทั้งสอง',I1.x,I1.y+u*2,'#15803d');
+  if(fr(3)>.8){arcAng(lo,ay,u*7,Math.PI,Math.PI+a,RC,'α',u);const b=Math.atan(Math.tan(a)*fo/fe);arcAng(le,ay,u*6,0,-Math.min(b,1.2),'#16a34a','β',u)}
+  if(fr(4)>.5)tag('ตาเห็นวัตถุไกลทำมุม β ใหญ่ขึ้น '+fN(fo/fe,1)+' เท่า (ภาพสุดท้ายที่ระยะไกลมาก)',W/2,H-u*1.4,'#2563eb');
+  txt('แสงจากวัตถุไกลมาก (ขนาน)',W*.01,ay-H*.36,'#b91c1c',Math.max(12,u),'left','bottom');
+  stageTag(['แสงขนานจากวัตถุไกลมากเข้าเลนส์ใกล้วัตถุ (มุม α)','หักเหไปรวมที่ระนาบโฟกัส','เกิดภาพที่ 1 ที่จุดโฟกัส · แสงผ่านต่อไปยังเลนส์ใกล้ตา','ออกจากเลนส์ใกล้ตาเป็นแสงขนาน (มุม β) เข้าตา','เห็นภาพเสมือนขนาดใหญ่ขึ้น M = fo/fe เท่า'],u*1.4)}
+function draw(){T.tab===1?draw1():T.tab===2?draw2():draw3()}
+/* ===================== แผงล่าง ===================== */
+function calc(){const t=T.tab;
+  if(t===1){const im=thin(T.s,T.f);let h=`<div class="cl"><span class="lab">แว่นขยาย (เลนส์นูน)</span>f = +${T.f} cm · s = ${fN(T.s,2)} cm</div>`;if(T.s>=T.f)return h+`<div class="cl warn">วัตถุต้องอยู่ใกล้เลนส์กว่าระยะโฟกัส (s &lt; f) จึงเกิดภาพเสมือนขยาย</div>`;if(!aniDone())return h+WAIT;
+    const best=25*T.f/(25+T.f);return h+`<div class="cl"><span class="lab">ระยะภาพ</span>s′ = sf/(s − f) = ${fN(T.s,2)} × ${T.f}/(${fN(T.s,2)} − ${T.f}) = <span class="res">${fN(im.sp,1)} cm</span> (ภาพเสมือน)</div><div class="cl"><span class="lab">กำลังขยาย</span>|m| = |s′|/s = <span class="res">${fN(Math.abs(im.m),2)} เท่า</span></div><div class="cl note">เห็นชัดที่สุดเมื่อภาพอยู่ที่ 25 cm: s = 25f/(25 + f) = ${fN(best,2)} cm → กำลังขยาย = 25/f + 1 = ${fN(25/T.f+1,1)} เท่า</div>`}
+  if(t===2){const M=mic();let h=`<div class="cl"><span class="lab">เลนส์ใกล้วัตถุ</span>s₁ = ${T.s1} cm, fo = ${T.fo} cm → s₁′ = ${fN(M.s1p,2)} cm · m₁ = ${fN(M.s1p/T.s1,2)}</div>`;if(!aniDone())return h+WAIT;
+    if(M.i2.inf)return h+`<div class="cl warn">ภาพที่ 1 อยู่ที่ Fe พอดี → ภาพสุดท้ายอยู่ไกลมาก</div>`;
+    return h+`<div class="cl"><span class="lab">เลนส์ใกล้ตา</span>s₂ = L − s₁′ = ${T.L} − ${fN(M.s1p,2)} = ${fN(M.s2,2)} cm → s₂′ = ${fN(M.i2.sp,2)} cm · m₂ = ${fN(Math.abs(M.i2.m),2)}</div><div class="cl"><span class="lab">กำลังขยายรวม</span>M = m₁ × m₂ = ${fN(M.s1p/T.s1,2)} × ${fN(Math.abs(M.i2.m),2)} = <span class="res">${fN(M.s1p/T.s1*Math.abs(M.i2.m),1)} เท่า</span></div><div class="cl note">ภาพที่ 1 ต้องอยู่ใกล้เลนส์ใกล้ตากว่า Fe · ภาพสุดท้ายเป็นภาพเสมือน ขยายมาก และหัวกลับเมื่อเทียบกับวัตถุ</div>`}
+  if(!aniDone())return `<div class="cl"><span class="lab">กล้องโทรทรรศน์</span>fo = ${T.tfo} cm · fe = ${T.tfe} cm</div>`+WAIT;
+  return `<div class="cl"><span class="lab">กำลังขยาย</span>M = fo/fe = ${T.tfo}/${T.tfe} = <span class="res">${fN(T.tfo/T.tfe,1)} เท่า</span></div><div class="cl"><span class="lab">ความยาวกล้อง</span>≈ fo + fe = ${T.tfo} + ${T.tfe} = <span class="res">${T.tfo+T.tfe} cm</span></div><div class="cl note">ภาพที่ 1 เป็นภาพจริงหัวกลับที่จุดโฟกัส · ใส่เลนส์นูนตัวที่ 3 หรือปริซึมเพื่อกลับภาพให้หัวตั้ง (ปริซึมช่วยให้กล้องสั้นลงด้วย)</div>`}
+/* ===================== แผงปรับค่า ===================== */
+function renderP(){const t=T.tab;
+  if(t===1)return finishP(prow('f','ความยาวโฟกัส f','cm')+prow('s','ระยะวัตถุ s','cm')+`<div class="seg" id="bestSeg"><button data-b="1">ตั้งให้ภาพอยู่ที่ 25 cm</button></div>`+ANI,[['f','','',1,3,12,T],['s','','',.1,1,12,T]]);
+  if(t===2)return finishP(prow('fo','fo (เลนส์ใกล้วัตถุ)','cm')+prow('s1','ระยะวัตถุ s₁','cm')+prow('fe','fe (เลนส์ใกล้ตา)','cm')+prow('L','ระยะระหว่างเลนส์','cm')+ANI,[['fo','','',.1,1,3,T],['s1','','',.1,1.1,4,T],['fe','','',.5,2,6,T],['L','','',.5,8,20,T]]);
+  finishP(prow('tfo','fo (เลนส์ใกล้วัตถุ)','cm')+prow('tfe','fe (เลนส์ใกล้ตา)','cm')+ANI,[['tfo','','',5,20,100,T],['tfe','','',1,2,10,T]])}
+$('params').addEventListener('click',e=>{if(e.target.closest('#bestSeg button')){T.s=Math.round(25*T.f/(25+T.f)*100)/100;syncInputs();replay()}});
+function onP(k){if(k==='s1'&&T.s1<=T.fo+.05)T.s1=+(T.fo+.1).toFixed(1);if(k==='fo'&&T.s1<=T.fo+.05)T.s1=+(T.fo+.1).toFixed(1)}
+function dragStart(p){return T.tab===1?'obj':null}
+function dragMove(p){const lx=W*(W<640?.72:.7),sc=(lx-W*.04)/30;T.s=Math.max(1,Math.min(12,Math.round((lx-p.x)/sc*10)/10));S.dirty=true}
+
+start();
+</script>
+</body>
+</html>

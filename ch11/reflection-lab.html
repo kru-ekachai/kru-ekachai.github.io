@@ -1,1 +1,361 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>การสะท้อนของแสง</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
 
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn,.calc .cl{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.prange{width:100%;accent-color:var(--accent);margin:0 0 .2em}
+.params{gap:calc(var(--u)*.15)!important}
+.nuc{display:inline-flex;align-items:center;white-space:nowrap}.nuc .az{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:.95;font-size:.62em;margin-right:.08em}.nuc .az sup,.nuc .az sub{vertical-align:baseline;position:static}
+.calc table{border-collapse:collapse;font-size:.95em;margin:.15em 0}.calc td,.calc th{padding:.05em .9em .05em 0;text-align:left;white-space:nowrap}.calc th{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em}
+.calc tr.hit td{color:#15803d;font-weight:700}
+
+@media (max-width:760px){.calc td{white-space:normal!important}}
+@media (max-width:760px) and (orientation:portrait){.app{grid-template-rows:auto 56vh auto}}
+.seg{flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>การสะท้อนของแสง</h1>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" aria-selected="true" data-t="1">① กฎการสะท้อน</button>
+      <button role="tab" aria-selected="false" data-t="2">② กระจกเงาราบ</button>
+      <button role="tab" aria-selected="false" data-t="3">③ กระจกเว้า / นูน</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="tools">
+      <button class="btn" id="reset">↺ เริ่มใหม่</button>
+      <button class="btn" id="fs">⛶ เต็มจอ</button>
+    </div>
+  </div>
+  <div class="panel stage" id="stageBox"><canvas id="cv"></canvas><div class="toast" id="toast"></div></div>
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+<script>
+/* ===================== ตัวช่วยร่วม ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const fN=(x,d)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺'};
+const SUBd={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const sup=s=>String(s).split('').map(c=>SUPd[c]||c).join(''),sub=s=>String(s).split('').map(c=>SUBd[c]||c).join('');
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-40)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+sup(e)}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(()=>layout()).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw=3){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3.2);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+function wave(x1,y1,x2,y2,col,u,lp){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const a=Math.atan2(y2-y1,x2-x1),A=u*.42;lp=lp||u*1.1;
+  ctx.save();ctx.translate(x1,y1);ctx.rotate(a);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();for(let s=0;s<=L;s+=1.2)ctx.lineTo(s,A*Math.sin(2*Math.PI*s/lp)*Math.min(1,s/(lp*.6),(L-s)/(lp*.6)));ctx.stroke();ctx.restore()}
+/* สัญลักษณ์นิวไคลด์ ᴬ_Z X */
+function nucSym(x,y,A,Z,X,size,col='#0f172a',ax='center'){font(size,700);const wX=ctx.measureText(X).width;font(size*.5,700,'"JetBrains Mono",monospace');const wn=Math.max(ctx.measureText(String(A)).width,ctx.measureText(String(Z)).width);
+  const tw=wn+3+wX;let x0=ax==='center'?x-tw/2:ax==='left'?x:x-tw;ctx.fillStyle=col;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+  ctx.fillText(String(A),x0+wn,y-size*.38);ctx.fillText(String(Z),x0+wn,y+size*.12);font(size,700);ctx.textAlign='left';ctx.fillText(X,x0+wn+3,y+size*.12);return tw}
+const nucTxt=(A,Z,X)=>`<span class="nuc"><span class="az"><sup>${A}</sup><sub>${Z}</sub></span>${X}</span>`;
+/* ปุ่มกลุ่ม (seg) */
+function segSync(id,attr,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+function segOn(id,fn){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(b)fn(b)})}
+/* แผงปรับค่าทั่วไป: [key,label,unit,step,min,max,obj] */
+let SPEC=[];
+function renderParams(spec,hint=''){SPEC=spec;$('params').innerHTML='<span class="label">ปรับค่า</span>'+spec.map(([k,l,u,st,a,b,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div><input class="prange" type="range" data-r="${k}" min="${a}" max="${b}" step="${st}" value="${o[k]}" aria-label="${l}">`).join('')+(hint?`<span class="hint2">${hint}</span>`:'')}
+function setParam(k,v){const sp=SPEC.find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;const r=document.querySelector(`#params input[data-r="${k}"]`);if(r&&document.activeElement!==r)r.value=v;S.dirty=true;if(typeof onParam==='function')onParam(k)}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SPEC.find(x=>x[0]===b.dataset.k);setParam(b.dataset.k,sp[6][b.dataset.k]+sp[3]*(+b.dataset.d))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k],input[data-r]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k||i.dataset.r,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i){const sp=SPEC.find(x=>x[0]===i.dataset.k);if(sp)i.value=sp[6][i.dataset.k]}});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
+
+const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb';
+const DEF={tab:1,th:40,tilt:0,rough:false,m2:'img',ox:.3,oy:.55,H:184,h:166,ang:60,mt:'cc',f:10,s:30};
+const T={...DEF};
+const S={dirty:true,drag:null};
+/* ===================== อนิเมชัน (ขั้นละ 1 หน่วย) ===================== */
+const A={p:0,tg:99,N:6,last:0,spd:1.25};
+const animTab=()=>T.tab===3||(T.tab===2&&T.m2==='img');
+function replay(){A.p=0;A.tg=99;S.dirty=true}
+function stepA(){if(A.p>=A.N-1e-3){A.p=0;A.tg=1}else A.tg=Math.floor(A.p+1e-6)+1;S.dirty=true}
+const fr=k=>Math.max(0,Math.min(1,A.p-k));
+function aseg(k,x1,y1,x2,y2,col,dash,arw){const f=fr(k);if(f<=0)return;ray(x1,y1,x1+(x2-x1)*f,y1+(y2-y1)*f,col,dash,arw&&f>=1)}
+function toEdge(x,y,dx,dy){let t=1e9;if(dx>0)t=Math.min(t,(W-x)/dx);if(dx<0)t=Math.min(t,-x/dx);if(dy>0)t=Math.min(t,(H-y)/dy);if(dy<0)t=Math.min(t,-y/dy);return{x:x+dx*t,y:y+dy*t}}
+function stageTag(list){A.N=list.length;const i=Math.min(A.N,Math.floor(A.p+1e-6)+1);tag('ขั้น '+i+'/'+A.N+' : '+list[i-1],W/2,UU()*1.4,'#0d6e66')}
+const aniDone=()=>!animTab()||A.p>=A.N-1e-3;
+const R2D=180/Math.PI,D2R=Math.PI/180;
+function resetAll(){Object.assign(T,DEF);setTab(T.tab);replay()}
+function ray(x1,y1,x2,y2,col,dash,arw){ctx.strokeStyle=col;ctx.lineWidth=3;ctx.setLineDash(dash?[8,6]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  if(arw){const mx=x1+(x2-x1)*.55,my=y1+(y2-y1)*.55,a=Math.atan2(y2-y1,x2-x1),L=12;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*L*.6,my+Math.sin(a)*L*.6);ctx.lineTo(mx+Math.cos(a+2.5)*L*.6,my+Math.sin(a+2.5)*L*.6);ctx.lineTo(mx+Math.cos(a-2.5)*L*.6,my+Math.sin(a-2.5)*L*.6);ctx.closePath();ctx.fill()}}
+function mirrorLine(x1,y1,x2,y2,u){ctx.strokeStyle=MC;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  const L=Math.hypot(x2-x1,y2-y1),nx=(y2-y1)/L,ny=-(x2-x1)/L;ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;for(let k=0;k<=L;k+=u*.9){const x=x1+(x2-x1)*k/L,y=y1+(y2-y1)*k/L;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-nx*u*.7+(x2-x1)/L*u*.4,y-ny*u*.7+(y2-y1)/L*u*.4);ctx.stroke()}}
+function arcAng(cx,cy,r,a0,a1,col,lab,u){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,r,a0,a1,a1<a0);ctx.stroke();if(lab){const am=(a0+a1)/2;tag(lab,cx+Math.cos(am)*(r+u*2.2),cy+Math.sin(am)*(r+u*2.2),col)}}
+/* ===================== ① กฎการสะท้อน ===================== */
+function g1(){const nr=W<640;return{nr,cx:W/2,my:H*(nr?.72:.75),L:Math.min(W*.36,H*.7)}}
+function draw1(){const g=g1(),u=UU(),ph=T.tilt*D2R,d={x:Math.cos(ph),y:Math.sin(ph)},n={x:Math.sin(ph),y:-Math.cos(ph)},th=T.th*D2R;
+  // ทิศรังสีตกกระทบ วัดจากเส้นปกติของกระจกที่ไม่เอียง
+  const inc={x:Math.sin(th),y:Math.cos(th)},len=g.L*1.05;
+  const P={x:g.cx,y:g.my};
+  if(!T.rough)mirrorLine(P.x-d.x*g.L*.9,P.y-d.y*g.L*.9,P.x+d.x*g.L*.9,P.y+d.y*g.L*.9,u);
+  else{ctx.strokeStyle=MC;ctx.lineWidth=4;ctx.beginPath();for(let k=-30;k<=30;k++){const t=k/30*g.L*.9,j=((k*7919)%5-2)*u*.25;const x=P.x+d.x*t+n.x*j,y=P.y+d.y*t+n.y*j;k===-30?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}
+  const offs=T.rough?[-2,-1,0,1,2]:[-1,0,1];
+  offs.forEach((k,idx)=>{const hp={x:P.x+d.x*k*u*4.5,y:P.y+d.y*k*u*4.5},src={x:hp.x-inc.x*len,y:hp.y-inc.y*len};
+    let nn=n,dot,rf;const R0=T.rough?[.32,-.22,.12,-.34,.24][idx]:0;for(let q=0;q<6;q++){const r=R0/(1<<q);nn={x:Math.sin(ph+r),y:-Math.cos(ph+r)};dot=inc.x*nn.x+inc.y*nn.y;rf={x:inc.x-2*dot*nn.x,y:inc.y-2*dot*nn.y};if(rf.x*n.x+rf.y*n.y>.12)break}
+    ray(src.x,src.y,hp.x,hp.y,RC,false,true);ray(hp.x,hp.y,hp.x+rf.x*len,hp.y+rf.y*len,RC2,false,true);
+    if(T.rough){ctx.strokeStyle=NC;ctx.lineWidth=1.2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(hp.x,hp.y);ctx.lineTo(hp.x+nn.x*u*3,hp.y+nn.y*u*3);ctx.stroke();ctx.setLineDash([])}});
+  if(!T.rough){ // เส้นปกติ + มุม
+    ctx.strokeStyle=NC;ctx.lineWidth=2;ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(P.x+n.x*g.L*.8,P.y+n.y*g.L*.8);ctx.stroke();ctx.setLineDash([]);
+    tag('เส้นปกติ',P.x+n.x*g.L*.8,P.y+n.y*g.L*.8-u*1.3,NC);
+    const dot=inc.x*n.x+inc.y*n.y,rf={x:inc.x-2*dot*n.x,y:inc.y-2*dot*n.y},aN=Math.atan2(n.y,n.x),aI=Math.atan2(-inc.y,-inc.x),aR=Math.atan2(rf.y,rf.x),ti=Math.acos(Math.min(1,-dot))*R2D;
+    arcAng(P.x,P.y,u*5,aI,aN,RC,'θ₁ = '+Math.round(ti)+'°',u);arcAng(P.x,P.y,u*6.5,aN,aR,RC2,'θ₂ = '+Math.round(ti)+'°',u);
+    if(T.tilt!==0){const rf0={x:inc.x,y:-inc.y};ray(P.x,P.y,P.x+rf0.x*len*.8,P.y+rf0.y*len*.8,'#cbd5e1',true);tag('แนวรังสีสะท้อนเดิม',P.x+rf0.x*len*.8,P.y+rf0.y*len*.8+u*1.4,'#94a3b8');
+      const a0=Math.atan2(rf0.y,rf0.x);arcAng(P.x,P.y,g.L*.62,a0,aR,'#7c3aed','',u);const am=(a0+aR)/2;tag('เบนไป '+Math.abs(2*T.tilt)+'° (= 2 × '+Math.abs(T.tilt)+'°)',P.x+Math.cos(am)*g.L*.72,P.y+Math.sin(am)*g.L*.72,'#7c3aed','left')}}
+  const s0={x:P.x-inc.x*len,y:P.y-inc.y*len};ctx.fillStyle='#334155';ctx.save();ctx.translate(s0.x,s0.y);ctx.rotate(Math.atan2(inc.y,inc.x));ctx.fillRect(-u*2.6,-u*.7,u*2.6,u*1.4);ctx.restore();
+  tag(T.rough?(W<640?'ผิวขรุขระ → สะท้อนไม่เป็นระเบียบ':'ผิวขรุขระ → สะท้อนไม่เป็นระเบียบ (แต่ละจุดยังเป็นไปตามกฎการสะท้อน)'):'ลากแหล่งแสงเพื่อเปลี่ยนมุมตกกระทบ',W/2,u*1.4,T.rough?'#b45309':'#0d6e66')}
+/* ===================== ② กระจกเงาราบ ===================== */
+function letterF(x,y,s,col,flip){ctx.save();ctx.translate(x,y);if(flip)ctx.scale(-1,1);ctx.fillStyle=col;ctx.fillRect(-s*.3,-s,s*.18,s);ctx.fillRect(-s*.3,-s,s*.6,s*.18);ctx.fillRect(-s*.3,-s*.58,s*.45,s*.16);ctx.restore()}
+function draw2a(){const u=UU(),mx=W*.55,my0=H*.12,my1=H*.88,ox=W*T.ox,oy=H*T.oy,sz=Math.min(H*.18,W*.08),ix=2*mx-ox;
+  mirrorLine(mx,my0,mx,my1,u);letterF(ox,oy,sz,RC,false);
+  const ex=W*.12,ey=H*.85;ctx.fillStyle='#0f172a';ctx.beginPath();ctx.ellipse(ex,ey,u*1.3,u*.8,0,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex,ey,u*.35,0,7);ctx.fill();tag('ตา',ex,ey+u*1.8,'#0f172a');
+  [oy-sz,oy].forEach((py,j)=>{const t=(mx-ex)/(ix-ex),hy=ey+(py-ey)*t;aseg(2*j,ox,py,mx,hy,RC,false,true);aseg(2*j+1,mx,hy,ex,ey,RC2,false,true);aseg(4,mx,hy,ix,py,IC,true)});
+  const fi=fr(5);if(fi>0){if(fi<1){ctx.fillStyle=`rgba(37,99,235,${.35*(1-fi)})`;ctx.beginPath();ctx.arc(ix,oy-sz/2,sz*(.6+.8*(1-fi)),0,7);ctx.fill()}ctx.globalAlpha=.5*fi;letterF(ix,oy,sz,IC,true);ctx.globalAlpha=1}
+  const ly=oy-sz-u*2.2;tag('วัตถุ (ลากได้)',ox,ly-u*2.2,RC);
+  if(fi>.6){ctx.strokeStyle='#94a3b8';ctx.setLineDash([3,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ox,ly);ctx.lineTo(ix,ly);ctx.stroke();ctx.setLineDash([]);
+    tag('ระยะวัตถุ',(ox+mx)/2,ly,RC);tag('ระยะภาพ (เท่ากัน)',(mx+ix)/2,ly,IC);tag('ภาพเสมือน',ix,ly-u*2.2,IC)}
+  tag('กระจกเงาราบ',mx,my0-u*.2,MC);
+  stageTag(W<640?['รังสีจากหัว F ถึงกระจก','สะท้อนเข้าตา','รังสีจากเท้า F ถึงกระจก','สะท้อนเข้าตา','ต่อแนวไปหลังกระจก','เกิดภาพเสมือน']:['รังสีจากหัวตัว F ตกกระทบกระจก','สะท้อนเข้าตา (มุมตกกระทบ = มุมสะท้อน)','รังสีจากเท้าตัว F ตกกระทบกระจก','สะท้อนเข้าตา','ตามองย้อนแนวรังสีสะท้อนไปหลังกระจก (เส้นประ)','เส้นประตัดกันหลังกระจก → เกิดภาพเสมือน'])}
+function draw2b(){const u=UU(),fy=H*.92,top=H*.07,sc=(fy-top)/Math.max(T.H,200)*.95,X=W*.25,mx=W*.55,D=mx-X,ix=mx+D;
+  const Y=c=>fy-c*sc,hd=Y(T.H),ey=Y(T.h),ft=fy;
+  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W*.05,fy);ctx.lineTo(W*.95,fy);ctx.stroke();
+  const man=(x,col,a)=>{ctx.globalAlpha=a;ctx.strokeStyle=col;ctx.lineWidth=5;ctx.lineCap='round';const hr=(Y(T.H-12)-hd)/1.1;ctx.beginPath();ctx.arc(x,hd+hr,hr,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(x,hd+2*hr);ctx.lineTo(x,Y(T.H*.48));ctx.lineTo(x-u*1.2,ft);ctx.moveTo(x,Y(T.H*.48));ctx.lineTo(x+u*1.2,ft);ctx.moveTo(x-u*2,Y(T.H*.72));ctx.lineTo(x+u*2,Y(T.H*.72));ctx.stroke();ctx.globalAlpha=1};
+  man(X,'#334155',1);man(ix,IC,.35);
+  const mb=Y(T.h/2),mtop=Y((T.H+T.h)/2);mirrorLine(mx,mtop,mx,mb,u);
+  ctx.fillStyle='#0f172a';ctx.beginPath();ctx.arc(X+u*.6,ey,u*.35,0,7);ctx.fill();
+  ray(X,hd,mx,mtop,RC,false,true);ray(mx,mtop,X+u*.6,ey,RC2,false,true);ray(mx,mtop,ix,hd,IC,true);
+  ray(X,ft,mx,mb,RC,false,true);ray(mx,mb,X+u*.6,ey,RC2,false,true);ray(mx,mb,ix,ft,IC,true);
+  const dim=(x,y1,y2,lab,col,fr=.5)=>{ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y2);ctx.moveTo(x-5,y1);ctx.lineTo(x+5,y1);ctx.moveTo(x-5,y2);ctx.lineTo(x+5,y2);ctx.stroke();tag(lab,x,y2+(y1-y2)*fr,col)};
+  dim(X-u*5,hd,ft,'H = '+T.H+' cm','#334155');dim(X-u*10,ey,ft,'ตา h = '+T.h+' cm','#0f172a',.25);dim(mx+u*4,mtop,mb,'กระจก '+fN(T.H/2,1)+' cm','#0d6e66');dim(mx+u*12,mb,ft,'ขอบล่าง '+fN(T.h/2,1)+' cm','#7c3aed')}
+function draw2c(){const u=UU(),vx=W*.5,vy=H*.62,Rr=Math.min(W*.3,H*.42),th=T.ang*D2R,a=th/3,m=Math.round(360/T.ang);
+  const pt=ang=>({x:vx+Math.cos(-ang)*Rr*.6,y:vy+Math.sin(-ang)*Rr*.6});
+  ctx.strokeStyle='#e2e8f0';ctx.setLineDash([4,5]);ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(vx,vy,Rr*.6,0,7);ctx.stroke();ctx.setLineDash([]);
+  mirrorLine(vx+Rr,vy,vx,vy,u);mirrorLine(vx,vy,vx+Math.cos(-th)*Rr,vy+Math.sin(-th)*Rr,u);
+  arcAng(vx,vy,u*3,0,-th,'#0d6e66','θ = '+T.ang+'°',u);
+  const angs=new Set();for(let k=0;k<m/2;k++){for(const s of [1,-1]){let v=((2*k*th+s*a)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);angs.add(Math.round(v*1e4))}}
+  angs.delete(Math.round(a*1e4));let i=1;[...angs].sort((p,q)=>p-q).forEach(v=>{const p=pt(v/1e4);ctx.fillStyle='rgba(37,99,235,.55)';ctx.beginPath();ctx.arc(p.x,p.y,u*.9,0,7);ctx.fill();font(Math.max(11,u*.9),700);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i++,p.x,p.y+1)});
+  const o=pt(a);ctx.fillStyle=RC;ctx.beginPath();ctx.arc(o.x,o.y,u*1,0,7);ctx.fill();tag('วัตถุ',o.x+u*2.6,o.y,RC,'left');
+  tag('จำนวนภาพ n = 360/θ − 1 = 360/'+T.ang+' − 1 = '+(m-1),W/2,u*1.4,'#0d6e66')}
+function draw2(){T.m2==='img'?draw2a():T.m2==='full'?draw2b():draw2c()}
+/* ===================== ③ กระจกโค้ง ===================== */
+function g3(){const nr=W<640,mx=W*(nr?.8:.72),ay=H*.55,sc=(mx-W*.04)/(nr?42:62);return{nr,mx,ay,sc}}
+const fS=()=>T.mt==='cc'?T.f:-T.f;
+function img3(){const f=fS(),s=T.s;if(Math.abs(s-f)<1e-6)return{inf:true};const sp=s*f/(s-f);return{sp,m:sp/s}}
+function draw3(){const g=g3(),u=UU(),f=fS(),sc=g.sc,X=c=>g.mx-c*sc,oy=Math.min(H*.17,sc*5),ytop=g.ay-oy,Fx=X(f),Cx=X(2*f),ox=X(T.s),hh=H*.42,cc=T.mt==='cc',nr=g.nr;
+  ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(W*.02,g.ay);ctx.lineTo(W*.98,g.ay);ctx.stroke();
+  const bow=u*1.6*(cc?1:-1);ctx.strokeStyle=MC;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(g.mx-bow,g.ay-hh);ctx.quadraticCurveTo(g.mx+bow,g.ay,g.mx-bow,g.ay+hh);ctx.stroke();
+  const mk=(x,l)=>{if(x<0||x>W)return;ctx.fillStyle='#0f172a';ctx.beginPath();ctx.arc(x,g.ay,4,0,7);ctx.fill();font(Math.max(13,u*1.1),800);ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(l,x,g.ay+6)};mk(Fx,'F');mk(Cx,'C');mk(g.mx,'V');
+  const im=img3(),ix=im.inf?0:X(im.sp),iy=im.inf?0:g.ay+oy*im.m,GU='#fca5a5',virt=!im.inf&&im.sp<0;
+  const mkR=(Px,nm)=>{let yh=ytop;if(Px!==null){if(Math.abs(ox-Px)<2)return null;yh=g.ay+(ytop-g.ay)*(g.mx-Px)/(ox-Px)}return Math.abs(yh-g.ay)>hh?null:{Px,yh,nm}};
+  const R=[mkR(null,'P')],r2=mkR(Fx,'F')||mkR(Cx,'C');if(r2)R.push(r2);
+  R.forEach((r,j)=>{const k=2*j;aseg(k,ox,ytop,g.mx,r.yh,RC,false,true);
+    if(r.Px!==null){if(r.Px<ox-2)aseg(k,r.Px,g.ay,ox,ytop,GU,true);else if(r.Px>g.mx+2)aseg(k+1,g.mx,r.yh,r.Px,g.ay,GU,true)}
+    let dx,dy;if(im.inf){dx=Cx-ox;dy=g.ay-ytop}else if(!virt){dx=ix-g.mx;dy=iy-r.yh}else{dx=g.mx-ix;dy=r.yh-iy;aseg(4,g.mx,r.yh,ix,iy,RC2,true)}
+    const e=toEdge(g.mx,r.yh,dx,dy);aseg(k+1,g.mx,r.yh,e.x,e.y,RC2,false,true)});
+  arrow(ox,g.ay,ox,ytop,RC,5);tag('วัตถุ',ox,ytop-u*1.6,RC);
+  const kI=2*R.length+(virt?1:0),fi=fr(kI);
+  if(fi>0&&!im.inf){if(ix>0&&ix<W){const ty=Math.max(-H,Math.min(2*H,iy));if(fi<1){ctx.fillStyle=`rgba(37,99,235,${.4*(1-fi)})`;ctx.beginPath();ctx.arc(ix,ty,u*(1+2.5*(1-fi)),0,7);ctx.fill()}
+      ctx.globalAlpha=virt?.6:1;if(Math.abs(ty-g.ay)*fi>6)arrow(ix,g.ay,ix,g.ay+(ty-g.ay)*fi,IC,5);ctx.globalAlpha=1;
+      if(fi>.6){const ly=im.m>0?Math.min(H-u*1.5,iy+u*1.8):Math.max(u*3.6,iy-u*1.8);tag(virt?'ภาพเสมือน':'ภาพจริง',ix,ly,IC)}}else if(fi>.6)tag('ภาพอยู่ไกลเกินจอ',W*.5,u*3.6,IC)}
+  tag(nr?'ลากวัตถุ':'ลากวัตถุไปตามแกนมุขสำคัญ',W*.2,H-u*1.4,'#0d6e66');
+  const L=[];const s2=f<0?'นูน':'';
+  L.push(nr?'รังสีขนานแกนถึงกระจก':'รังสีขนานแกนมุขสำคัญ ตกกระทบกระจก');
+  L.push(cc?'สะท้อนผ่านจุดโฟกัส F':(nr?'สะท้อนออกเหมือนมาจาก F':'สะท้อนออกในแนวที่เหมือนมาจาก F หลังกระจก (เส้นประ)'));
+  if(r2){if(r2.nm==='F'){L.push(!cc?(nr?'รังสีเล็งไปยัง F':'รังสีที่เล็งไปยัง F หลังกระจก ตกกระทบกระจก'):r2.Px<ox?(nr?'รังสีแนวมาจาก F':'รังสีที่มีแนวมาจาก F ตกกระทบกระจก'):'รังสีผ่าน F ตกกระทบกระจก');L.push('สะท้อนขนานแกนมุขสำคัญ')}
+    else{L.push(nr?'รังสีแนวผ่าน C':'รังสีที่มีแนวผ่านจุดศูนย์กลางความโค้ง C ตกกระทบกระจก');L.push('สะท้อนกลับทางเดิม')}}
+  if(virt)L.push(nr?'ต่อแนวไปหลังกระจก':'ต่อแนวรังสีสะท้อนไปหลังกระจก (เส้นประ)');
+  L.push(im.inf?(nr?'สะท้อนขนานกัน ไม่เกิดภาพ':'รังสีสะท้อนขนานกัน → ไม่เกิดภาพ (ภาพที่ระยะอนันต์)'):virt?(nr?'เกิดภาพเสมือน':'แนวเส้นประตัดกัน → เกิดภาพเสมือน'):(nr?'เกิดภาพจริง':'รังสีสะท้อนตัดกันจริง → เกิดภาพจริง'));
+  stageTag(L)}
+/* ===================== วาด ===================== */
+function draw(){ctx.fillStyle='#f8faf9';ctx.fillRect(0,0,W,H);T.tab===1?draw1():T.tab===2?draw2():draw3()}
+/* ===================== แผงล่าง ===================== */
+function typeTxt(){const im=img3();if(im.inf)return'ไม่เกิดภาพ (ภาพที่อนันต์)';const m=Math.abs(im.m);return (im.sp>0?'ภาพจริง หัวกลับ':'ภาพเสมือน หัวตั้ง')+' · '+(Math.abs(m-1)<.02?'ขนาดเท่าวัตถุ':m>1?'ขยาย':'ย่อ')+' · อยู่'+(im.sp>0?'หน้า':'หลัง')+'กระจก'}
+function calc(){const t=T.tab;
+  if(t===1){if(T.rough)return `<div class="cl"><span class="lab">การสะท้อนไม่เป็นระเบียบ</span>ผิวขรุขระมีเส้นปกติหลายทิศ แสงขนานจึงสะท้อนกระจายไปหลายทิศ ทำให้มองเห็นวัตถุได้จากหลายตำแหน่ง</div><div class="cl note">ทุกจุดยังเป็นไปตามกฎการสะท้อน เพียงแต่เส้นปกติของแต่ละจุดต่างกัน</div>`;
+    return `<div class="cl"><span class="lab">กฎการสะท้อน</span>1. มุมตกกระทบเท่ากับมุมสะท้อน θ₁ = θ₂ = <span class="res">${T.th+T.tilt}°</span> · 2. รังสีตกกระทบ รังสีสะท้อน และเส้นปกติ อยู่ในระนาบเดียวกัน</div>
+    ${T.tilt?`<div class="cl"><span class="lab">เอียงกระจก</span>ลำแสงเดิม แต่เอียงกระจก ${Math.abs(T.tilt)}° → เส้นปกติเอียง ${Math.abs(T.tilt)}° → รังสีสะท้อนเบนจากเดิม 2 × ${Math.abs(T.tilt)}° = <span class="res">${2*Math.abs(T.tilt)}°</span></div>`:''}<div class="cl note">มุมตกกระทบและมุมสะท้อน วัดจากเส้นปกติ ไม่ใช่วัดจากผิวกระจก</div>`}
+  if(t===2){if(T.m2==='img'&&!aniDone())return `<div class="cl note">ดูรังสีให้ครบทุกขั้น แล้วข้อสรุปจะขึ้นตรงนี้</div>`;if(T.m2==='img')return `<div class="cl"><span class="lab">ภาพในกระจกเงาราบ</span>เป็นภาพเสมือน หัวตั้ง อยู่หลังกระจก · ระยะภาพเท่ากับระยะวัตถุ · ขนาดภาพเท่ากับขนาดวัตถุ · กลับด้านซ้ายขวา</div><div class="cl note">รังสีสะท้อนเข้าตาเหมือนออกมาจากจุดภาพหลังกระจก (เส้นประ) จึงเรียกว่าภาพเสมือน</div>`;
+    if(T.m2==='full')return `<div class="cl"><span class="lab">ความสูงกระจกน้อยสุด</span>= H/2 = ${T.H}/2 = <span class="res">${fN(T.H/2,1)} cm</span></div><div class="cl"><span class="lab">ติดขอบล่างสูงจากพื้น</span>= h/2 = ${T.h}/2 = <span class="res">${fN(T.h/2,1)} cm</span> · ขอบบนสูง (H + h)/2 = ${fN((T.H+T.h)/2,1)} cm</div><div class="cl note">ไม่ขึ้นกับระยะที่ยืนห่างจากกระจก · รังสีจากศีรษะและปลายเท้าสะท้อนที่จุดกึ่งกลางระหว่างระดับตากับระดับนั้น</div>`;
+    const m=Math.round(360/T.ang);return `<div class="cl"><span class="lab">จำนวนภาพ</span>n = 360/θ − 1 = 360/${T.ang} − 1 = <span class="res">${m-1} ภาพ</span></div><div class="cl note">ภาพทั้งหมดอยู่บนวงกลมรอบจุดที่กระจกทั้งสองบานชนกัน · ใช้สูตรนี้เมื่อ 360/θ เป็นจำนวนเต็มคู่ · θ = 90° ได้ 3 ภาพ · ยิ่งมุมเล็ก ภาพยิ่งมาก</div>`}
+  const f=fS(),im=img3();let h=`<div class="cl"><span class="lab">${T.mt==='cc'?'กระจกเว้า':'กระจกนูน'}</span>f = ${f>0?'+':'−'}${T.f} cm · s = ${T.s} cm</div>`;
+  if(!aniDone())return h+`<div class="cl note">ดูรังสีให้ครบทุกขั้น แล้วคำตอบจะขึ้นตรงนี้</div>`;
+  if(im.inf)h+=`<div class="cl warn">s = f → 1/s′ = 1/f − 1/s = 0 → s′ = ∞ ไม่เกิดภาพ</div>`;
+  else h+=`<div class="cl"><span class="lab">ระยะภาพ</span>1/f = 1/s + 1/s′ → s′ = sf/(s − f) = ${T.s} × ${f<0?'('+fN(f,0)+')':f}/(${T.s} − ${f<0?'('+fN(f,0)+')':f}) = <span class="res">${fN(im.sp,1)} cm</span></div>
+    <div class="cl"><span class="lab">กำลังขยาย</span>m = s′/s = ${fN(im.sp,1)}/${T.s} = <span class="res">${fN(im.m,2)}</span> · ${typeTxt()}</div>`;
+  h+=`<div class="cl note">เครื่องหมาย: f เว้า +, นูน − · s′ และ m เป็น + = ภาพจริง, − = ภาพเสมือน · ${T.mt==='cc'?'ประโยชน์ของกระจกเว้า: กระจกแต่งหน้า, จานรวมแสง, ไฟฉาย/ไฟหน้ารถ':'ประโยชน์ของกระจกนูน: กระจกมองข้างรถ, กระจกโค้งตามทางแยก (เห็นมุมกว้าง ภาพเล็ก)'}</div>`;return h}
+/* ===================== แผงปรับค่า ===================== */
+const segH=(id,key,list)=>`<div class="seg" id="${id}">${list.map(([v,l])=>`<button data-v="${v}" aria-pressed="${String(T[key])===String(v)}">${l}</button>`).join('')}</div>`;
+const prow=(k,l,un)=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${T[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${un}</span></div><input class="prange" type="range" data-r="${k}" value="${T[k]}" aria-label="${l}">`;
+function renderP(){const t=T.tab;let h='';
+  if(t===1){h=`<span class="label">ผิวกระจก</span>${segH('rSeg','rough',[[false,'ผิวเรียบ'],[true,'ผิวขรุขระ']])}`+prow('th','ทิศลำแสง (มุมกับแนวดิ่ง)','°')+prow('tilt','เอียงกระจก','°');SPEC=[['th','','',5,5,80,T],['tilt','','',5,-20,20,T]]}
+  if(t===2){h=`<span class="label">เลือกเรื่อง</span>${segH('mSeg','m2',[['img','ภาพในกระจก'],['full','กระจกเห็นเต็มตัว'],['two','กระจก 2 บาน']])}`;
+    if(T.m2==='img')h+=`<span class="label">อนิเมชัน</span><div class="seg" id="aniSeg"><button data-a="play">▶ เล่นอีกครั้ง</button><button data-a="step">⏭ ทีละขั้น</button></div>`+'<span class="hint2">ลากตัวอักษร F สีแดงเพื่อย้ายวัตถุ</span>';
+    if(T.m2==='full'){h+=prow('H','ความสูงคน H','cm')+prow('h','ระดับตา h','cm');SPEC=[['H','','',1,120,200,T],['h','','',1,100,190,T]]}else SPEC=[];
+    if(T.m2==='two')h+=`<span class="label">มุมระหว่างกระจก θ</span>${segH('aSeg','ang',[[180,'180°'],[90,'90°'],[60,'60°'],[45,'45°'],[30,'30°']])}`}
+  if(t===3){h=`<span class="label">ชนิดกระจก</span>${segH('tSeg','mt',[['cc','กระจกเว้า'],['cv','กระจกนูน']])}`+prow('f','ความยาวโฟกัส |f|','cm')+prow('s','ระยะวัตถุ s','cm');
+    if(T.mt==='cc')h+=`<span class="label">กรณีของกระจกเว้า</span><div class="seg" id="cSeg">${[[3,'s > 2f'],[2,'s = 2f'],[1.5,'f < s < 2f'],[1,'s = f'],[.5,'s < f']].map(([k,l])=>`<button data-c="${k}">${l}</button>`).join('')}</div>`;h+=`<span class="label">อนิเมชัน</span><div class="seg" id="aniSeg"><button data-a="play">▶ เล่นอีกครั้ง</button><button data-a="step">⏭ ทีละขั้น</button></div>`;SPEC=[['f','','',1,5,20,T],['s','','',1,2,60,T]]}
+  $('params').innerHTML=h;SPEC.forEach(([k,,,st,a,b])=>{const r=document.querySelector(`#params input[data-r="${k}"]`);if(r){r.min=a;r.max=b;r.step=st;r.value=T[k]}});
+  const bind=(id,key,cv)=>{if($(id))segOn(id,b=>{T[key]=cv(b.dataset.v);renderP();replay()})};
+  bind('rSeg','rough',v=>v==='true');bind('mSeg','m2',v=>v);bind('aSeg','ang',v=>+v);bind('tSeg','mt',v=>v);if($('aniSeg'))segOn('aniSeg',b=>b.dataset.a==='play'?replay():stepA());
+  if($('cSeg'))segOn('cSeg',b=>{T.s=Math.round(+b.dataset.c*T.f);renderP();replay()})}
+function onParam(k){if(k==='f'||k==='s'){if(document.activeElement&&document.activeElement.dataset.r)A.p=99;else replay()}if((k==='h'||k==='H')&&T.h>T.H-8){T.h=T.H-8;document.querySelectorAll('#params [data-k="h"],#params [data-r="h"]').forEach(x=>{if(x.value!==undefined)x.value=T.h})}S.dirty=true}
+function setTab(t){T.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));renderP();replay()}
+$('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+/* ===================== ลาก ===================== */
+function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=T.tab===1?'src':T.tab===2&&T.m2==='img'?'obj':T.tab===3?'obj3':null;if(S.drag){cv.setPointerCapture(e.pointerId);move(p)}});
+cv.addEventListener('pointermove',e=>{if(S.drag)move(pos(e))});const endDrag=()=>{if(S.drag==='obj'||S.drag==='obj3')replay();S.drag=null};cv.addEventListener('pointerup',endDrag);$('params').addEventListener('change',e=>{if(e.target.dataset.r&&animTab())replay()});cv.addEventListener('pointercancel',endDrag);
+function move(p){if(S.drag==='src'){const g=g1();if(p.y>=g.my-5)return;let a=Math.atan2(g.cx-p.x,g.my-p.y)*R2D;a=Math.max(5,Math.min(80,Math.round(Math.abs(a))));T.th=a}
+  if(S.drag==='obj'){T.ox=Math.max(.08,Math.min(.5,p.x/W));T.oy=Math.max(.3,Math.min(.9,p.y/H))}
+  if(S.drag==='obj3'){const g=g3();T.s=Math.max(2,Math.min(60,Math.round((g.mx-p.x)/g.sc)))}
+  if(S.drag==='obj'||S.drag==='obj3')A.p=99;
+  document.querySelectorAll('#params input[data-k],#params input[data-r]').forEach(x=>{if(x!==document.activeElement)x.value=T[x.dataset.k||x.dataset.r]});S.dirty=true}
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if('123'.includes(k)&&k.length===1)setTab(+k)});
+function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
+  if(S.dirty&&W){S.dirty=false;draw();setCalc(calc())}requestAnimationFrame(loop)}
+setTab(1);layout();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
