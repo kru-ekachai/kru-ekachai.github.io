@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>กฎการเคลื่อนที่ของนิวตันและน้ำหนัก</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn,.calc .cl{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.prange{width:100%;accent-color:var(--accent);margin:0 0 .2em}
+.params{gap:calc(var(--u)*.15)!important}
+.nuc{display:inline-flex;align-items:center;white-space:nowrap}.nuc .az{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:.95;font-size:.62em;margin-right:.08em}.nuc .az sup,.nuc .az sub{vertical-align:baseline;position:static}
+.calc table{border-collapse:collapse;font-size:.95em;margin:.15em 0}.calc td,.calc th{padding:.05em .9em .05em 0;text-align:left;white-space:nowrap}.calc th{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em}
+.calc tr.hit td{color:#15803d;font-weight:700}
+
+@media (max-width:760px){.calc td{white-space:normal!important}}
+@media (max-width:760px) and (orientation:portrait){.app{grid-template-rows:auto 56vh auto}}
+.seg{flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>กฎการเคลื่อนที่ของนิวตันและน้ำหนัก</h1>
+    <div class="tabs" role="tablist" id="tabs"><button role="tab" aria-selected="true" data-t="1">① กฎข้อ 1 ความเฉื่อย</button><button role="tab" aria-selected="false" data-t="2">② กฎข้อ 2</button><button role="tab" aria-selected="false" data-t="3">③ กฎข้อ 3</button><button role="tab" aria-selected="false" data-t="4">④ มวลกับน้ำหนัก</button></div>
+    <div class="spacer"></div>
+    <div class="tools"><button class="btn" id="reset">↺ เริ่มใหม่</button><button class="btn" id="fs">⛶ เต็มจอ</button></div>
+  </div>
+  <div class="panel stage" id="stageBox"><canvas id="cv"></canvas><div class="toast" id="toast"></div></div>
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+<script>
+/* ===================== ตัวช่วยร่วม ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const fN=(x,d)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺'};
+const SUBd={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const sup=s=>String(s).split('').map(c=>SUPd[c]||c).join(''),sub=s=>String(s).split('').map(c=>SUBd[c]||c).join('');
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-40)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+sup(e)}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(()=>layout()).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw=3){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3.2);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+function wave(x1,y1,x2,y2,col,u,lp){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const a=Math.atan2(y2-y1,x2-x1),A=u*.42;lp=lp||u*1.1;
+  ctx.save();ctx.translate(x1,y1);ctx.rotate(a);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();for(let s=0;s<=L;s+=1.2)ctx.lineTo(s,A*Math.sin(2*Math.PI*s/lp)*Math.min(1,s/(lp*.6),(L-s)/(lp*.6)));ctx.stroke();ctx.restore()}
+/* สัญลักษณ์นิวไคลด์ ᴬ_Z X */
+function nucSym(x,y,A,Z,X,size,col='#0f172a',ax='center'){font(size,700);const wX=ctx.measureText(X).width;font(size*.5,700,'"JetBrains Mono",monospace');const wn=Math.max(ctx.measureText(String(A)).width,ctx.measureText(String(Z)).width);
+  const tw=wn+3+wX;let x0=ax==='center'?x-tw/2:ax==='left'?x:x-tw;ctx.fillStyle=col;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+  ctx.fillText(String(A),x0+wn,y-size*.38);ctx.fillText(String(Z),x0+wn,y+size*.12);font(size,700);ctx.textAlign='left';ctx.fillText(X,x0+wn+3,y+size*.12);return tw}
+const nucTxt=(A,Z,X)=>`<span class="nuc"><span class="az"><sup>${A}</sup><sub>${Z}</sub></span>${X}</span>`;
+/* ปุ่มกลุ่ม (seg) */
+function segSync(id,attr,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+function segOn(id,fn){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(b)fn(b)})}
+/* แผงปรับค่าทั่วไป: [key,label,unit,step,min,max,obj] */
+let SPEC=[];
+function renderParams(spec,hint=''){SPEC=spec;$('params').innerHTML='<span class="label">ปรับค่า</span>'+spec.map(([k,l,u,st,a,b,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div><input class="prange" type="range" data-r="${k}" min="${a}" max="${b}" step="${st}" value="${o[k]}" aria-label="${l}">`).join('')+(hint?`<span class="hint2">${hint}</span>`:'')}
+function setParam(k,v){const sp=SPEC.find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;const r=document.querySelector(`#params input[data-r="${k}"]`);if(r&&document.activeElement!==r)r.value=v;S.dirty=true;if(typeof onParam==='function')onParam(k)}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SPEC.find(x=>x[0]===b.dataset.k);setParam(b.dataset.k,sp[6][b.dataset.k]+sp[3]*(+b.dataset.d))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k],input[data-r]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k||i.dataset.r,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i){const sp=SPEC.find(x=>x[0]===i.dataset.k);if(sp)i.value=sp[6][i.dataset.k]}});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
+
+const DEF={tab:1,s1:'go',mL:2,mH:8,F2:12,m2:3,fr:false,fk:4,gm:'aF',s3:'horse',md3:'show',pl:'moon',m4:5};
+
+/* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
+const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
+const R2D=180/Math.PI,D2R=Math.PI/180;
+const T={...DEF};
+const S={dirty:true,drag:null};
+function ray(x1,y1,x2,y2,col,dash,arw,lw=3){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.setLineDash(dash?[8,6]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  if(arw){const mx=x1+(x2-x1)*.55,my=y1+(y2-y1)*.55,a=Math.atan2(y2-y1,x2-x1),L=12;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*L*.6,my+Math.sin(a)*L*.6);ctx.lineTo(mx+Math.cos(a+2.5)*L*.6,my+Math.sin(a+2.5)*L*.6);ctx.lineTo(mx+Math.cos(a-2.5)*L*.6,my+Math.sin(a-2.5)*L*.6);ctx.closePath();ctx.fill()}}
+function arcAng(cx,cy,r,a0,a1,col,lab,u){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();let d=a1-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;ctx.arc(cx,cy,r,a0,a0+d,d<0);ctx.stroke();if(lab){const am=a0+d/2;tag(lab,cx+Math.cos(am)*(r+u*2.4),cy+Math.sin(am)*(r+u*2.4),col)}}
+function dashLine(x1,y1,x2,y2,col,lw=2){ray(x1,y1,x2,y2,col,true,false,lw)}
+function dot(x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function txt(s,x,y,col,px,al='center',bl='middle',w=700){font(px,w);ctx.fillStyle=col;ctx.textAlign=al;ctx.textBaseline=bl;ctx.fillText(s,x,y)}
+/* ---------- อนิเมชันทีละขั้น ---------- */
+const A={p:99,tg:99,N:6,last:0,spd:1.25};
+function replay(){A.p=0;A.tg=99;S.dirty=true}
+function instant(){A.p=99;S.dirty=true}
+function stepA(){if(A.p>=A.N-1e-3){A.p=0;A.tg=1}else A.tg=Math.floor(A.p+1e-6)+1;S.dirty=true}
+const fr=k=>Math.max(0,Math.min(1,A.p-k));
+function aseg(k,x1,y1,x2,y2,col,dash,arw,lw){const f=fr(k);if(f<=0)return;ray(x1,y1,x1+(x2-x1)*f,y1+(y2-y1)*f,col,dash,arw&&f>=1,lw)}
+function apoly(k,pts,col,dash,arw){/* วาดเส้นหลายช่วงตามสัดส่วนความยาว */const f=fr(k);if(f<=0||pts.length<2)return;let L=0;const d=[];for(let i=1;i<pts.length;i++){d.push(Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));L+=d[i-1]}
+  let rem=L*f;for(let i=1;i<pts.length&&rem>0;i++){const t=Math.min(1,rem/d[i-1]);const a=pts[i-1],b=pts[i];ray(a.x,a.y,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,col,dash,arw&&f>=1&&i===Math.ceil(pts.length/2));rem-=d[i-1]}}
+function toEdge(x,y,dx,dy){let t=1e9;if(dx>0)t=Math.min(t,(W-x)/dx);if(dx<0)t=Math.min(t,-x/dx);if(dy>0)t=Math.min(t,(H-y)/dy);if(dy<0)t=Math.min(t,-y/dy);if(t>1e8)t=0;return{x:x+dx*t,y:y+dy*t}}
+function stageTag(list,y){A.N=list.length;const i=Math.min(A.N,Math.floor(A.p+1e-6)+1);tag('ขั้น '+i+'/'+A.N+' : '+list[i-1],W/2,y===undefined?UU()*1.4:y,TC)}
+const aniDone=()=>!animTab()||A.p>=A.N-1e-3;
+const WAIT='<div class="cl note">ดูรังสีให้ครบทุกขั้น แล้วคำตอบจะขึ้นตรงนี้</div>';
+/* ภาพลูกศรค่อย ๆ งอก + กะพริบที่ปลาย */
+function growImg(k,x,y0,y1,col,alpha=1){const f=fr(k);if(f<=0)return 0;const u=UU();if(f<1){ctx.fillStyle=`rgba(37,99,235,${.4*(1-f)})`;ctx.beginPath();ctx.arc(x,y1,u*(1+2.5*(1-f)),0,7);ctx.fill()}
+  ctx.globalAlpha=alpha;if(Math.abs(y1-y0)*f>6)arrow(x,y0,x,y0+(y1-y0)*f,col,5);ctx.globalAlpha=1;return f}
+/* ---------- เลนส์บาง ---------- */
+function drawLens(x,ay,h,cvx,u,col='#7dd3fc'){const w=u*1.6;ctx.fillStyle='rgba(125,211,252,.35)';ctx.strokeStyle='#0284c7';ctx.lineWidth=2.5;ctx.beginPath();
+  if(cvx){ctx.moveTo(x,ay-h);ctx.quadraticCurveTo(x+w*1.6,ay,x,ay+h);ctx.quadraticCurveTo(x-w*1.6,ay,x,ay-h)}
+  else{ctx.moveTo(x-w,ay-h);ctx.lineTo(x+w,ay-h);ctx.quadraticCurveTo(x+w*.15,ay,x+w,ay+h);ctx.lineTo(x-w,ay+h);ctx.quadraticCurveTo(x-w*.15,ay,x-w,ay-h)}ctx.closePath();ctx.fill();ctx.stroke()}
+function axisMarks(ay,list,u){list.forEach(([x,l])=>{if(x<2||x>W-2)return;dot(x,ay,4,'#0f172a');txt(l,x,ay+6,'#0f172a',Math.max(13,u*1.05),'center','top',800)})}
+/* หาภาพเลนส์บาง: s>0 หน้าเลนส์, f เลนส์นูน + เว้า − */
+function thin(s,f){if(Math.abs(s-f)<1e-9)return{inf:true};const sp=s*f/(s-f);return{sp,m:sp/s}}
+/* ---------- แผงปรับค่า ---------- */
+const segH=(id,key,list)=>`<div class="seg" id="${id}" data-key="${key}">${list.map(([v,l])=>`<button data-v="${v}" aria-pressed="${String(T[key])===String(v)}">${l}</button>`).join('')}</div>`;
+const prow=(k,l,un)=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${T[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${un}</span></div><input class="prange" type="range" data-r="${k}" value="${T[k]}" aria-label="${l}">`;
+const ANI='<span class="label">อนิเมชัน</span><div class="seg" id="aniSeg"><button data-a="play">▶ เล่นอีกครั้ง</button><button data-a="step">⏭ ทีละขั้น</button></div>';
+function finishP(h,spec){SPEC=spec||[];$('params').innerHTML=h;SPEC.forEach(([k,,,st,a,b])=>{const r=document.querySelector(`#params input[data-r="${k}"]`);if(r){r.min=a;r.max=b;r.step=st;r.value=T[k]}})}
+function syncInputs(){document.querySelectorAll('#params input[data-k],#params input[data-r]').forEach(x=>{if(x!==document.activeElement){const k=x.dataset.k||x.dataset.r;if(T[k]!==undefined)x.value=T[k]}})}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sg=b.closest('.seg');if(!sg)return;
+  if(sg.id==='aniSeg'){b.dataset.a==='play'?replay():stepA();return}
+  const key=sg.dataset.key;if(key&&b.dataset.v!==undefined){const o=T[key],v=b.dataset.v;T[key]=typeof o==='boolean'?v==='true':(v!==''&&!isNaN(+v)?+v:v);if(typeof onSeg==='function')onSeg(key);renderP();replay()}});
+$('params').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.r)replay()});
+function onParam(k){if(typeof onP==='function')onP(k);if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.r)instant();else replay();syncInputs()}
+/* ---------- แท็บ / ลาก / วงรอบ ---------- */
+function setTab(t){if(typeof auStop==='function')auStop();T.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));if(typeof onTab==='function')onTab(t);renderP();replay()}
+function resetAll(){const t=T.tab;Object.keys(T).forEach(k=>delete T[k]);Object.assign(T,DEF);setTab(t)}
+$('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
+cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
+const endDrag=()=>{if(S.drag){S.drag=null;if(typeof dragEnd==='function')dragEnd();replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
+function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
+  if(typeof tick==='function'&&tick(dt))S.dirty=true;
+  if(S.dirty&&W){S.dirty=false;ctx.fillStyle=typeof BG==='function'?BG():'#f8faf9';ctx.fillRect(0,0,W,H);draw();setCalc(calc())}requestAnimationFrame(loop)}
+function start(){setTab(T.tab);layout();requestAnimationFrame(loop)}
+/* ---------- สีจากความยาวคลื่น (nm) ---------- */
+function lamRGB(l){let r=0,g=0,b=0;if(l<440){r=-(l-440)/60;b=1}else if(l<490){g=(l-440)/50;b=1}else if(l<510){g=1;b=-(l-510)/20}else if(l<580){r=(l-510)/70;g=1}else if(l<645){r=1;g=-(l-645)/65}else r=1;
+  const f=l<420?.3+.7*(l-380)/40:l>700?.3+.7*(780-l)/80:1;return[r*f,g*f,b*f]}
+const lamCol=(l,a=1)=>{const[r,g,b]=lamRGB(l);return `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`};
+function lamName(l){return l<450?'ม่วง':l<495?'น้ำเงิน':l<570?'เขียว':l<590?'เหลือง':l<620?'แสด':'แดง'}
+/* ---------- เสียงจริง (Web Audio) ---------- */
+const AU={c:null,m:null,on:false,vol:.3,v:{}};
+function auInit(){try{if(!AU.c){AU.c=new (window.AudioContext||window.webkitAudioContext)();AU.m=AU.c.createGain();AU.m.gain.value=0;const lim=AU.c.createDynamicsCompressor();AU.m.connect(lim);lim.connect(AU.c.destination)}AU.c.resume()}catch(e){}}
+function auMaster(){if(AU.m)AU.m.gain.setTargetAtTime(AU.on?.35*AU.vol*AU.vol:0,AU.c.currentTime,.05)}
+function auSet(on){AU.on=on;if(on)auInit();auMaster();if(!on)auStop()}
+function auWave(harm){const re=new Float32Array(harm.length+1),im=new Float32Array(harm.length+1);harm.forEach((a,i)=>im[i+1]=a);return AU.c.createPeriodicWave(re,im)}
+function auTone(id,f,amp,harm){/* โทนต่อเนื่อง: amp 0..1 */if(!AU.on||!AU.c)return;let v=AU.v[id];if(!v){const o=AU.c.createOscillator(),g=AU.c.createGain();g.gain.value=0;o.connect(g);g.connect(AU.m);o.start();v=AU.v[id]={o,g,h:null}}
+  const hk=harm?harm.join():'';if(hk!==v.h){v.h=hk;if(harm)v.o.setPeriodicWave(auWave(harm));else v.o.type='sine'}v.o.frequency.setTargetAtTime(Math.max(10,Math.min(20000,f)),AU.c.currentTime,.02);v.g.gain.setTargetAtTime(Math.max(0,Math.min(1,amp)),AU.c.currentTime,.03)}
+function auOff(id){const v=AU.v[id];if(v&&AU.c)v.g.gain.setTargetAtTime(0,AU.c.currentTime,.03)}
+function auStop(){Object.keys(AU.v).forEach(auOff)}
+function auBlip(f,dur,amp,when){if(!AU.on||!AU.c)return;const t=AU.c.currentTime+(when||0),o=AU.c.createOscillator(),g=AU.c.createGain();o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+.01);g.gain.exponentialRampToValueAtTime(.0005,t+dur);o.connect(g);g.connect(AU.m);o.start(t);o.stop(t+dur+.05)}
+function auNoise(dur,amp,when,lp){if(!AU.on||!AU.c)return;const n=Math.floor(AU.c.sampleRate*dur),b=AU.c.createBuffer(1,n,AU.c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const s=AU.c.createBufferSource(),f=AU.c.createBiquadFilter(),g=AU.c.createGain();f.type='lowpass';f.frequency.value=lp||800;g.gain.value=amp;s.buffer=b;s.connect(f);f.connect(g);g.connect(AU.m);s.start(AU.c.currentTime+(when||0))}
+function auUI(){return spdUI()+`<span class="label">เสียงจริง</span><div class="seg" id="auSeg"><button data-au="1" aria-pressed="${AU.on}">🔊 เปิดเสียง</button><button data-au="0" aria-pressed="${!AU.on}">🔇 ปิดเสียง</button></div><div class="prow"><span class="pl">ความดัง</span><input id="auVol" class="prange" type="range" min="0" max="100" value="${Math.round(AU.vol*100)}" aria-label="ความดัง"></div>`}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#auSeg button');if(b){auSet(b.dataset.au==='1');document.querySelectorAll('#auSeg button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.au==='1')===AU.on));S.dirty=true}});
+$('params').addEventListener('input',e=>{if(e.target.id==='auVol'){AU.vol=+e.target.value/100;auMaster()}});
+/* ---------- แถบปรับความเร็ว (ภาพ + จังหวะเสียง) ---------- */
+const SPD={v:1};
+function spdUI(){return `<div class="prow"><span class="pl">ความเร็ว <b id="spdV">${SPD.v.toFixed(2).replace(/0$/,'')}×</b></span><input id="spdR" class="prange" type="range" min="0.1" max="2" step="0.05" value="${SPD.v}" aria-label="ความเร็ว"></div>`}
+$('params').addEventListener('input',e=>{if(e.target.id==='spdR'){SPD.v=+e.target.value;const l=$('spdV');if(l)l.textContent=SPD.v.toFixed(2).replace(/0$/,'')+'×';S.dirty=true}});
+
+
+const animTab=()=>false;
+const ST={clk:0};
+const CF='#dc2626',CV='#16a34a',CP='#7c3aed',CO='#ea580c',CBL='#2563eb',BXF='#f59e0b',BXS='#b45309';
+const r2=v=>fN(v,2),r1=v=>fN(v,1);
+const E=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function boxes(k=.6){const u=UU(),wide=W>=H*1.2;return wide?{u,wide,d:{x:u,y:u*2.4,w:W*.6-u,h:H-u*3.4},i:{x:W*.62,y:u,w:W*.38-u*1.2,h:H-u*2}}:{u,wide,d:{x:u*.6,y:u*2,w:W-u*1.2,h:H*k-u*1.4},i:{x:u*.6,y:H*(k+.02),w:W-u*1.2,h:H*(.98-k)-u*.6}}}
+function table(b,rows,head){const u=b.u||UU(),n=rows.length+(head?1:0),rh=Math.min(u*2.8,b.h/n),fz=Math.max(11,Math.min(u*1.45,rh*.45)),cols=(head||rows[0]).length,cw=b.w/cols;let y=b.y+(b.h-rh*n)/2;ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;
+  const row=(r,bg,bold)=>{ctx.fillStyle=bg;ctx.fillRect(b.x,y,b.w,rh);ctx.strokeRect(b.x,y,b.w,rh);r.forEach((c,j)=>{const [s,col]=Array.isArray(c)?c:[c,'#0f172a'];font(fz,800);let f=fz;const w=ctx.measureText(s).width;if(w>cw-u*.6)f=Math.max(9,fz*(cw-u*.6)/w);txt(s,b.x+cw*(j+.5),y+rh/2,col,f,'center','middle',bold?800:700)});y+=rh};
+  if(head)row(head,'#e2e8f0',1);rows.forEach((r,i)=>row(r,r.sum?'#fef2f2':i%2?'#f8fafc':'#fff',r.sum))}
+function rbox(x,y,w,h,fill,stroke,lw=2,r=0){ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.beginPath();if(r)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);ctx.fill();if(stroke)ctx.stroke()}
+function line(x1,y1,x2,y2,col,lw=2){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function fitTxt(s,x,y,col,fz,mw,al='center',w=800){font(fz,w);const tw=ctx.measureText(s).width;if(tw>mw)fz=Math.max(9,fz*mw/tw);txt(s,x,y,col,fz,al,'middle',w)}
+/* กล่องข้อความเหลือง (กะพริบ/จาง) */
+function note(msg,B,al=1,yy){const u=B.u;ctx.globalAlpha=al;let fz=Math.max(14,u*1.4);font(fz,800);let w=ctx.measureText(msg).width;const mw=B.d.w-u*2;if(w>mw){fz*=mw/w;font(fz,800);w=ctx.measureText(msg).width}const bx=B.d.x+B.d.w/2,by=yy===undefined?B.d.y+B.d.h-u*1.3:yy;rbox(bx-w/2-u*.8,by-fz*.9,w+u*1.6,fz*1.8,'rgba(254,243,199,.97)','#d97706',2,8);txt(msg,bx,by,'#92400e',fz,'center','middle',800);ctx.globalAlpha=1}
+/* ===================== ขั้นตอน (เล่น / ถัดไป) ===================== */
+const SP={p:0,tg:0,play:false};
+const NS=()=>STEPS().length;
+const fq=i=>Math.max(0,Math.min(1,SP.p-(i-1))),FIN=()=>SP.p>=NS()-1e-9,CUR=()=>Math.ceil(SP.p-1e-9);
+function spReset(full){SP.play=false;SP.p=SP.tg=full?NS():0}
+function caption(list,B,u){const k=CUR(),s=k<=0?'กด ▶ เล่น หรือ ถัดไป ▶ เพื่อดูทีละขั้น':list[Math.min(k,list.length)-1];let f=Math.max(12,W<700?u*.95:u*1.15);font(f,800);const w=ctx.measureText(s).width,mw=(B.wide?W*.6:W)-u*1.6;if(w>mw)f=Math.max(9,f*mw/w);txt(s,u*.8,u*1.1,'#0f766e',f,'left','middle',800)}
+const PBS=()=>`<div class="seg" id="pb"><button data-p="play">${SP.play?'⏸ หยุด':'▶ เล่น'}</button><button data-p="nx">ถัดไป ▶</button><button data-p="rs">⏮ เริ่มใหม่</button></div>`;
+/* ขั้นตอนของแต่ละแท็บ: [ข้อความ, เวลา (s ที่ความเร็ว 1×)] */
+function STEPS(){const t=T.tab;
+  if(t===1){const s=T.s1;
+    if(s==='go')return[['ขั้น 1: รถและกล่องอยู่นิ่ง แรงลัพธ์ที่กระทำต่อกล่องเป็นศูนย์',1.5],['ขั้น 2: ดึงรถด้วยแรง F รถเร่งออกไป แต่พื้นรถลื่น จึงไม่มีแรงกระทำต่อกล่องในแนวราบ',3],['ขั้น 3: เทียบกับพื้น กล่องยังอยู่ที่เดิม (เส้นประ) แต่คนบนรถเห็นกล่องไถลไปข้างหลัง',2.5],['ขั้น 4: วัตถุที่อยู่นิ่งจะรักษาสภาพนิ่งไว้ ถ้าแรงลัพธ์เป็นศูนย์ = ความเฉื่อย',2]];
+    if(s==='brake')return[['ขั้น 1: รถและกล่องเคลื่อนที่ไปทางขวาด้วยความเร็วเท่ากัน',2.5],['ขั้น 2: รถเบรก แรงเบรกกระทำต่อรถเท่านั้น รถช้าลงจนหยุด',2],['ขั้น 3: กล่องยังเคลื่อนที่ด้วยความเร็วเดิม ไถลไปข้างหน้าจนชนผนังหน้ารถ',2],['ขั้น 4: วัตถุที่เคลื่อนที่จะรักษาความเร็วเดิมไว้ ถ้าแรงลัพธ์เป็นศูนย์ = ความเฉื่อย',2]];
+    if(s==='space')return[['ขั้น 1: นักบินอวกาศไกลจากดาว ไม่มีแรงลัพธ์ จึงลอยไปด้วยความเร็วคงตัว',4],['ขั้น 2: เปิดไอพ่น 1 วินาที มีแรงลัพธ์ ความเร็วจึงเพิ่ม แล้วปิดไอพ่น ความเร็วคงตัวอีกครั้ง',3],['ขั้น 3: ไม่มีแรงลัพธ์ = ความเร็วคงตัวตลอดไป · มีแรงลัพธ์ = ความเร็วเปลี่ยน',2]];
+    return[['ขั้น 1: กล่องเบาและกล่องหนักวางนิ่งบนพื้นน้ำแข็ง (ไม่มีแรงเสียดทาน)',1.5],['ขั้น 2: ผลักทั้งสองกล่องด้วยแรงเท่ากัน F = 4 N นาน 1 วินาที',1.5],['ขั้น 3: เลิกผลัก กล่องไถลต่อด้วยความเร็วคงตัว กล่องหนักช้ากว่า',2.5],['ขั้น 4: มวลมาก ความเฉื่อยมาก เปลี่ยนสภาพการเคลื่อนที่ได้ยากกว่า',2]]}
+  if(t===2)return[['ขั้น 1: หาแรงลัพธ์ที่กระทำต่อรถ ΣF',2],['ขั้น 2: ปล่อยรถ รถเร่งขึ้น · บันทึกความเร็วทุก 1 วินาที',T2().tEnd],['ขั้น 3: ความเร่งจากตาราง a = Δv/Δt เท่ากับ ΣF/m',1.5]];
+  if(t===3)return T.md3==='self'?[]:SC3[T.s3].steps.map(s=>[s.c,s.d||2]);
+  return[['ขั้น 1: ชั่งวัตถุบนโลก ตาชั่งสปริงอ่านน้ำหนัก W · ตาชั่งคานเทียบมวลกับตุ้มน้ำหนัก',2],['ขั้น 2: ย้ายไป'+PL[T.pl].n+' ตาชั่งสปริงอ่านค่าเปลี่ยน แต่ตาชั่งคานยังสมดุลด้วยตุ้มเดิม',3],['ขั้น 3: มวลเท่าเดิมทุกที่ แต่น้ำหนัก W = mg เปลี่ยนตามค่า g',1.5]]}
+const tq=k=>{const s=STEPS()[k-1];return s?fq(k)*s[1]:0};
+
+/* ===================== ① กฎข้อ 1 ความเฉื่อย ===================== */
+function G1(B){const d=B.d,u=B.u,wm=T.s1==='go'||T.s1==='brake'?9.4:12,hm=T.s1==='mass'?5:2.9,s=Math.min(d.w*.96/wm,(d.h-u*6)/hm),x0=d.x+(d.w-wm*s)/2,gy=d.y+u*1.6+(d.h-u*1.6-(hm*s+u*3.6))/2+hm*s+u*1.2;return{s,u,gy,wm,X:x=>x0+x*s,Y:m=>gy-m*s,x0}}
+function ground(G,col='#94a3b8'){const u=G.u;line(G.X(0),G.gy,G.X(G.wm),G.gy,col,2);ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;for(let x=0;x<G.wm;x+=.5){ctx.beginPath();ctx.moveTo(G.X(x),G.gy+2);ctx.lineTo(G.X(x)-u*.6,G.gy+u*.7);ctx.stroke()}}
+function cartD(G,xl,len){const s=G.s,X=G.X,Y=G.Y;[xl+.7,xl+len-.7].forEach(c=>{dot(X(c),Y(.3),.3*s,'#334155');dot(X(c),Y(.3),.11*s,'#e2e8f0')});
+  rbox(X(xl),Y(.9),len*s,.3*s,'#cbd5e1','#334155',2);rbox(X(xl),Y(1.35),.12*s,.45*s,'#94a3b8','#334155',1.5);rbox(X(xl+len-.12),Y(1.35),.12*s,.45*s,'#94a3b8','#334155',1.5)}
+function boxD(G,xl,yb,sd,lb){const s=G.s;rbox(G.X(xl),G.Y(yb+sd),sd*s,sd*s,BXF,BXS,2,3);fitTxt(lb,G.X(xl+sd/2),G.Y(yb+sd/2),'#fff',Math.max(11,G.u*1.05),sd*s*.9)}
+function vArrow(x,y,v,G,lb,col=CV,k=1.1){const u=G.u;if(Math.abs(v)<.005){tag(lb+' = 0',x,y,col);return}const L=v*k*G.s;arrow(x-L/2,y,x+L/2,y,col,4);tag(lb+' = '+r2(v)+' m/s',x,y-u*1.4,col)}
+function ST1(){/* สถานะทางฟิสิกส์ของแท็บ 1 ตามขั้นปัจจุบัน */const s=T.s1;
+  if(s==='go'){const a=2*2.3/9,t=tq(2);return{a,t,xc:1+.5*a*t*t,vc:a*t,xb:3.9,vb:0}}
+  if(s==='brake'){const v0=1.2,t1=tq(1),t2=tq(2),t3=tq(3);let xc=.5+v0*t1,vc=v0,xb=.9+v0*t1,vb=v0,hit=false;if(SP.p>1){xc+=v0*t2-.3*t2*t2;vc=v0-.6*t2;xb+=v0*t2}if(SP.p>2){const mx=xc+4-.12-.9,nx=xb+v0*t3;if(nx>=mx){xb=mx;vb=0;hit=true}else xb=nx}return{xc,vc,xb,vb,hit,t:t1+t2+t3}}
+  if(s==='space'){const t1=tq(1),t2=tq(2);let x=1+t1,v=1,on=false;if(SP.p>1){if(t2<=1){x+=t2+.5*t2*t2;v=1+t2;on=t2>0&&t2<1}else{x+=1.5+2*(t2-1);v=2}}return{x,v,on,t:t1+t2}}
+  const F=4,t2=fq(2)*1,t3=tq(3),sL=.55*Math.cbrt(T.mL),sH=.55*Math.cbrt(T.mH),one=(m,sd)=>{const a=F/m,mx=12-.15-sd;let x=.8+.5*a*t2*t2,v=a*t2;if(SP.p>2)x+=v*t3;if(x>=mx){x=mx;v=SP.p>2?0:v}return{x,v,a,sd}};return{L:one(T.mL,sL),Hv:one(T.mH,sH),push:SP.p>1&&SP.p<2-1e-9,F}}
+function draw1(){const B=boxes(.62),{u}=B,G=G1(B),cur=CUR(),fin=FIN(),Z=ST1(),s=T.s1;
+  if(s==='go'||s==='brake'){ground(G);
+    if(s==='go'){const bx=Z.xb+.45;/* เส้นประตำแหน่งกล่องเทียบพื้น */let al=.55;if(cur===3&&!fin){const q=fq(3);al=.35+.65*(.5+.5*Math.cos(q*Math.PI*8))}else if(SP.p>=3)al=1;ctx.globalAlpha=al;dashLine(G.X(bx),G.gy,G.X(bx),G.Y(2.75),'#475569',2.2);ctx.globalAlpha=1;tag('ตำแหน่งกล่องเทียบพื้น',G.X(bx),G.Y(2.75)-u*.9,'#475569')}
+    cartD(G,Z.xc,4);boxD(G,Z.xb,.9,.9,'กล่อง');
+    if(s==='go'){if(SP.p>1&&SP.p<2+1e-9&&CUR()===2){arrow(G.X(Z.xc+4),G.Y(.75),G.X(Z.xc+4)+u*5,G.Y(.75),CF,5);tag('แรงดึงรถ F',G.X(Z.xc+4)+u*2.5,G.Y(.75)-u*1.5,CF)}
+      if(SP.p>0)tag('ΣF ต่อกล่อง = 0',G.X(Z.xb+.9)+u*.5,G.Y(1.35),CP,'left');
+      if(SP.p>2){const o=Z.xc+2.9+.45,q=E(Math.min(1,fq(3)*1.5));if(o-(Z.xb+.45)>.05){const y=G.Y(2.2);arrow(G.X(o),y,G.X(o)+(G.X(Z.xb+.45)-G.X(o))*q,y,CP,3.5);if(q>=1)tag('เทียบกับรถ: เลื่อนไปข้างหลัง '+r2(o-Z.xb-.45)+' m',(G.X(o)+G.X(Z.xb+.45))/2,y-u*1.4,CP)}}
+      vArrow(G.X(Z.xc+2),G.gy+u*2.2,Z.vc,G,'v รถ',CV)}
+    else{if(SP.p>1&&SP.p<2+1e-9&&Z.vc>.01){arrow(G.X(Z.xc),G.Y(.75),G.X(Z.xc)-u*4.5,G.Y(.75),CF,5);tag('แรงเบรก',G.X(Z.xc)-u*2.3,G.Y(.75)-u*1.5,CF)}
+      vArrow(G.X(Z.xc+2),G.gy+u*2.2,Math.max(0,Z.vc),G,'v รถ',CV);vArrow(G.X(Z.xb+.45),G.Y(2.2),Z.vb,G,'v กล่อง','#0f766e');
+      if(Z.hit&&cur===3&&!fin)tag('ชนผนังหน้ารถ!',G.X(Z.xb+.9),G.Y(1.9)-u*2.6,CF)}
+  }
+  else if(s==='space'){const d=B.d;rbox(d.x,d.y+u*.2,d.w,d.h-u*.2,'#0f172a','',0,10);for(let i=0;i<70;i++){const sx=d.x+((i*97.3)%1)*d.w,x=d.x+((i*0.6180339*d.w*7.3)%d.w),y=d.y+u+((i*0.3819*d.h*5.1)%(d.h-u*1.5));dot(x,y,i%7?1:1.8,'rgba(226,232,240,.75)')}
+    /* ไม้บรรทัด */for(let x=0;x<=12;x++){line(G.X(x),G.gy,G.X(x),G.gy+u*(x%2?.5:.9),'#94a3b8',1.5);if(x%2===0)txt(x+' m',G.X(x),G.gy+u*1.7,'#cbd5e1',Math.max(10,u*.95),'center','middle',700)}line(G.X(0),G.gy,G.X(12),G.gy,'#94a3b8',1.5);
+    astro(G,Z.x,1.3,Z.on);vArrow(G.X(Z.x),G.Y(2.55),Z.v,G,'v',('#4ade80'),.8);
+    if(Z.on){arrow(G.X(Z.x-.6),G.Y(.22),G.X(Z.x-.6)+u*5,G.Y(.22),'#f87171',5);tag('แรงจากไอพ่น',G.X(Z.x-.6)+u*5.6,G.Y(.22),CF,'left')}
+    tag('t = '+r1(Z.t)+' s',d.x+u*1.2,d.y+u*2.6,'#0f766e','left');tag('ΣF '+(Z.on?'≠ 0':'= 0'),d.x+u*1.2,d.y+u*4.6,Z.on?CF:CP,'left')}
+  else{/* มวลน้อย / มาก */const lanes=[[2.4,Z.L,T.mL,'เบา'],[0,Z.Hv,T.mH,'หนัก']];lanes.forEach(([yb,b,m,nm])=>{rbox(G.X(0),G.Y(yb),12*G.s,u*.55,'#e0f2fe','#7dd3fc',1);rbox(G.X(12-.15),G.Y(yb+.9),.15*G.s,.9*G.s,'#94a3b8','#334155',1.5);
+      boxD(G,b.x,yb,b.sd,m+' kg');if(Z.push)  {arrow(G.X(b.x)-u*4.8,G.Y(yb+b.sd/2),G.X(b.x)-u*.3,G.Y(yb+b.sd/2),CF,5);tag('F = 4 N',G.X(b.x)-u*2.6,G.Y(yb+b.sd/2)-u*1.4,CF)}
+      if(SP.p>1)vArrow(G.X(b.x+b.sd/2),G.Y(yb+b.sd)-u*1.6,b.v,G,'v',CV,.7);txt('กล่อง'+nm,G.X(11.8),G.Y(yb)+u*1.3,'#334155',Math.max(11,u*1.05),'right','middle',800)})}
+  if(s==='go'&&cur===4)note('ไม่มีแรงลัพธ์กระทำต่อกล่อง → กล่องรักษาสภาพนิ่ง',B,Math.min(1,fq(4)*3),B.d.y+u*3.2);
+  if(s==='brake'&&cur===4)note('รถเบรกกะทันหัน ของในรถพุ่งไปข้างหน้า → จึงต้องคาดเข็มขัดนิรภัย',B,Math.min(1,fq(4)*3),B.d.y+u*3.2);
+  if(s==='mass'&&cur===4)note('แรงเท่ากัน กล่องหนักได้ความเร็วน้อยกว่า → มวลมาก ความเฉื่อยมาก',B,Math.min(1,fq(4)*3),B.d.y+u*3.2);
+  caption(STEPS().map(x=>x[0]),B,u);
+  const I=B.i,H2=v=>Math.abs(v)<.005?'0':r2(v);
+  if(s==='go')table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.5:.95),u},[['เวลา t',r1(Z.t)+' s'],[['v รถ (เทียบพื้น)',CV],[H2(Z.vc)+' m/s',CV]],[['v กล่อง (เทียบพื้น)','#0f766e'],['0 m/s','#0f766e']],[['v กล่อง (เทียบรถ)',CP],[Z.vc>.005?'−'+r2(Z.vc)+' m/s':'0 m/s',CP]],[['ΣF ต่อกล่อง',CF],['0 N',CF]]]);
+  else if(s==='brake')table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.5:.95),u},[['เวลา t',r1(Z.t)+' s'],[['v รถ',CV],[H2(Math.max(0,Z.vc))+' m/s',CV]],[['v กล่อง','#0f766e'],[H2(Z.vb)+' m/s','#0f766e']],[['ΣF ต่อกล่อง (ก่อนชน)',CF],['0 N',CF]]]);
+  else if(s==='space')table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.45:.9),u},[['เวลา t',r1(Z.t)+' s'],[['ความเร็ว v',CV],[r2(Z.v)+' m/s',CV]],[['ไอพ่น',CF],[Z.on?'เปิด':'ปิด',CF]],[['ΣF',CP],[Z.on?'≠ 0 (ความเร็วเปลี่ยน)':'0 (ความเร็วคงตัว)',CP]]]);
+  else{const sh=SP.p>=2-1e-9;table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.55:.95),u},[['มวล',T.mL+' kg',T.mH+' kg'],['แรงผลัก','4 N','4 N'],[['a = F/m',CF],[sh?r2(4/T.mL)+' m/s²':'?',CF],[sh?r2(4/T.mH)+' m/s²':'?',CF]],[['v หลังผลัก 1 s',CV],[sh?r2(Math.min(4/T.mL,99))+' m/s':'?',CV],[sh?r2(4/T.mH)+' m/s':'?',CV]]],['','กล่องเบา','กล่องหนัก'])}}
+function astro(G,x,yc,on){const s=G.s,X=G.X(x),Y=G.Y(yc);if(on){const f=.5+.5*Math.sin(ST.clk*40);ctx.fillStyle='rgba(251,146,60,.9)';ctx.beginPath();ctx.moveTo(X-.5*s,Y-.18*s);ctx.lineTo(X-(1.05+.25*f)*s,Y);ctx.lineTo(X-.5*s,Y+.18*s);ctx.fill();ctx.fillStyle='rgba(254,240,138,.95)';ctx.beginPath();ctx.moveTo(X-.5*s,Y-.09*s);ctx.lineTo(X-(.8+.15*f)*s,Y);ctx.lineTo(X-.5*s,Y+.09*s);ctx.fill()}
+  rbox(X-.5*s,Y-.35*s,.18*s,.6*s,'#94a3b8','#475569',1.5,3);/* เป้ */
+  line(X-.12*s,Y+.3*s,X-.25*s,Y+.85*s,'#f1f5f9',.17*s);line(X+.12*s,Y+.3*s,X+.2*s,Y+.85*s,'#f1f5f9',.17*s);
+  rbox(X-.32*s,Y-.38*s,.64*s,.75*s,'#f8fafc','#94a3b8',1.5,.15*s);line(X+.25*s,Y-.2*s,X+.55*s,Y+.15*s,'#f1f5f9',.15*s);
+  dot(X,Y-.6*s,.3*s,'#f8fafc');ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(X,Y-.6*s,.3*s,0,7);ctx.stroke();rbox(X-.02*s,Y-.74*s,.26*s,.24*s,'#38bdf8','#0369a1',1,.08*s)}
+
+/* ===================== ② กฎข้อ 2 ===================== */
+let PTS=[],G2=null;
+const TR=40;
+function T2(){const f=T.fr?T.fk:0,sf=Math.max(0,T.F2-f),a=sf/T.m2,tEnd=a>0?Math.min(3,Math.sqrt(2*TR/a)):3;return{f,sf,a,tEnd,stat:T.fr&&T.F2<=T.fk}}
+function draw2(){const B=boxes(.6),{u}=B,d=B.d,Q=T2(),cur=CUR(),fin=FIN();const t=SP.p>1?tq(2):0,x=Math.min(TR,.5*Q.a*t*t),v=Q.a*t;
+  const th=d.h*.6,tx0=d.x+u*.6,tw=d.w-u*1.2,cw=Math.max(u*5.5,tw*.13),sc=(tw-cw)/TR,ry=d.y+th*.72+u,ch=Math.min(u*2.6,th*.22),cx=tx0+x*sc,kF=Math.min(u*.5,tw*.3/20);
+  /* ราง + ไม้บรรทัด */line(tx0,ry,tx0+tw,ry,'#334155',3);for(let m=0;m<=TR;m+=5){const X=tx0+cw/2+m*sc;line(X,ry+3,X,ry+u*.8,'#64748b',1.5);txt(m+'',X,ry+u*1.6,'#475569',Math.max(11,u*1.1),'center','middle',700)}txt('m',tx0+tw,ry+u*1.6,'#475569',Math.max(10,u*.95),'right','middle',700);
+  /* รถ */const wr=Math.max(4,u*.5);dot(cx+cw*.22,ry-wr,wr,'#334155');dot(cx+cw*.78,ry-wr,wr,'#334155');rbox(cx,ry-wr*1.6-ch,cw,ch,'#fde68a','#92400e',2,4);fitTxt('m = '+T.m2+' kg',cx+cw/2,ry-wr*1.6-ch/2,'#78350f',Math.max(11,u*1.1),cw*.9);
+  const my=ry-wr*1.6-ch*.5,s1=SP.p>0?E(Math.min(1,fq(1)*1.6)):0,s2=SP.p>0?E(Math.max(0,Math.min(1,(fq(1)-.5)*2))):0;G2={x0:cx+cw,y:my,kF};
+  if(s1>0&&T.F2>0){arrow(cx+cw,my,cx+cw+T.F2*kF*s1,my,CF,5);if(s1>=1)tag('F = '+T.F2+' N',cx+cw+T.F2*kF/2,my-u*1.5,CF)}
+  if(s1>0&&T.fr&&Q.f>0){const fv=Q.stat?T.F2:Q.f;if(fv>0){arrow(cx,my,cx-fv*kF*s1,my,CO,5);if(s1>=1)tag('f = '+fN(fv,0)+' N',cx-fv*kF/2,my-u*1.5,CO)}}
+  if(s2>0){const ty=ry-wr*1.6-ch-u*1.3;if(Q.sf>0&&!Q.stat){arrow(cx+cw/2,ty,cx+cw/2+Q.sf*kF*s2,ty,CP,5);if(s2>=1)tag('ΣF = '+fN(Q.sf,0)+' N',cx+cw/2+Q.sf*kF/2,ty-u*1.4,CP)}else if(s2>=1)tag('ΣF = 0',cx+cw/2,ty,CP)}
+  tag('t = '+r1(t)+' s · v = '+r1(v)+' m/s',d.x+d.w-u*.6,d.y+u*1.4,'#0f766e','right');
+  if(x>=TR-1e-6&&SP.p>1)tag('ถึงปลายราง',tx0+tw-cw/2,ry-wr*1.6-ch-u*3.2,'#475569');
+  /* ตาราง t–v */const tt=[0,1,2,3],ok=k=>SP.p>1&&t>=k-1e-6&&k<=Q.tEnd+1e-6,row=k=>ok(k)?r1(Q.a*k):(k>Q.tEnd+1e-6&&SP.p>=2-1e-9?'—':'?');
+  table({x:d.x,y:d.y+th+u*.6,w:d.w,h:d.h-th-u*.8,u},[['t (s)',...tt.map(String)],[['v (m/s)',CV],...tt.map(k=>[row(k),CV])],['x (m)',...tt.map(k=>ok(k)?r1(.5*Q.a*k*k):(k>Q.tEnd+1e-6&&SP.p>=2-1e-9?'—':'?'))]]);
+  caption(STEPS().map(x=>x[0]),B,u);graph2(B.i,u,Q,fin)}
+const GC=['#2563eb','#16a34a','#ea580c','#7c3aed','#db2777','#0891b2','#ca8a04','#475569'];
+function graph2(I,u,Q,fin){const aF=T.gm==='aF',L=I.x+u*4.2,R=I.x+I.w-u*1.2,Tp=I.y+u*3,Bt=I.y+I.h-u*2.8,xm=aF?20:1;const pts=PTS.map(p=>({x:aF?p.sf:1/p.m,y:p.a,k:aF?p.m:p.sf}));const cx=aF?Q.sf:1/T.m2;
+  let ym=Math.max(2,...pts.map(p=>p.y),fin?Q.a:0)*1.12;const nice=[2,4,5,8,10,15,20,25];ym=nice.find(n=>n>=ym)||Math.ceil(ym/5)*5;const st=ym<=5?1:ym<=10?2:5;
+  const X=v=>L+(R-L)*v/xm,Y=v=>Bt-(Bt-Tp)*v/ym;rbox(I.x,I.y,I.w,I.h,'#fff','#cbd5e1',1,8);
+  txt(aF?'กราฟ a–ΣF':'กราฟ a–1/m',I.x+I.w/2,I.y+u*1.4,'#0f172a',Math.max(12,u*1.3),'center','middle',800);
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;const xs=aF?5:.25;for(let v=0;v<=xm+1e-9;v+=xs){line(X(v),Tp,X(v),Bt,'#eef2f7',1);txt(aF?String(v):(v===0?'0':fN(v,2)),X(v),Bt+u*1,'#475569',Math.max(10,u*.95),'center','middle',700)}
+  for(let v=0;v<=ym+1e-9;v+=st){line(L,Y(v),R,Y(v),'#eef2f7',1);txt(String(v),L-u*.5,Y(v),'#475569',Math.max(10,u*.95),'right','middle',700)}
+  arrow(L,Bt,R+u*.6,Bt,'#334155',2);arrow(L,Bt,L,Tp-u*.8,'#334155',2);txt(aF?'ΣF (N)':'1/m (kg⁻¹)',R,Bt+u*2.1,'#334155',Math.max(10,u*1.05),'right','middle',800);txt('a (m/s²)',L+u*.4,Tp-u*1.4,'#334155',Math.max(10,u*1.05),'left','middle',800);
+  const keys=[...new Set(pts.map(p=>p.k))].sort((a,b)=>a-b);ctx.save();ctx.beginPath();ctx.rect(L,Tp-u,R-L,Bt-Tp+u);ctx.clip();
+  keys.forEach((k,i)=>{const c=GC[i%GC.length],sl=aF?1/k:k;let x2=xm,y2=sl*xm;if(y2>ym){y2=ym;x2=ym/sl}dashLine(X(0),Y(0),X(x2),Y(y2),c,2)});ctx.restore();
+  keys.forEach((k,i)=>{const c=GC[i%GC.length],sl=aF?1/k:k;let x2=xm,y2=sl*xm;if(y2>ym){y2=ym;x2=ym/sl}tag(aF?'m = '+k+' kg':'ΣF = '+k+' N',Math.min(X(x2),R-u*2),Math.max(Y(y2),Tp)+u*.2,c,'right')});
+  pts.forEach(p=>dot(X(p.x),Y(p.y),Math.max(4,u*.45),GC[keys.indexOf(p.k)%GC.length]));
+  if(fin){ctx.strokeStyle=CF;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X(cx),Y(Q.a),Math.max(6,u*.75),0,7);ctx.stroke();tag('a = '+r2(Q.a),X(cx)+u*1.2,Y(Q.a)-u*1.4,CF,'left')}
+  if(!pts.length)txt(fin?'กด 📌 บันทึกจุด เพื่อเก็บจุดนี้ลงกราฟ':'ดูให้ครบ 3 ขั้น แล้วกด 📌 บันทึกจุด',(L+R)/2,(Tp+Bt)/2,'#94a3b8',Math.max(11,u*1.05),'center','middle',700)}
+
+/* ===================== ③ กฎข้อ 3 ===================== */
+const PC1='#2563eb',PC2='#16a34a';
+function stick(P,k,pts,col='#1e293b',lw=.22){ctx.strokeStyle=col;ctx.lineWidth=lw*k;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.stroke()}
+function circ(P,k,x,y,r,fill,stroke,lw=2){const q=P(x,y);ctx.fillStyle=fill;ctx.beginPath();ctx.arc(q[0],q[1],r*k,0,7);ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}
+function poly(P,pts,fill,stroke,lw=2){ctx.fillStyle=fill;ctx.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.closePath();ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}
+function rectU(P,k,x0,y0,x1,y1,fill,stroke,lw=2){const a=P(x0,y0);rbox(a[0],a[1],(x1-x0)*k,(y1-y0)*k,fill,stroke,lw)}
+function groundU(P,k,y,x0=0,x1=16){const a=P(x0,y),b=P(x1,y);line(a[0],a[1],b[0],b[1],'#64748b',2.5);ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;for(let x=x0;x<x1;x+=.45){const q=P(x,y);ctx.beginPath();ctx.moveTo(q[0],q[1]+2);ctx.lineTo(q[0]-.3*k,q[1]+.35*k);ctx.stroke()}}
+const SC3={
+ horse:{sep:{A:[1.3,0],B:[-1.1,0]},
+  draw(P,k,o,e){groundU(P,k,6.55);const Pa=(x,y)=>P(x+o.A[0],y+o.A[1]),Pb=(x,y)=>P(x+o.B[0],y+o.B[1]);
+   /* เชือก */ctx.globalAlpha=1-e;stick(P,k,[[5.2+o.B[0],4.6],[8.6+o.A[0],4.25]],'#78350f',.08);ctx.globalAlpha=1;
+   /* รถ */rectU(Pb,k,.8,4,5.2,5.8,'#fde68a','#92400e');circ(Pb,k,1.8,6.1,.45,'#334155');circ(Pb,k,4.2,6.1,.45,'#334155');circ(Pb,k,1.8,6.1,.15,'#e2e8f0');circ(Pb,k,4.2,6.1,.15,'#e2e8f0');{const q=Pb(3,5.45);txt('รถ',q[0],q[1],'#78350f',Math.max(11,k*.42),'center','middle',800)}
+   /* ม้า */[[9.2,5,9.0],[9.8,5.1,9.9],[11.5,5.1,11.3],[12.1,5,12.4]].forEach(([a,b,c])=>stick(Pa,k,[[a,b],[c,6.5]],'#7c4a1e',.26));stick(Pa,k,[[8.6,3.9],[8.1,4.6],[8.15,5.3]],'#57340f',.2);
+   {const q=Pa(10.6,4.3);ctx.fillStyle='#a16207';ctx.beginPath();ctx.ellipse(q[0],q[1],2.1*k,.95*k,0,0,7);ctx.fill()}poly(Pa,[[12.2,3.85],[12.9,2.35],[13.5,2.45],[12.9,4.5]],'#a16207');{const q=Pa(13.6,2.55);ctx.fillStyle='#a16207';ctx.beginPath();ctx.ellipse(q[0],q[1],.75*k,.38*k,.45,0,7);ctx.fill()}poly(Pa,[[13.0,2.1],[13.2,1.6],[13.4,2.15]],'#a16207');circ(Pa,k,13.55,2.35,.08,'#1e293b');stick(Pa,k,[[12.95,2.3],[12.3,3.5]],'#57340f',.14);
+   {const q=Pa(10.6,5.75);txt('ม้า',q[0],q[1],'#57340f',Math.max(11,k*.42),'center','middle',800)}},
+  ar:{a:{o:'B',p:[2.0,4.55,4.2,4.55],c:PC1,t:'ม้าดึงรถ',l:[3.1,3.55]},b:{o:'A',p:[11.6,3.95,9.4,3.95],c:PC1,t:'รถดึงม้า',l:[10.5,2.95]},
+   f:{o:'B',p:[2.6,6.55,1.0,6.55],c:CO,t:'แรงเสียดทาน',l:[1.8,7.3]},g:{o:'A',p:[9.0,6.55,11.9,6.55],c:CV,t:'พื้นดันม้า',l:[10.45,7.3]}},
+  steps:[{c:'ขั้น 1: ม้าลากรถ ม้ากับรถออกแรงกระทำซึ่งกันและกันผ่านเชือก'},{c:'ขั้น 2: แรงกิริยา: ม้าดึงรถ (กระทำต่อรถ)',add:['a']},{c:'ขั้น 3: แรงปฏิกิริยา: รถดึงม้า ขนาดเท่ากัน ทิศตรงข้าม (กระทำต่อม้า)',add:['b']},{c:'ขั้น 4: แยกม้ากับรถ: แรงคู่นี้กระทำต่อวัตถุคนละก้อน จึงหักล้างกันไม่ได้',sep:1,d:2.5},{c:'ขั้น 5: รถเคลื่อนที่ได้ เพราะแรงที่ม้าดึงรถ มากกว่าแรงเสียดทานที่กระทำต่อรถ',add:['f','g'],d:2.5}],
+  pairs:[['ม้าดึงรถ (ต่อรถ)','รถดึงม้า (ต่อม้า)']],
+  cand:[{L:'ก',o:'A',on:'ม้า',p:[9.4,4.6,11.6,4.6],tl:[12.15,4.6],why:'ทิศเดียวกับแรงกิริยา — แรงปฏิกิริยาต้องมีทิศตรงข้าม'},{L:'ข',o:'B',on:'รถ',p:[4.2,5.3,2.0,5.3],tl:[1.45,5.3],why:'กระทำต่อรถซึ่งเป็นวัตถุก้อนเดียวกับแรงกิริยา — คู่แรงต้องกระทำต่อวัตถุคนละก้อน'},{L:'ค',o:'A',on:'ม้า',p:[11.6,3.75,9.4,3.75],tl:[8.85,3.75],ok:1,why:'รถดึงม้า ขนาดเท่ากัน ทิศตรงข้าม กระทำต่อม้า'},{L:'ง',o:'A',on:'ม้า',p:[11.1,5.25,10.0,5.25],tl:[9.45,5.25],why:'ขนาดไม่เท่ากัน — แรงกิริยาและแรงปฏิกิริยามีขนาดเท่ากันเสมอ'}]},
+ wall:{sep:{A:[-1.2,0],B:[1.1,0]},
+  draw(P,k,o){groundU(P,k,6.55);const Pa=(x,y)=>P(x+o.A[0],y+o.A[1]),Pb=(x,y)=>P(x+o.B[0],y+o.B[1]);
+   rectU(Pb,k,10,.8,11.5,6.55,'#e5e7eb','#6b7280');ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;for(let y=1.3,r=0;y<6.5;y+=.5,r++){const a=Pb(10,y),b=Pb(11.5,y);line(a[0],a[1],b[0],b[1],'#cbd5e1',1);for(let x=10+(r%2?.37:.75);x<11.5;x+=.75){const c=Pb(x,y-.5),dd=Pb(x,y);line(c[0],c[1],dd[0],dd[1],'#cbd5e1',1)}}{const q=Pb(10.75,.35);txt('กำแพง',q[0],q[1],'#374151',Math.max(11,k*.42),'center','middle',800)}
+   stick(Pa,k,[[6.1,6.5],[6.6,5.6],[7.1,4.7]]);stick(Pa,k,[[6.9,6.5],[7.1,5.6],[7.1,4.7]]);stick(Pa,k,[[7.1,4.7],[8.3,3.0]]);stick(Pa,k,[[8.15,3.2],[9.1,3.0],[10,3.05]]);stick(Pa,k,[[8.05,3.35],[9.0,3.5],[10,3.55]]);circ(Pa,k,8.65,2.3,.48,'#fde68a','#1e293b',2);
+   {const q=Pa(6.2,3.9);txt('คน',q[0],q[1],'#1e293b',Math.max(11,k*.42),'center','middle',800)}},
+  ar:{a:{o:'B',p:[10.3,4.3,12.6,4.3],c:PC1,t:'คนผลักกำแพง',l:[12.6,3.4]},b:{o:'A',p:[9.8,3.95,7.6,3.95],c:PC1,t:'กำแพงผลักคน',l:[8.8,4.85]}},
+  steps:[{c:'ขั้น 1: คนผลักกำแพง มือกับกำแพงออกแรงกระทำซึ่งกันและกัน'},{c:'ขั้น 2: แรงกิริยา: คนผลักกำแพง (กระทำต่อกำแพง)',add:['a']},{c:'ขั้น 3: แรงปฏิกิริยา: กำแพงผลักคน ขนาดเท่ากัน ทิศตรงข้าม (กระทำต่อคน)',add:['b']},{c:'ขั้น 4: แยกคนกับกำแพง: แรงคู่นี้กระทำต่อวัตถุคนละก้อน · ถ้าใส่รองเท้าสเก็ต คนจะไถลถอยหลัง',sep:1,d:2.5}],
+  pairs:[['คนผลักกำแพง (ต่อกำแพง)','กำแพงผลักคน (ต่อคน)']],
+  cand:[{L:'ก',o:'A',on:'คน',p:[9.8,3.95,7.6,3.95],tl:[7.05,3.95],ok:1,why:'กำแพงผลักคน ขนาดเท่ากัน ทิศตรงข้าม กระทำต่อคน'},{L:'ข',o:'A',on:'คน',p:[7.6,4.75,9.8,4.75],tl:[7.05,4.75],why:'ทิศเดียวกับแรงกิริยา — แรงปฏิกิริยาต้องมีทิศตรงข้าม'},{L:'ค',o:'B',on:'กำแพง',p:[12.9,5.6,10.6,5.6],tl:[13.45,5.6],why:'กระทำต่อกำแพงซึ่งเป็นวัตถุก้อนเดียวกับแรงกิริยา — คู่แรงต้องกระทำต่อวัตถุคนละก้อน'},{L:'ง',o:'A',on:'คน',p:[9.8,5.55,8.7,5.55],tl:[8.15,5.55],why:'ขนาดไม่เท่ากัน — แรงกิริยาและแรงปฏิกิริยามีขนาดเท่ากันเสมอ'}]},
+ book:{sep:{A:[0,-.9],B:[0,0],C:[0,0]},
+  draw(P,k,o){const Pa=(x,y)=>P(x+o.A[0],y+o.A[1]);rectU(P,k,0,7.4,16,9,'#dcfce7','#16a34a',1.5);{const q=P(1.4,8.25);txt('โลก',q[0],q[1],'#166534',Math.max(11,k*.45),'center','middle',800)}
+   rectU(P,k,4.5,5,11.5,5.45,'#d6a46b','#7c4a1e');rectU(P,k,5,5.45,5.4,7.4,'#b7844d','#7c4a1e');rectU(P,k,10.6,5.45,11,7.4,'#b7844d','#7c4a1e');{const q=P(6.4,6.3);txt('โต๊ะ',q[0],q[1],'#7c4a1e',Math.max(11,k*.42),'center','middle',800)}
+   rectU(Pa,k,6.9,4.2,9.1,5,'#60a5fa','#1d4ed8');{const q=Pa(6.75,4.6);txt('หนังสือ',q[0],q[1],'#1d4ed8',Math.max(11,k*.42),'right','middle',800)}},
+  ar:{w:{o:'A',p:[7.4,4.6,7.4,6.1],c:CF,t:'W: โลกดึงหนังสือ',l:[7.1,5.9],al:'right'},we:{o:'C',p:[7.4,8.95,7.4,7.45],c:CF,t:'หนังสือดึงโลก',l:[7.1,8.2],al:'right'},n:{o:'A',p:[8.6,4.6,8.6,3.1],c:PC2,t:'N: โต๊ะดันหนังสือ',l:[8.9,3.3],al:'left'},nt:{o:'B',p:[8.6,5.05,8.6,6.55],c:PC2,t:'หนังสือกดโต๊ะ',l:[8.9,6.3],al:'left'}},
+  steps:[{c:'ขั้น 1: หนังสือวางนิ่งบนโต๊ะ มีแรงกระทำ 2 คู่'},{c:'ขั้น 2: แรงกิริยาคู่ที่ 1: โลกดึงหนังสือ = น้ำหนัก W (กระทำต่อหนังสือ)',add:['w']},{c:'ขั้น 3: แรงปฏิกิริยา: หนังสือดึงโลก ขนาดเท่ากัน ทิศขึ้น (กระทำต่อโลก)',add:['we']},{c:'ขั้น 4: แรงกิริยาคู่ที่ 2: โต๊ะดันหนังสือ = แรงตั้งฉาก N (กระทำต่อหนังสือ)',add:['n'],sep:1,d:2.5},{c:'ขั้น 5: แรงปฏิกิริยา: หนังสือกดโต๊ะ ขนาดเท่ากัน ทิศลง (กระทำต่อโต๊ะ)',add:['nt']},{c:'ขั้น 6: W กับ N ไม่ใช่คู่กิริยา–ปฏิกิริยา เพราะกระทำต่อหนังสือก้อนเดียวกัน',blink:['w','n'],msg:'W กับ N ไม่ใช่คู่กัน (กระทำต่อหนังสือก้อนเดียว) · W = N เพราะหนังสือสมดุล',d:3.5}],
+  pairs:[['W: โลกดึงหนังสือ (ต่อหนังสือ)','หนังสือดึงโลก (ต่อโลก)'],['N: โต๊ะดันหนังสือ (ต่อหนังสือ)','หนังสือกดโต๊ะ (ต่อโต๊ะ)']],
+  act:'w',cand:[{L:'ก',o:'A',on:'หนังสือ',p:[8.6,4.6,8.6,3.1],tl:[8.6,2.55],why:'นี่คือ N (โต๊ะดันหนังสือ) กระทำต่อหนังสือก้อนเดียวกับ W — W กับ N ไม่ใช่คู่กัน'},{L:'ข',o:'C',on:'โลก',p:[7.4,8.95,7.4,7.45],tl:[6.85,8.2],ok:1,why:'หนังสือดึงโลก ขนาดเท่ากับ W ทิศขึ้น กระทำต่อโลก'},{L:'ค',o:'B',on:'โต๊ะ',p:[9.6,5.05,9.6,6.55],tl:[9.6,7.05],why:'นี่คือหนังสือกดโต๊ะ ซึ่งเป็นคู่ของ N ไม่ใช่คู่ของ W'},{L:'ง',o:'C',on:'โลก',p:[3,7.45,3,8.95],tl:[3.55,8.2],why:'ทิศเดียวกับ W — แรงปฏิกิริยาต้องมีทิศตรงข้าม'}]},
+ kick:{sep:{A:[0,0],B:[2.2,-.7]},
+  draw(P,k,o){groundU(P,k,6.7);const Pb=(x,y)=>P(x+o.B[0],y+o.B[1]);
+   stick(P,k,[[5.6,4.4],[5.5,5.5],[5.3,6.65]]);stick(P,k,[[5.6,4.4],[6.8,5.0],[7.85,5.85]]);{const q=P(7.95,5.9);ctx.fillStyle='#1e293b';ctx.beginPath();ctx.ellipse(q[0],q[1],.38*k,.2*k,.6,0,7);ctx.fill()}stick(P,k,[[5.6,4.4],[5.35,2.75]]);stick(P,k,[[5.4,3.0],[4.5,3.9]]);stick(P,k,[[5.4,3.0],[6.3,3.55]]);circ(P,k,5.3,2.1,.5,'#fde68a','#1e293b',2);
+   {const q=P(3.9,3.0);txt('คน',q[0],q[1],'#1e293b',Math.max(11,k*.42),'center','middle',800)}
+   circ(Pb,k,8.85,5.85,.85,'#fff','#1e293b',2.5);poly(Pb,[[8.85,5.55],[9.13,5.75],[9.03,6.08],[8.67,6.08],[8.57,5.75]],'#1e293b');{const q=Pb(8.85,7.15);txt('ลูกบอล',q[0],q[1],'#1e293b',Math.max(11,k*.42),'center','middle',800)}},
+  ar:{a:{o:'B',p:[8.85,5.85,11.1,5.85],c:PC1,t:'เท้าเตะลูกบอล',l:[10.4,4.75]},b:{o:'A',p:[7.6,5.2,5.4,5.2],c:PC1,t:'ลูกบอลดันเท้า',l:[6.1,6.1]}},
+  steps:[{c:'ขั้น 1: เท้าเตะลูกบอล เท้ากับลูกบอลสัมผัสกันชั่วขณะ'},{c:'ขั้น 2: แรงกิริยา: เท้าเตะลูกบอล (กระทำต่อลูกบอล)',add:['a']},{c:'ขั้น 3: แรงปฏิกิริยา: ลูกบอลดันเท้า ขนาดเท่ากัน ทิศตรงข้าม (กระทำต่อเท้า)',add:['b']},{c:'ขั้น 4: ลูกบอลพุ่งออกไป: แรงคู่นี้กระทำต่อวัตถุคนละก้อน · เตะแรงเท้าก็เจ็บมาก',sep:1,d:2.5}],
+  pairs:[['เท้าเตะลูกบอล (ต่อลูกบอล)','ลูกบอลดันเท้า (ต่อเท้า)']],
+  cand:[{L:'ก',o:'A',on:'เท้า',p:[5.6,4.45,7.8,4.45],tl:[5.05,4.45],why:'ทิศเดียวกับแรงกิริยา — แรงปฏิกิริยาต้องมีทิศตรงข้าม'},{L:'ข',o:'A',on:'เท้า',p:[7.6,5.25,5.4,5.25],tl:[4.85,5.25],ok:1,why:'ลูกบอลดันเท้า ขนาดเท่ากัน ทิศตรงข้าม กระทำต่อเท้า'},{L:'ค',o:'A',on:'เท้า',p:[7.6,6.1,6.5,6.1],tl:[5.95,6.1],why:'ขนาดไม่เท่ากัน — แรงกิริยาและแรงปฏิกิริยามีขนาดเท่ากันเสมอ'},{L:'ง',o:'B',on:'ลูกบอล',p:[11.1,4.75,8.9,4.75],tl:[11.65,4.75],why:'กระทำต่อลูกบอลซึ่งเป็นวัตถุก้อนเดียวกับแรงกิริยา — คู่แรงต้องกระทำต่อวัตถุคนละก้อน'}]},
+ rocket:{sep:{A:[0,.45],B:[0,-.6]},
+  draw(P,k,o,e){const Pa=(x,y)=>P(x+o.A[0],y+o.A[1]),Pb=(x,y)=>P(x+o.B[0],y+o.B[1]);rectU(P,k,3,8.6,13,9,'#cbd5e1','#64748b',1.5);
+   /* แก๊ส */for(let i=0;i<14;i++){const ph=ST.clk*3+i*1.7,y=5.6+((i*.37+ST.clk*1.2)%1)*2.7,x=8+Math.sin(ph)*.25*(y-5.3),r=.25+.22*(y-5.4);const q=Pa(x,y);ctx.fillStyle=i%3?'rgba(251,146,60,.55)':'rgba(250,204,21,.6)';ctx.beginPath();ctx.arc(q[0],q[1],r*k,0,7);ctx.fill()}{const q=Pa(11.2,8.1);txt('แก๊สร้อน',q[0],q[1],'#c2410c',Math.max(11,k*.42),'center','middle',800)}
+   poly(Pb,[[7,4.2],[6.3,5.3],[7,5.0]],'#dc2626','#7f1d1d');poly(Pb,[[9,4.2],[9.7,5.3],[9,5.0]],'#dc2626','#7f1d1d');rectU(Pb,k,7,1.6,9,5,'#f1f5f9','#334155');poly(Pb,[[7,1.6],[8,.25],[9,1.6]],'#dc2626','#7f1d1d');poly(Pb,[[7.4,5],[8.6,5],[8.8,5.45],[7.2,5.45]],'#475569');circ(Pb,k,8,2.3,.3,'#7dd3fc','#0369a1');{const q=Pb(5.7,2.6);txt('จรวด',q[0],q[1],'#334155',Math.max(11,k*.42),'center','middle',800)}},
+  ar:{a:{o:'A',p:[8,5.8,8,7.9],c:PC1,t:'จรวดดันแก๊ส',l:[5.6,7.0]},b:{o:'B',p:[8,4.6,8,2.6],c:PC1,t:'แก๊สดันจรวด',l:[10.4,3.6]}},
+  steps:[{c:'ขั้น 1: จรวดพ่นแก๊สร้อนออกทางท้าย'},{c:'ขั้น 2: แรงกิริยา: จรวดดันแก๊สลง (กระทำต่อแก๊ส)',add:['a']},{c:'ขั้น 3: แรงปฏิกิริยา: แก๊สดันจรวดขึ้น ขนาดเท่ากัน ทิศตรงข้าม (กระทำต่อจรวด)',add:['b']},{c:'ขั้น 4: จรวดพุ่งขึ้น แก๊สพุ่งลง: แรงคู่นี้กระทำต่อวัตถุคนละก้อน',sep:1,d:2.5}],
+  pairs:[['จรวดดันแก๊ส (ต่อแก๊ส)','แก๊สดันจรวด (ต่อจรวด)']],
+  cand:[{L:'ก',o:'B',on:'จรวด',p:[7.4,2.6,7.4,4.6],tl:[6.45,3.6],why:'ทิศเดียวกับแรงกิริยา — แรงปฏิกิริยาต้องมีทิศตรงข้าม'},{L:'ข',o:'B',on:'จรวด',p:[8,4.6,8,3.6],tl:[8,3.05],why:'ขนาดไม่เท่ากัน — แรงกิริยาและแรงปฏิกิริยามีขนาดเท่ากันเสมอ'},{L:'ค',o:'B',on:'จรวด',p:[8.6,4.6,8.6,2.6],tl:[9.55,3.6],ok:1,why:'แก๊สดันจรวด ขนาดเท่ากัน ทิศขึ้น กระทำต่อจรวด'},{L:'ง',o:'A',on:'แก๊ส',p:[9.6,7.9,9.6,5.8],tl:[10.2,6.85],why:'กระทำต่อแก๊สซึ่งเป็นวัตถุก้อนเดียวกับแรงกิริยา — คู่แรงต้องกระทำต่อวัตถุคนละก้อน'}]}};
+const SEL={pick:null,chk:false};
+function scn3(B){const d=B.d,u=B.u,k=Math.min(d.w/16,(d.h-u*.6)/9.2),ox=d.x+(d.w-16*k)/2,oy=d.y+u*.4+(d.h-u*.4-9.2*k)/2;return{k,P:(x,y)=>[ox+x*k,oy+y*k]}}
+function sepOff(sc,e){const o={};['A','B','C'].forEach(n=>{const v=sc.sep[n]||[0,0];o[n]=[v[0]*e,v[1]*e]});return o}
+function ar3(P,k,a,o,g=1,al=1,lw=5,lab=true){lw=Math.max(lw,k*lw/55);const off=o[a.o],p=a.p,x0=p[0]+off[0],y0=p[1]+off[1],x1=x0+(p[2]-p[0])*g,y1=y0+(p[3]-p[1])*g;if(g<=.02)return;ctx.globalAlpha=al;const A0=P(x0,y0),A1=P(x1,y1);arrow(A0[0],A0[1],A1[0],A1[1],a.c,lw);if(lab&&g>=1&&a.t){const q=P(a.l[0]+off[0],a.l[1]+off[1]);tag(a.t,q[0],q[1],a.c,a.al||'center')}ctx.globalAlpha=1}
+function draw3(){const B=boxes(.6),{u}=B,sc=SC3[T.s3],{k,P}=scn3(B);
+  if(T.md3==='self')return draw3S(B,sc,k,P);
+  const cur=CUR(),fin=FIN();let e=0;sc.steps.forEach((s,i)=>{if(s.sep)e=Math.max(e,E(fq(i+1)))});const o=sepOff(sc,e);sc.draw(P,k,o,e);
+  const blinkS=sc.steps.findIndex(s=>s.blink)+1;
+  sc.steps.forEach((s,i)=>(s.add||[]).forEach(id=>{const q=fq(i+1);if(q<=0)return;let al=1;if(blinkS&&cur===blinkS&&!fin&&sc.steps[blinkS-1].blink.includes(id)){const bq=fq(blinkS);al=bq<.75?.25+.75*(.5+.5*Math.cos(bq/.75*Math.PI*8)):1}else if(blinkS&&cur===blinkS&&!fin)al=.3;ar3(P,k,sc.ar[id],o,E(Math.min(1,q*1.4)),al)}));
+  if(blinkS&&cur===blinkS&&!fin){const bq=fq(blinkS),a=bq<.1?bq/.1:bq>.8?Math.max(0,(1-bq)/.2):1;note(sc.steps[blinkS-1].msg,B,a)}
+  caption(sc.steps.map(s=>s.c),B,u);info3(B,sc)}
+function info3(B,sc){const I=B.i,u=B.u,shown=id=>{let r=false;sc.steps.forEach((s,i)=>{if((s.add||[]).includes(id)&&fq(i+1)>=1)r=true});return r},ids=Object.keys(sc.ar),rows=[];
+  sc.pairs.forEach((p,j)=>{const ia=T.s3==='book'?(j?'n':'w'):'a',ib=T.s3==='book'?(j?'nt':'we'):'b',c=sc.ar[ia].c;rows.push([['แรงกิริยา',c],[shown(ia)?p[0]:'?',c]]);rows.push([['แรงปฏิกิริยา',c],[shown(ib)?p[1]:'?',c]])});
+  const done=FIN();rows.push(['ขนาด / ทิศ',done?'เท่ากัน / ตรงข้าม':'?']);rows.push([['กระทำต่อ',CF],[done?'วัตถุคนละก้อน → หักล้างกันไม่ได้':'?',CF]]);
+  table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?Math.min(.75,rows.length*.11):.95),u},rows)}
+function badge(L,x,y,col,r,fill){ctx.fillStyle=fill?col:'#fff';ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.stroke();txt(L,x,y+1,fill?'#fff':col,r*1.25,'center','middle',800)}
+function candG(c){return{o:c.o,p:c.p,c:'#64748b'}}
+function draw3S(B,sc,k,P){const u=B.u,o=sepOff(sc,0);sc.draw(P,k,o,0);const act=sc.ar[sc.act||'a'];ar3(P,k,act,o,1,1,5);
+  sc.cand.forEach(c=>{const sel=SEL.pick===c.L,col=SEL.chk?(c.ok?act.c:sel?CF:'#94a3b8'):sel?CP:'#64748b',al=SEL.chk&&!c.ok&&!sel?.45:1;ar3(P,k,{o:c.o,p:c.p,c:col},o,1,al,sel||(SEL.chk&&c.ok)?6:4,false);
+    const q=P(c.tl[0]+o[c.o][0],c.tl[1]+o[c.o][1]);ctx.globalAlpha=al;badge(c.L,q[0],q[1],SEL.chk&&c.ok?CV:col,Math.max(10,Math.min(u*1.15,k*.27)),sel||SEL.chk&&c.ok);ctx.globalAlpha=1});
+  const st=!SEL.pick?'ทำเอง: ลูกศรใดคือแรงปฏิกิริยาของ "'+act.t+'" · แตะลูกศรหรือกดปุ่ม ก–ง':!SEL.chk?'เลือก '+SEL.pick+' แล้ว · กด ✓ ตรวจคำตอบ':sc.cand.find(c=>c.L===SEL.pick).ok?'ถูกต้อง ✓ '+sc.cand.find(c=>c.ok).why:'ยังไม่ถูก · คำตอบคือ '+sc.cand.find(c=>c.ok).L;
+  {let f=Math.max(12,W<700?u*.95:u*1.15);font(f,800);const w=ctx.measureText(st).width,mw=(B.wide?W*.6:W)-u*1.6;if(w>mw)f=Math.max(9,f*mw/w);txt(st,u*.8,u*1.1,'#0f766e',f,'left','middle',800)}
+  const I=B.i;table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.55:.95),u},[[['แรงกิริยา',act.c],[act.t+' (ต่อ'+{horse:'รถ',wall:'กำแพง',book:'หนังสือ',kick:'ลูกบอล',rocket:'แก๊ส'}[T.s3]+')',act.c]],...sc.cand.map(c=>[[c.L,SEL.pick===c.L?CP:'#334155'],[(SEL.chk?(c.ok?'✓ ':'✗ '):'')+'กระทำต่อ'+c.on,SEL.chk&&c.ok?CV:'#334155']])])}
+
+/* ===================== ④ มวลกับน้ำหนัก ===================== */
+const PL={earth:{n:'โลก',g:9.8,bg:'#ecfeff',gr:'#86efac'},moon:{n:'ดวงจันทร์',g:1.6,bg:'#f1f5f9',gr:'#cbd5e1'},mars:{n:'ดาวอังคาร',g:3.7,bg:'#fff1e6',gr:'#fdba74'},jupiter:{n:'ดาวพฤหัสบดี',g:24.8,bg:'#fef9c3',gr:'#fcd34d'},space:{n:'อวกาศ',g:0,bg:'#e0e7ff',gr:'#a5b4fc'}};
+const hx=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),mix=(a,b,t)=>{const A=hx(a),Bc=hx(b);return 'rgb('+A.map((v,i)=>Math.round(v+(Bc[i]-v)*t)).join(',')+')'};
+function wts(m){const r=[];let x=m;[5,2,1].forEach(w=>{while(x>=w-1e-9){r.push(w);x-=w}});return r}
+function draw4(){const B=boxes(.6),{u}=B,d=B.d,p=PL[T.pl],e=PL.earth,q2=SP.p>1?E(fq(2)):0,g=e.g+(p.g-e.g)*q2,bg=mix(e.bg,p.bg,q2),gr=mix(e.gr,p.gr,q2),Wt=T.m4*g,flo=T.pl==='space'&&q2>.6;
+  rbox(d.x,d.y+u*.2,d.w,d.h-u*.2,bg,'#cbd5e1',1,10);if(T.pl==='space'&&q2>0){ctx.globalAlpha=q2;for(let i=0;i<40;i++)dot(d.x+((i*0.618*7.1)%1)*d.w,d.y+u+((i*0.382*3.7)%1)*(d.h*.6),1.6,'#6366f1');ctx.globalAlpha=1}
+  const {k,P}=scn3(B),bob=flo?(-.35-.15*Math.sin(ST.clk*1.6))*Math.min(1,(q2-.6)/.4):0;rectU(P,k,0,8,16,9.1,gr,'',0);
+  /* ตาชั่งสปริง */rectU(P,k,1.7,8,3.3,8.2,'#64748b','#334155',1.5);rectU(P,k,2.35,.6,2.6,8,'#94a3b8','#334155',1.5);rectU(P,k,2.35,.5,5,.75,'#94a3b8','#334155',1.5);
+  const ye=1.3+4*Math.min(250,Wt)/250;rectU(P,k,4.85,1,6.15,5.6,'#fff','#334155',1.5);for(let v=0;v<=250;v+=25){const y=1.3+4*v/250,a=P(4.85,y),b=P(v%50?5.1:5.3,y);line(a[0],a[1],b[0],b[1],'#334155',1.5);if(v%50===0){const c=P(5.45,y);txt(String(v),c[0],c[1],'#334155',Math.max(9,k*.32),'left','middle',700)}}{const c=P(5.5,.85);txt('N',c[0],c[1],'#334155',Math.max(9,k*.32),'center','bottom',800)}
+  {const n=12,t=P(4.2,.75),b=P(4.2,ye);ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(t[0],t[1]);for(let i=1;i<=n;i++){const y=t[1]+(b[1]-t[1])*(i-.5)/n;ctx.lineTo(t[0]+(i%2?1:-1)*.28*k,y)}ctx.lineTo(b[0],b[1]);ctx.stroke()}
+  {const a=P(4.2,ye),b=P(4.95,ye);line(a[0],a[1],b[0],b[1],CF,2.5);poly(P,[[4.85,ye],[5.1,ye-.15],[5.1,ye+.15]],CF)}
+  const hb=ye+.35+bob;stick(P,k,[[4.2,ye],[4.2,ye+.35]],'#475569',.06);rectU(P,k,3.5,hb,4.9,hb+1.1,BXF,BXS);{const c=P(4.2,hb+.55);fitTxt(T.m4+' kg',c[0],c[1],'#fff',Math.max(11,k*.4),1.3*k)}
+{const c=P(6.35,ye);tag('W = '+(SP.p>=1-1e-9?r1(Wt)+' N':'? N'),c[0],c[1],CF,'left')}
+  {const c=P(4.2,8.55);txt('ตาชั่งสปริง (วัดน้ำหนัก)',c[0],c[1],'#0f172a',Math.max(10,k*.36),'center','middle',800)}
+  /* ตาชั่งคาน */rectU(P,k,11.3,8,13.3,8.2,'#64748b','#334155',1.5);rectU(P,k,12.18,2.6,12.42,8,'#94a3b8','#334155',1.5);poly(P,[[12.3,2.45],[12,2.95],[12.6,2.95]],'#475569');rectU(P,k,9.7,2.45,14.9,2.65,'#64748b','#334155',1.5);stick(P,k,[[12.3,2.45],[12.3,1.55]],CF,.07);
+  [[9.8,'L'],[14.8,'R']].forEach(([x,s])=>{stick(P,k,[[x,2.6],[x-.95,5.3]],'#64748b',.04);stick(P,k,[[x,2.6],[x+.95,5.3]],'#64748b',.04);rectU(P,k,x-1.05,5.3,x+1.05,5.45,'#94a3b8','#334155',1.5)});
+  const fb=flo?bob:0;rectU(P,k,9.1,4.2+fb,10.5,5.3+fb,BXF,BXS);{const c=P(9.8,4.75+fb);fitTxt(T.m4+' kg',c[0],c[1],'#fff',Math.max(11,k*.4),1.3*k)}
+  {let y=5.3+fb*1.2;wts(T.m4).forEach(w=>{const ww=w===5?1.5:w===2?1.1:.8,hh=w===5?.5:w===2?.4:.32;rectU(P,k,14.8-ww/2,y-hh,14.8+ww/2,y,'#94a3b8','#334155',1.5);const c=P(14.8,y-hh/2);fitTxt(w+' kg',c[0],c[1],'#0f172a',Math.max(9,k*.3),ww*k*.9);y-=hh+.02})}
+  {const c=P(12.3,B.wide?1.0:7.1);tag(flo?'ชั่งไม่ได้ (ไม่มีน้ำหนัก)':'สมดุล ✓ มวล '+T.m4+' kg',c[0],c[1],flo?CF:CV)}
+  {const c=P(12.3,8.55);txt('ตาชั่งคาน (วัดมวล)',c[0],c[1],'#0f172a',Math.max(10,k*.36),'center','middle',800)}
+  {const c=P(8.4,.4);tag((q2>.5?p.n:'โลก')+' · g = '+fN(g,1)+' m/s²',c[0],c[1],'#0f766e')}
+  caption(STEPS().map(x=>x[0]),B,u);
+  const I=B.i,cur=SP.p,fin=FIN(),rows=['earth','moon','mars','jupiter','space'].map(n=>{const P1=PL[n],sh=n==='earth'?cur>=1-1e-9:n===T.pl?cur>=2-1e-9:fin,r=[P1.n,fN(P1.g,1),sh?String(T.m4):'?',[sh?r1(T.m4*P1.g):'?',CF]];if(n===T.pl&&cur>1)r.sum=1;return r});
+  table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.6:.95),u},rows,['สถานที่','g (m/s²)','มวล (kg)','น้ำหนัก (N)'])}
+
+function draw(){[draw1,draw2,draw3,draw4][T.tab-1]()}
+function tick(dt){ST.clk+=dt;const cont=(T.tab===3&&T.s3==='rocket')||(T.tab===4&&T.pl==='space'&&SP.p>1)||(T.tab===1&&T.s1==='space');if(SP.p>=SP.tg)return cont;const L=STEPS(),k=Math.floor(SP.p+1e-9)+1,du=L[k-1]?L[k-1][1]:1;SP.p=Math.min(SP.tg,SP.p+dt*SPD.v/Math.max(.2,du));if(SP.p>=SP.tg){SP.play=false;renderP()}return true}
+
+/* ===================== แผงล่าง ===================== */
+function calc(){const t=T.tab,k=CUR(),fin=FIN(),wait=`<div class="cl note">กด ▶ เล่น เพื่อดูต่อเนื่อง หรือ ถัดไป ▶ เพื่อดูทีละขั้น</div>`;
+  if(t===1){const s=T.s1;let h='';
+    if(s==='go'){h=`<div class="cl"><span class="lab">กฎข้อที่ 1</span>ถ้า ΣF = 0 วัตถุจะรักษาสภาพเดิม: นิ่งก็นิ่งต่อไป เคลื่อนที่ก็เคลื่อนที่ด้วยความเร็วคงตัว</div>`;if(!fin)return h+wait;
+      return h+`<div class="cl"><span class="lab">กล่อง</span>ΣF ต่อกล่อง = 0 (พื้นรถลื่น) → a = 0 → กล่องยัง<span class="res">นิ่งเทียบกับพื้น</span></div><div class="cl"><span class="lab">รถ</span>มีแรงดึง F กระทำ → รถเร่งออกไป · เทียบกับรถ กล่องจึงดูเหมือนไถลไปข้างหลัง ${r2(ST1().xc-1)} m</div><div class="cl note">ชีวิตจริง: รถเมล์ออกตัวกะทันหัน ผู้โดยสารเอนไปข้างหลัง</div>`}
+    if(s==='brake'){h=`<div class="cl"><span class="lab">กฎข้อที่ 1</span>ถ้า ΣF = 0 วัตถุที่เคลื่อนที่จะเคลื่อนที่ด้วยความเร็วคงตัวต่อไป</div>`;if(!fin)return h+wait;
+      return h+`<div class="cl"><span class="lab">กล่อง</span>ก่อนชน ΣF ต่อกล่อง = 0 → v กล่องคงที่ = <span class="res">1.20 m/s</span> แม้รถจะหยุดแล้ว</div><div class="cl"><span class="lab">รถ</span>แรงเบรกกระทำต่อรถ → รถช้าลงจาก 1.20 m/s จนหยุด · กล่องหยุดได้เมื่อผนังหน้ารถออกแรงกระทำ</div><div class="cl note">ชีวิตจริง: รถเบรกกะทันหัน คนในรถพุ่งไปข้างหน้า เข็มขัดนิรภัยจึงช่วยออกแรงหยุดตัวเรา</div>`}
+    if(s==='space'){h=`<div class="cl"><span class="lab">สูตร</span>ΣF = 0 → v คงตัว · ΣF ≠ 0 → v เปลี่ยน</div>`;if(!fin)return h+wait;
+      return h+`<div class="cl"><span class="lab">ช่วงไม่มีแรงลัพธ์</span>v = <span class="res">1.00 m/s</span> คงตัว (ทุก 1 s เคลื่อนที่ได้ 1 m เท่ากัน)</div><div class="cl"><span class="lab">ช่วงเปิดไอพ่น 1 s</span>มีแรงลัพธ์ → ความเร็วเพิ่มจาก 1.00 เป็น 2.00 m/s → ปิดไอพ่นแล้ว v = <span class="res">2.00 m/s</span> คงตัว</div><div class="cl note">ในอวกาศไม่มีแรงต้าน นักบินที่ลอยออกไปจะลอยไปเรื่อย ๆ จนกว่าจะมีแรงมากระทำ</div>`}
+    h=`<div class="cl"><span class="lab">ความเฉื่อย</span>สมบัติของวัตถุที่จะรักษาสภาพการเคลื่อนที่เดิม · วัตถุมวลมากมีความเฉื่อยมาก</div>`;if(k<2||!(SP.p>=2-1e-9))return h+wait;
+    return h+`<div class="cl"><span class="lab">กล่องเบา</span>a = F/m = 4/${T.mL} = <span class="res">${r2(4/T.mL)} m/s²</span> → ผลัก 1 s ได้ v = ${r2(4/T.mL)} m/s</div><div class="cl"><span class="lab">กล่องหนัก</span>a = F/m = 4/${T.mH} = <span class="res">${r2(4/T.mH)} m/s²</span> → ผลัก 1 s ได้ v = ${r2(4/T.mH)} m/s</div>`+(fin?`<div class="cl note">แรงเท่ากัน กล่องที่มวลมากกว่าเปลี่ยนความเร็วได้น้อยกว่า = เปลี่ยนสภาพการเคลื่อนที่ได้ยากกว่า</div>`:wait)}
+  if(t===2){const Q=T2();let h='';if(SP.p<1-1e-9)return `<div class="cl"><span class="lab">กฎข้อที่ 2</span>ΣF = ma → a = ΣF/m</div>`+wait;
+    h+=T.fr?(Q.stat?`<div class="cl"><span class="lab">แรงลัพธ์</span>แรงดึง ${T.F2} N ไม่เกินแรงเสียดทานสูงสุด ${T.fk} N → ΣF = <span class="res">0 N</span> รถไม่เคลื่อนที่</div>`:`<div class="cl"><span class="lab">แรงลัพธ์</span>ΣF = F − f = ${T.F2} − ${T.fk} = <span class="res">${fN(Q.sf,0)} N</span></div>`):`<div class="cl"><span class="lab">แรงลัพธ์</span>ไม่มีแรงเสียดทาน → ΣF = F = <span class="res">${T.F2} N</span></div>`;
+    if(SP.p>=2-1e-9){const t2=Math.floor(Q.tEnd+1e-9);h+=t2>=1?`<div class="cl"><span class="lab">จากตาราง</span>a = Δv/Δt = (${r1(Q.a*t2)} − 0)/(${t2} − 0) = <span class="res">${r2(Q.a)} m/s²</span></div>`:`<div class="cl"><span class="lab">จากตาราง</span>รถถึงปลายรางก่อน 1 s</div>`}
+    if(fin)h+=`<div class="cl"><span class="lab">สูตร</span>a = ΣF/m = ${fN(Q.sf,0)}/${T.m2} = <span class="res">${r2(Q.a)} m/s²</span> ตรงกับค่าจากตาราง</div><div class="cl note">กด 📌 บันทึกจุด แล้วเปลี่ยน F (มวลเท่าเดิม) จะได้เส้นตรงผ่านจุดกำเนิด ความชัน = 1/m · ลากหัวลูกศร F เพื่อเปลี่ยนแรง</div>`;else h+=wait;return h}
+  if(t===3){const sc=SC3[T.s3];if(T.md3==='self'){const act=sc.ar[sc.act||'a'];if(!SEL.chk)return `<div class="cl"><span class="lab">ทำเอง</span>แรงกิริยาคือ "${act.t}" · เลือกลูกศรที่เป็นแรงปฏิกิริยา แล้วกด ✓ ตรวจ</div><div class="cl"><span class="lab">หลักคิด</span>แรงปฏิกิริยา: ขนาดเท่ากัน · ทิศตรงข้าม · กระทำต่อวัตถุอีกก้อน (ผู้ออกแรงกับผู้ถูกกระทำสลับกัน)</div>`;
+      return sc.cand.map(c=>`<div class="cl"><span class="lab">${c.L}${c.ok?' ✓':' ✗'}</span>${c.why}</div>`).join('')}
+    if(!fin)return `<div class="cl"><span class="lab">กฎข้อที่ 3</span>ทุกแรงกิริยาย่อมมีแรงปฏิกิริยาที่มีขนาดเท่ากันและทิศตรงข้ามกันเสมอ · F<sub>AB</sub> = −F<sub>BA</sub></div>`+wait;
+    let h=`<div class="cl"><span class="lab">กฎข้อที่ 3</span>F<sub>AB</sub> = −F<sub>BA</sub> · ${sc.pairs.map(p=>p[0]+' ↔ '+p[1]).join(' · ')}</div><div class="cl"><span class="lab">จำ</span>แรงคู่กิริยา–ปฏิกิริยา ขนาดเท่ากัน ทิศตรงข้าม เกิดพร้อมกัน และ<span class="res">กระทำต่อวัตถุคนละก้อน</span> จึงไม่หักล้างกัน</div>`;
+    if(T.s3==='horse')h+=`<div class="cl note">ม้าเคลื่อนที่ได้เพราะพื้นดันม้าไปข้างหน้ามากกว่าแรงที่รถดึงม้า · รถเคลื่อนที่ได้เพราะม้าดึงรถมากกว่าแรงเสียดทาน (พิจารณาแรงที่กระทำต่อวัตถุก้อนเดียว)</div>`;
+    if(T.s3==='book')h+=`<div class="cl note">W กับ N กระทำต่อหนังสือก้อนเดียวกัน ขนาดเท่ากันเพราะหนังสือสมดุล (กฎข้อที่ 1) ไม่ใช่เพราะกฎข้อที่ 3</div>`;return h}
+  const p=PL[T.pl];let h=`<div class="cl"><span class="lab">สูตร</span>W = mg · มวล m (kg) วัดด้วยตาชั่งคาน · น้ำหนัก W (N) วัดด้วยตาชั่งสปริง</div>`;if(SP.p<1-1e-9)return h+wait;
+  h+=`<div class="cl"><span class="lab">บนโลก</span>W = mg = (${T.m4})(9.8) = <span class="res">${r1(T.m4*9.8)} N</span></div>`;
+  if(SP.p>=2-1e-9)h+=`<div class="cl"><span class="lab">บน${p.n}</span>W = mg = (${T.m4})(${fN(p.g,1)}) = <span class="res">${r1(T.m4*p.g)} N</span> · มวลยังเป็น ${T.m4} kg</div>`;
+  if(fin)h+=`<div class="cl note">${T.pl==='space'?'ในอวกาศไกลจากดาว g ≈ 0 วัตถุจึงไม่มีน้ำหนัก (ลอยได้) แต่ยังมีมวลและความเฉื่อยเท่าเดิม ผลักยังรู้สึกหนัก':'น้ำหนักบน'+p.n+' เป็น '+fN(p.g/9.8,2)+' เท่าของบนโลก เพราะ g ต่างกัน แต่มวลไม่เปลี่ยน'}</div>`;else h+=wait;return h}
+
+/* ===================== แผงปรับค่า ===================== */
+function renderP(){const t=T.tab;
+  if(t===1)return finishP(PBS()+`<span class="label">สถานการณ์</span>${segH('s1s','s1',[['go','รถออกตัว'],['brake','รถเบรก'],['space','นักบินอวกาศ'],['mass','มวลน้อย / มาก']])}`+(T.s1==='mass'?prow('mL','มวลกล่องเบา','kg')+prow('mH','มวลกล่องหนัก','kg'):'')+spdUI(),[['mL','','',1,1,10,T],['mH','','',1,1,10,T]]);
+  if(t===2)return finishP(PBS()+`<div class="seg" id="g2"><button data-g="rec">📌 บันทึกจุด</button><button data-g="clr">🗑 ล้าง</button><button data-g="aF" aria-pressed="${T.gm==='aF'}">กราฟ a–ΣF</button><button data-g="am" aria-pressed="${T.gm==='am'}">กราฟ a–1/m</button></div>${segH('frs','fr',[[false,'ไม่มีแรงเสียดทาน'],[true,'มีแรงเสียดทาน']])}`+prow('F2','แรงดึง F','N')+prow('m2','มวลรถ m','kg')+(T.fr?prow('fk','แรงเสียดทาน f','N'):'')+spdUI(),[['F2','','',1,0,20,T],['m2','','',1,1,10,T],['fk','','',1,0,10,T]]);
+  if(t===3){const sc=SC3[T.s3];return finishP(`<span class="label">โหมด</span>${segH('md3s','md3',[['self','ทำเอง'],['show','ดูเฉลย']])}`+(T.md3==='self'?`<div class="seg" id="c3">${sc.cand.map(c=>`<button data-c="${c.L}" aria-pressed="${SEL.pick===c.L}">${c.L}</button>`).join('')}</div><div class="seg" id="k3"><button data-k3="chk">✓ ตรวจ</button><button data-k3="re">↺ ทำใหม่</button></div>`:PBS())+`<span class="label">สถานการณ์</span>${segH('s3s','s3',[['horse','ม้าลากรถ'],['wall','คนผลักกำแพง'],['book','หนังสือบนโต๊ะ'],['kick','เตะลูกบอล'],['rocket','จรวด']])}`+(T.md3==='self'?'':spdUI()),[])}
+  return finishP(PBS()+`<span class="label">ย้ายไปที่</span>${segH('pls','pl',[['moon','ดวงจันทร์'],['mars','ดาวอังคาร'],['jupiter','ดาวพฤหัสบดี'],['space','อวกาศ (g ≈ 0)']])}`+prow('m4','มวลวัตถุ m','kg')+spdUI(),[['m4','','',1,1,10,T]])}
+$('params').addEventListener('click',e=>{const pb=e.target.closest('#pb button');if(pb){const d=pb.dataset.p,N=NS();if(d==='play'){if(SP.play){SP.play=false;SP.tg=SP.p}else{if(SP.p>=N-1e-9)SP.p=0;SP.play=true;SP.tg=N}}else if(d==='nx'){SP.play=false;if(SP.p>=N-1e-9)SP.p=0;SP.tg=Math.min(N,Math.floor(SP.p+1e-6)+1)}else if(d==='rs')spReset(false);renderP();S.dirty=true;return}
+  const g=e.target.closest('#g2 button');if(g){if(g.dataset.g==='aF'||g.dataset.g==='am'){T.gm=g.dataset.g;renderP()}else if(g.dataset.g==='clr')PTS=[];else{if(!FIN()){toast('ดูให้ครบ 3 ขั้นก่อน แล้วค่อยบันทึกจุด');return}const Q=T2();if(PTS.some(p=>p.m===T.m2&&p.sf===Q.sf))toast('จุดนี้บันทึกไว้แล้ว');else{PTS.push({m:T.m2,sf:Q.sf,a:Q.a});toast('บันทึกจุด ΣF = '+fN(Q.sf,0)+' N, m = '+T.m2+' kg แล้ว')}}S.dirty=true;return}
+  const c=e.target.closest('#c3 button');if(c){if(!SEL.chk){SEL.pick=c.dataset.c;renderP();S.dirty=true}return}
+  const kk=e.target.closest('#k3 button');if(kk){if(kk.dataset.k3==='re'){SEL.pick=null;SEL.chk=false}else if(SEL.pick)SEL.chk=true;else toast('เลือกลูกศรก่อน');renderP();S.dirty=true}});
+function onSeg(k){if(k==='md3'||k==='s3'){SEL.pick=null;SEL.chk=false}if(k!=='gm')spReset(false)}
+function onP(k){spReset(!!S.drag)}function onTab(){spReset(false)}
+const clrAll=()=>{PTS=[];SEL.pick=null;SEL.chk=false};$('reset').addEventListener('click',clrAll);addEventListener('keydown',e=>{if(e.target.tagName!=='INPUT'&&(e.key==='r'||e.key==='R'))clrAll()});
+/* ===================== ลาก ===================== */
+function dragStart(p){const u=UU();if(T.tab===2&&G2){const tx=G2.x0+T.F2*G2.kF;if(Math.hypot(p.x-tx,p.y-G2.y)<u*2.5)return{k:'F'};return null}
+  if(T.tab===3&&T.md3==='self'&&!SEL.chk){const B=boxes(.6),{P}=scn3(B),sc=SC3[T.s3];let best=null,bd=u*2.2;sc.cand.forEach(c=>{const a=P(c.p[0],c.p[1]),b=P(c.p[2],c.p[3]),l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,t=Math.max(0,Math.min(1,((p.x-a[0])*(b[0]-a[0])+(p.y-a[1])*(b[1]-a[1]))/l/l)),dd=Math.hypot(p.x-a[0]-t*(b[0]-a[0]),p.y-a[1]-t*(b[1]-a[1]));if(dd<bd){bd=dd;best=c.L}});if(best){SEL.pick=best;renderP();S.dirty=true}}return null}
+function dragMove(p){if(S.drag&&S.drag.k==='F'&&G2)setParam('F2',(p.x-G2.x0)/G2.kF)}
+
+start();
+</script>
+</body>
+</html>

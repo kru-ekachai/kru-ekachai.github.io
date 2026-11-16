@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>การนำกฎการเคลื่อนที่ไปใช้</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn,.calc .cl{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.prange{width:100%;accent-color:var(--accent);margin:0 0 .2em}
+.params{gap:calc(var(--u)*.15)!important}
+.nuc{display:inline-flex;align-items:center;white-space:nowrap}.nuc .az{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:.95;font-size:.62em;margin-right:.08em}.nuc .az sup,.nuc .az sub{vertical-align:baseline;position:static}
+.calc table{border-collapse:collapse;font-size:.95em;margin:.15em 0}.calc td,.calc th{padding:.05em .9em .05em 0;text-align:left;white-space:nowrap}.calc th{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em}
+.calc tr.hit td{color:#15803d;font-weight:700}
+
+@media (max-width:760px){.calc td{white-space:normal!important}}
+@media (max-width:760px) and (orientation:portrait){.app{grid-template-rows:auto 56vh auto}}
+.seg{flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>การนำกฎการเคลื่อนที่ไปใช้</h1>
+    <div class="tabs" role="tablist" id="tabs"><button role="tab" aria-selected="true" data-t="1">① มวลผูกเชือก</button><button role="tab" aria-selected="false" data-t="2">② ลิฟต์และตาชั่ง</button><button role="tab" aria-selected="false" data-t="3">③ รอก</button></div>
+    <div class="spacer"></div>
+    <div class="tools"><button class="btn" id="reset">↺ เริ่มใหม่</button><button class="btn" id="fs">⛶ เต็มจอ</button></div>
+  </div>
+  <div class="panel stage" id="stageBox"><canvas id="cv"></canvas><div class="toast" id="toast"></div></div>
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+<script>
+/* ===================== ตัวช่วยร่วม ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const fN=(x,d)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺'};
+const SUBd={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const sup=s=>String(s).split('').map(c=>SUPd[c]||c).join(''),sub=s=>String(s).split('').map(c=>SUBd[c]||c).join('');
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-40)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+sup(e)}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(()=>layout()).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw=3){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3.2);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+function wave(x1,y1,x2,y2,col,u,lp){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const a=Math.atan2(y2-y1,x2-x1),A=u*.42;lp=lp||u*1.1;
+  ctx.save();ctx.translate(x1,y1);ctx.rotate(a);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();for(let s=0;s<=L;s+=1.2)ctx.lineTo(s,A*Math.sin(2*Math.PI*s/lp)*Math.min(1,s/(lp*.6),(L-s)/(lp*.6)));ctx.stroke();ctx.restore()}
+/* สัญลักษณ์นิวไคลด์ ᴬ_Z X */
+function nucSym(x,y,A,Z,X,size,col='#0f172a',ax='center'){font(size,700);const wX=ctx.measureText(X).width;font(size*.5,700,'"JetBrains Mono",monospace');const wn=Math.max(ctx.measureText(String(A)).width,ctx.measureText(String(Z)).width);
+  const tw=wn+3+wX;let x0=ax==='center'?x-tw/2:ax==='left'?x:x-tw;ctx.fillStyle=col;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+  ctx.fillText(String(A),x0+wn,y-size*.38);ctx.fillText(String(Z),x0+wn,y+size*.12);font(size,700);ctx.textAlign='left';ctx.fillText(X,x0+wn+3,y+size*.12);return tw}
+const nucTxt=(A,Z,X)=>`<span class="nuc"><span class="az"><sup>${A}</sup><sub>${Z}</sub></span>${X}</span>`;
+/* ปุ่มกลุ่ม (seg) */
+function segSync(id,attr,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+function segOn(id,fn){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(b)fn(b)})}
+/* แผงปรับค่าทั่วไป: [key,label,unit,step,min,max,obj] */
+let SPEC=[];
+function renderParams(spec,hint=''){SPEC=spec;$('params').innerHTML='<span class="label">ปรับค่า</span>'+spec.map(([k,l,u,st,a,b,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div><input class="prange" type="range" data-r="${k}" min="${a}" max="${b}" step="${st}" value="${o[k]}" aria-label="${l}">`).join('')+(hint?`<span class="hint2">${hint}</span>`:'')}
+function setParam(k,v){const sp=SPEC.find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;const r=document.querySelector(`#params input[data-r="${k}"]`);if(r&&document.activeElement!==r)r.value=v;S.dirty=true;if(typeof onParam==='function')onParam(k)}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SPEC.find(x=>x[0]===b.dataset.k);setParam(b.dataset.k,sp[6][b.dataset.k]+sp[3]*(+b.dataset.d))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k],input[data-r]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k||i.dataset.r,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i){const sp=SPEC.find(x=>x[0]===i.dataset.k);if(sp)i.value=sp[6][i.dataset.k]}});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
+
+const DEF={tab:1,md1:'pull',sd:'L',nb:3,m1:2,m2:3,m3:5,F1:20,el:'upA',me:50,ae:2,pu:'table',p1:4,p2:2};
+
+/* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
+const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
+const R2D=180/Math.PI,D2R=Math.PI/180;
+const T={...DEF};
+const S={dirty:true,drag:null};
+function ray(x1,y1,x2,y2,col,dash,arw,lw=3){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.setLineDash(dash?[8,6]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  if(arw){const mx=x1+(x2-x1)*.55,my=y1+(y2-y1)*.55,a=Math.atan2(y2-y1,x2-x1),L=12;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*L*.6,my+Math.sin(a)*L*.6);ctx.lineTo(mx+Math.cos(a+2.5)*L*.6,my+Math.sin(a+2.5)*L*.6);ctx.lineTo(mx+Math.cos(a-2.5)*L*.6,my+Math.sin(a-2.5)*L*.6);ctx.closePath();ctx.fill()}}
+function arcAng(cx,cy,r,a0,a1,col,lab,u){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();let d=a1-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;ctx.arc(cx,cy,r,a0,a0+d,d<0);ctx.stroke();if(lab){const am=a0+d/2;tag(lab,cx+Math.cos(am)*(r+u*2.4),cy+Math.sin(am)*(r+u*2.4),col)}}
+function dashLine(x1,y1,x2,y2,col,lw=2){ray(x1,y1,x2,y2,col,true,false,lw)}
+function dot(x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function txt(s,x,y,col,px,al='center',bl='middle',w=700){font(px,w);ctx.fillStyle=col;ctx.textAlign=al;ctx.textBaseline=bl;ctx.fillText(s,x,y)}
+/* ---------- อนิเมชันทีละขั้น ---------- */
+const A={p:99,tg:99,N:6,last:0,spd:1.25};
+function replay(){A.p=0;A.tg=99;S.dirty=true}
+function instant(){A.p=99;S.dirty=true}
+function stepA(){if(A.p>=A.N-1e-3){A.p=0;A.tg=1}else A.tg=Math.floor(A.p+1e-6)+1;S.dirty=true}
+const fr=k=>Math.max(0,Math.min(1,A.p-k));
+function aseg(k,x1,y1,x2,y2,col,dash,arw,lw){const f=fr(k);if(f<=0)return;ray(x1,y1,x1+(x2-x1)*f,y1+(y2-y1)*f,col,dash,arw&&f>=1,lw)}
+function apoly(k,pts,col,dash,arw){/* วาดเส้นหลายช่วงตามสัดส่วนความยาว */const f=fr(k);if(f<=0||pts.length<2)return;let L=0;const d=[];for(let i=1;i<pts.length;i++){d.push(Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));L+=d[i-1]}
+  let rem=L*f;for(let i=1;i<pts.length&&rem>0;i++){const t=Math.min(1,rem/d[i-1]);const a=pts[i-1],b=pts[i];ray(a.x,a.y,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,col,dash,arw&&f>=1&&i===Math.ceil(pts.length/2));rem-=d[i-1]}}
+function toEdge(x,y,dx,dy){let t=1e9;if(dx>0)t=Math.min(t,(W-x)/dx);if(dx<0)t=Math.min(t,-x/dx);if(dy>0)t=Math.min(t,(H-y)/dy);if(dy<0)t=Math.min(t,-y/dy);if(t>1e8)t=0;return{x:x+dx*t,y:y+dy*t}}
+function stageTag(list,y){A.N=list.length;const i=Math.min(A.N,Math.floor(A.p+1e-6)+1);tag('ขั้น '+i+'/'+A.N+' : '+list[i-1],W/2,y===undefined?UU()*1.4:y,TC)}
+const aniDone=()=>!animTab()||A.p>=A.N-1e-3;
+const WAIT='<div class="cl note">ดูรังสีให้ครบทุกขั้น แล้วคำตอบจะขึ้นตรงนี้</div>';
+/* ภาพลูกศรค่อย ๆ งอก + กะพริบที่ปลาย */
+function growImg(k,x,y0,y1,col,alpha=1){const f=fr(k);if(f<=0)return 0;const u=UU();if(f<1){ctx.fillStyle=`rgba(37,99,235,${.4*(1-f)})`;ctx.beginPath();ctx.arc(x,y1,u*(1+2.5*(1-f)),0,7);ctx.fill()}
+  ctx.globalAlpha=alpha;if(Math.abs(y1-y0)*f>6)arrow(x,y0,x,y0+(y1-y0)*f,col,5);ctx.globalAlpha=1;return f}
+/* ---------- เลนส์บาง ---------- */
+function drawLens(x,ay,h,cvx,u,col='#7dd3fc'){const w=u*1.6;ctx.fillStyle='rgba(125,211,252,.35)';ctx.strokeStyle='#0284c7';ctx.lineWidth=2.5;ctx.beginPath();
+  if(cvx){ctx.moveTo(x,ay-h);ctx.quadraticCurveTo(x+w*1.6,ay,x,ay+h);ctx.quadraticCurveTo(x-w*1.6,ay,x,ay-h)}
+  else{ctx.moveTo(x-w,ay-h);ctx.lineTo(x+w,ay-h);ctx.quadraticCurveTo(x+w*.15,ay,x+w,ay+h);ctx.lineTo(x-w,ay+h);ctx.quadraticCurveTo(x-w*.15,ay,x-w,ay-h)}ctx.closePath();ctx.fill();ctx.stroke()}
+function axisMarks(ay,list,u){list.forEach(([x,l])=>{if(x<2||x>W-2)return;dot(x,ay,4,'#0f172a');txt(l,x,ay+6,'#0f172a',Math.max(13,u*1.05),'center','top',800)})}
+/* หาภาพเลนส์บาง: s>0 หน้าเลนส์, f เลนส์นูน + เว้า − */
+function thin(s,f){if(Math.abs(s-f)<1e-9)return{inf:true};const sp=s*f/(s-f);return{sp,m:sp/s}}
+/* ---------- แผงปรับค่า ---------- */
+const segH=(id,key,list)=>`<div class="seg" id="${id}" data-key="${key}">${list.map(([v,l])=>`<button data-v="${v}" aria-pressed="${String(T[key])===String(v)}">${l}</button>`).join('')}</div>`;
+const prow=(k,l,un)=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${T[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${un}</span></div><input class="prange" type="range" data-r="${k}" value="${T[k]}" aria-label="${l}">`;
+const ANI='<span class="label">อนิเมชัน</span><div class="seg" id="aniSeg"><button data-a="play">▶ เล่นอีกครั้ง</button><button data-a="step">⏭ ทีละขั้น</button></div>';
+function finishP(h,spec){SPEC=spec||[];$('params').innerHTML=h;SPEC.forEach(([k,,,st,a,b])=>{const r=document.querySelector(`#params input[data-r="${k}"]`);if(r){r.min=a;r.max=b;r.step=st;r.value=T[k]}})}
+function syncInputs(){document.querySelectorAll('#params input[data-k],#params input[data-r]').forEach(x=>{if(x!==document.activeElement){const k=x.dataset.k||x.dataset.r;if(T[k]!==undefined)x.value=T[k]}})}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sg=b.closest('.seg');if(!sg)return;
+  if(sg.id==='aniSeg'){b.dataset.a==='play'?replay():stepA();return}
+  const key=sg.dataset.key;if(key&&b.dataset.v!==undefined){const o=T[key],v=b.dataset.v;T[key]=typeof o==='boolean'?v==='true':(v!==''&&!isNaN(+v)?+v:v);if(typeof onSeg==='function')onSeg(key);renderP();replay()}});
+$('params').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.r)replay()});
+function onParam(k){if(typeof onP==='function')onP(k);if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.r)instant();else replay();syncInputs()}
+/* ---------- แท็บ / ลาก / วงรอบ ---------- */
+function setTab(t){if(typeof auStop==='function')auStop();T.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));if(typeof onTab==='function')onTab(t);renderP();replay()}
+function resetAll(){const t=T.tab;Object.keys(T).forEach(k=>delete T[k]);Object.assign(T,DEF);setTab(t)}
+$('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
+cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
+const endDrag=()=>{if(S.drag){S.drag=null;if(typeof dragEnd==='function')dragEnd();replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
+function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
+  if(typeof tick==='function'&&tick(dt))S.dirty=true;
+  if(S.dirty&&W){S.dirty=false;ctx.fillStyle=typeof BG==='function'?BG():'#f8faf9';ctx.fillRect(0,0,W,H);draw();setCalc(calc())}requestAnimationFrame(loop)}
+function start(){setTab(T.tab);layout();requestAnimationFrame(loop)}
+/* ---------- สีจากความยาวคลื่น (nm) ---------- */
+function lamRGB(l){let r=0,g=0,b=0;if(l<440){r=-(l-440)/60;b=1}else if(l<490){g=(l-440)/50;b=1}else if(l<510){g=1;b=-(l-510)/20}else if(l<580){r=(l-510)/70;g=1}else if(l<645){r=1;g=-(l-645)/65}else r=1;
+  const f=l<420?.3+.7*(l-380)/40:l>700?.3+.7*(780-l)/80:1;return[r*f,g*f,b*f]}
+const lamCol=(l,a=1)=>{const[r,g,b]=lamRGB(l);return `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`};
+function lamName(l){return l<450?'ม่วง':l<495?'น้ำเงิน':l<570?'เขียว':l<590?'เหลือง':l<620?'แสด':'แดง'}
+/* ---------- เสียงจริง (Web Audio) ---------- */
+const AU={c:null,m:null,on:false,vol:.3,v:{}};
+function auInit(){try{if(!AU.c){AU.c=new (window.AudioContext||window.webkitAudioContext)();AU.m=AU.c.createGain();AU.m.gain.value=0;const lim=AU.c.createDynamicsCompressor();AU.m.connect(lim);lim.connect(AU.c.destination)}AU.c.resume()}catch(e){}}
+function auMaster(){if(AU.m)AU.m.gain.setTargetAtTime(AU.on?.35*AU.vol*AU.vol:0,AU.c.currentTime,.05)}
+function auSet(on){AU.on=on;if(on)auInit();auMaster();if(!on)auStop()}
+function auWave(harm){const re=new Float32Array(harm.length+1),im=new Float32Array(harm.length+1);harm.forEach((a,i)=>im[i+1]=a);return AU.c.createPeriodicWave(re,im)}
+function auTone(id,f,amp,harm){/* โทนต่อเนื่อง: amp 0..1 */if(!AU.on||!AU.c)return;let v=AU.v[id];if(!v){const o=AU.c.createOscillator(),g=AU.c.createGain();g.gain.value=0;o.connect(g);g.connect(AU.m);o.start();v=AU.v[id]={o,g,h:null}}
+  const hk=harm?harm.join():'';if(hk!==v.h){v.h=hk;if(harm)v.o.setPeriodicWave(auWave(harm));else v.o.type='sine'}v.o.frequency.setTargetAtTime(Math.max(10,Math.min(20000,f)),AU.c.currentTime,.02);v.g.gain.setTargetAtTime(Math.max(0,Math.min(1,amp)),AU.c.currentTime,.03)}
+function auOff(id){const v=AU.v[id];if(v&&AU.c)v.g.gain.setTargetAtTime(0,AU.c.currentTime,.03)}
+function auStop(){Object.keys(AU.v).forEach(auOff)}
+function auBlip(f,dur,amp,when){if(!AU.on||!AU.c)return;const t=AU.c.currentTime+(when||0),o=AU.c.createOscillator(),g=AU.c.createGain();o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+.01);g.gain.exponentialRampToValueAtTime(.0005,t+dur);o.connect(g);g.connect(AU.m);o.start(t);o.stop(t+dur+.05)}
+function auNoise(dur,amp,when,lp){if(!AU.on||!AU.c)return;const n=Math.floor(AU.c.sampleRate*dur),b=AU.c.createBuffer(1,n,AU.c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const s=AU.c.createBufferSource(),f=AU.c.createBiquadFilter(),g=AU.c.createGain();f.type='lowpass';f.frequency.value=lp||800;g.gain.value=amp;s.buffer=b;s.connect(f);f.connect(g);g.connect(AU.m);s.start(AU.c.currentTime+(when||0))}
+function auUI(){return spdUI()+`<span class="label">เสียงจริง</span><div class="seg" id="auSeg"><button data-au="1" aria-pressed="${AU.on}">🔊 เปิดเสียง</button><button data-au="0" aria-pressed="${!AU.on}">🔇 ปิดเสียง</button></div><div class="prow"><span class="pl">ความดัง</span><input id="auVol" class="prange" type="range" min="0" max="100" value="${Math.round(AU.vol*100)}" aria-label="ความดัง"></div>`}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#auSeg button');if(b){auSet(b.dataset.au==='1');document.querySelectorAll('#auSeg button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.au==='1')===AU.on));S.dirty=true}});
+$('params').addEventListener('input',e=>{if(e.target.id==='auVol'){AU.vol=+e.target.value/100;auMaster()}});
+/* ---------- แถบปรับความเร็ว (ภาพ + จังหวะเสียง) ---------- */
+const SPD={v:1};
+function spdUI(){return `<div class="prow"><span class="pl">ความเร็ว <b id="spdV">${SPD.v.toFixed(2).replace(/0$/,'')}×</b></span><input id="spdR" class="prange" type="range" min="0.1" max="2" step="0.05" value="${SPD.v}" aria-label="ความเร็ว"></div>`}
+$('params').addEventListener('input',e=>{if(e.target.id==='spdR'){SPD.v=+e.target.value;const l=$('spdV');if(l)l.textContent=SPD.v.toFixed(2).replace(/0$/,'')+'×';S.dirty=true}});
+
+
+const animTab=()=>false;
+const ST={clk:0};
+const CF='#dc2626',CV='#16a34a',CP='#7c3aed',CO='#ea580c',CBL='#2563eb',BXF='#f59e0b',BXS='#b45309';
+const r2=v=>fN(v,2),r1=v=>fN(v,1);
+const E=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function boxes(k=.6){const u=UU(),wide=W>=H*1.2;return wide?{u,wide,d:{x:u,y:u*2.4,w:W*.6-u,h:H-u*3.4},i:{x:W*.62,y:u,w:W*.38-u*1.2,h:H-u*2}}:{u,wide,d:{x:u*.6,y:u*2,w:W-u*1.2,h:H*k-u*1.4},i:{x:u*.6,y:H*(k+.02),w:W-u*1.2,h:H*(.98-k)-u*.6}}}
+function table(b,rows,head){const u=b.u||UU(),n=rows.length+(head?1:0),rh=Math.min(u*2.8,b.h/n),fz=Math.max(11,Math.min(u*1.45,rh*.45)),cols=(head||rows[0]).length,cw=b.w/cols;let y=b.y+(b.h-rh*n)/2;ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;
+  const row=(r,bg,bold)=>{ctx.fillStyle=bg;ctx.fillRect(b.x,y,b.w,rh);ctx.strokeRect(b.x,y,b.w,rh);r.forEach((c,j)=>{const [s,col]=Array.isArray(c)?c:[c,'#0f172a'];font(fz,800);let f=fz;const w=ctx.measureText(s).width;if(w>cw-u*.6)f=Math.max(9,fz*(cw-u*.6)/w);txt(s,b.x+cw*(j+.5),y+rh/2,col,f,'center','middle',bold?800:700)});y+=rh};
+  if(head)row(head,'#e2e8f0',1);rows.forEach((r,i)=>row(r,r.sum?'#fef2f2':i%2?'#f8fafc':'#fff',r.sum))}
+function rbox(x,y,w,h,fill,stroke,lw=2,r=0){ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.beginPath();if(r)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);ctx.fill();if(stroke)ctx.stroke()}
+function line(x1,y1,x2,y2,col,lw=2){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function fitTxt(s,x,y,col,fz,mw,al='center',w=800){font(fz,w);const tw=ctx.measureText(s).width;if(tw>mw)fz=Math.max(9,fz*mw/tw);txt(s,x,y,col,fz,al,'middle',w)}
+/* กล่องข้อความเหลือง (กะพริบ/จาง) */
+function note(msg,B,al=1,yy){const u=B.u;ctx.globalAlpha=al;let fz=Math.max(14,u*1.4);font(fz,800);let w=ctx.measureText(msg).width;const mw=B.d.w-u*2;if(w>mw){fz*=mw/w;font(fz,800);w=ctx.measureText(msg).width}const bx=B.d.x+B.d.w/2,by=yy===undefined?B.d.y+B.d.h-u*1.3:yy;rbox(bx-w/2-u*.8,by-fz*.9,w+u*1.6,fz*1.8,'rgba(254,243,199,.97)','#d97706',2,8);txt(msg,bx,by,'#92400e',fz,'center','middle',800);ctx.globalAlpha=1}
+/* ===================== ขั้นตอน (เล่น / ถัดไป) ===================== */
+const SP={p:0,tg:0,play:false};
+const NS=()=>STEPS().length;
+const fq=i=>Math.max(0,Math.min(1,SP.p-(i-1))),FIN=()=>SP.p>=NS()-1e-9,CUR=()=>Math.ceil(SP.p-1e-9);
+function spReset(full){SP.play=false;SP.p=SP.tg=full?NS():0}
+function caption(list,B,u){const k=CUR(),s=k<=0?'กด ▶ เล่น หรือ ถัดไป ▶ เพื่อดูทีละขั้น':list[Math.min(k,list.length)-1];let f=Math.max(12,W<700?u*.95:u*1.15);font(f,800);const w=ctx.measureText(s).width,mw=(B.wide?W*.6:W)-u*1.6;if(w>mw)f=Math.max(9,f*mw/w);txt(s,u*.8,u*1.1,'#0f766e',f,'left','middle',800)}
+const PBS=()=>`<div class="seg" id="pb"><button data-p="play">${SP.play?'⏸ หยุด':'▶ เล่น'}</button><button data-p="nx">ถัดไป ▶</button><button data-p="rs">⏮ เริ่มใหม่</button></div>`;
+function stick(P,k,pts,col='#1e293b',lw=.22){ctx.strokeStyle=col;ctx.lineWidth=lw*k;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.stroke()}
+function circ(P,k,x,y,r,fill,stroke,lw=2){const q=P(x,y);ctx.fillStyle=fill;ctx.beginPath();ctx.arc(q[0],q[1],r*k,0,7);ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}
+function poly(P,pts,fill,stroke,lw=2){ctx.fillStyle=fill;ctx.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.closePath();ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}
+function rectU(P,k,x0,y0,x1,y1,fill,stroke,lw=2){const a=P(x0,y0);rbox(a[0],a[1],(x1-x0)*k,(y1-y0)*k,fill,stroke,lw)}
+function groundU(P,k,y,x0=0,x1=16){const a=P(x0,y),b=P(x1,y);line(a[0],a[1],b[0],b[1],'#64748b',2.5);ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;for(let x=x0;x<x1;x+=.45){const q=P(x,y);ctx.beginPath();ctx.moveTo(q[0],q[1]+2);ctx.lineTo(q[0]-.3*k,q[1]+.35*k);ctx.stroke()}}
+function scn3(B){const d=B.d,u=B.u,k=Math.min(d.w/16,(d.h-u*.6)/9.2),ox=d.x+(d.w-16*k)/2,oy=d.y+u*.4+(d.h-u*.4-9.2*k)/2;return{k,P:(x,y)=>[ox+x*k,oy+y*k]}}
+const GG=9.8,SUBN='₁₂₃';
+function STEPS(){const t=T.tab;
+  if(t===1&&T.md1==='push')return stepsP();
+  if(t===1){const n=T.nb,L=[['ขั้น 1: มองทั้งระบบเป็นก้อนเดียว แรงภายนอกในแนวราบมีแค่ F → a = F / มวลรวม',2],['ขั้น 2: ปล่อยให้กล่องทุกก้อนเคลื่อนที่ไปพร้อมกัน ด้วยความเร่งเท่ากัน',2.5],['ขั้น 3: แยกกล่องออกเป็นแผนภาพแรง · ก้อนท้าย m₁ มีแรง T₁ ดึงไปข้างหน้าแรงเดียว → T₁ = m₁a',3]];
+    if(n===3)L.push(['ขั้น 4: ก้อนกลาง m₂ ถูก T₂ ดึงไปข้างหน้า และ T₁ ดึงไปข้างหลัง → T₂ − T₁ = m₂a',2.5],['ขั้น 5: ตรวจกับก้อนหน้า m₃: F − T₂ = m₃a ได้ค่า a เท่าเดิม ✓',2]);else L.push(['ขั้น 4: ตรวจกับก้อนหน้า m₂: F − T₁ = m₂a ได้ค่า a เท่าเดิม ✓',2]);return L}
+  if(t===2)return[['ขั้น 1: แรงที่กระทำต่อคนมี 2 แรง: น้ำหนัก W = mg ลง และแรงที่ตาชั่งดันคน N ขึ้น',2],['ขั้น 2: ลิฟต์'+EL[T.el].n,3],['ขั้น 3: ΣF = ma → N − mg = ma → ตาชั่งอ่านได้ N',2],['ขั้น 4: '+EL[T.el].feel,2]];
+  return[['ขั้น 1: แรงที่กระทำต่อแต่ละก้อน: น้ำหนัก W และแรงตึงเชือก T'+(T.pu==='table'?' (ก้อนบนโต๊ะมี N ด้วย)':''),2],['ขั้น 2: มองทั้งระบบ: a = แรงที่ทำให้ระบบเคลื่อนที่ ÷ มวลรวม',2],['ขั้น 3: ปล่อยระบบ ทั้งสองก้อนเคลื่อนที่ด้วยความเร่งเท่ากัน',2.5],['ขั้น 4: หา T จากก้อนหนึ่ง แล้วตรวจกับอีกก้อน',3]]}
+const tq=k=>{const s=STEPS()[k-1];return s?fq(k)*s[1]:0};
+function scnW(B,w,h){const d=B.d,u=B.u,k=Math.min(d.w/w,(d.h-u*.6)/h),ox=d.x+(d.w-w*k)/2,oy=d.y+u*.4+(d.h-u*.4-h*k)/2;return{k,P:(x,y)=>[ox+x*k,oy+y*k]}}
+function arw(P,x0,y0,x1,y1,col,lw,al=1){if(Math.hypot(x1-x0,y1-y0)<.03)return;ctx.globalAlpha=al;const a=P(x0,y0),b=P(x1,y1);arrow(a[0],a[1],b[0],b[1],col,lw);ctx.globalAlpha=1}
+function tagU(P,s,x,y,col,al='center',a=1){ctx.globalAlpha=a;const q=P(x,y);tag(s,q[0],q[1],col,al);ctx.globalAlpha=1}
+/* ===================== ① มวลผูกเชือก ===================== */
+function Q1(){const ms=T.nb===3?[T.m1,T.m2,T.m3]:[T.m1,T.m2],M=ms.reduce((a,b)=>a+b,0),a=T.F1/M,Ts=[];let acc=0;for(let i=0;i<ms.length-1;i++){acc+=ms[i];Ts.push(acc*a)}return{ms,M,a,Ts}}
+function draw1(){if(T.md1==='push')return draw1P();const B=boxes(.6),{u}=B,{k,P}=scnW(B,13,5.4),Q=Q1(),n=Q.ms.length,cur=CUR(),fin=FIN(),lw=Math.max(4,k*.08);
+  const ws=Q.ms.map(m=>.85+.1*m),hs=Q.ms.map(m=>.8+.07*m),gap=.8,span=ws.reduce((a,b)=>a+b,0)+gap*(n-1),fy=4.25;
+  const e=E(fq(3)),sh=1.5*Math.pow(fq(2),2),x0=Math.max(.3,(13-(span+2+2.2+1.5))/2);
+  /* พื้น */groundU(P,k,fy,0,13);{const a=P(0,fy+.15),b=P(13,fy+.15);rbox(a[0],a[1]-2,b[0]-a[0],k*.1,'#e0f2fe','',0)}
+  let x=x0+sh;const pos=Q.ms.map((m,i)=>{const p={x:x+i*1.0*e,w:ws[i],h:hs[i]};x+=ws[i]+gap;return p});
+  const focus=fin?-1:cur>=3?cur-3:-1,alB=i=>focus<0||focus===i||(n===2&&cur===4&&i===1)?1:.3;const fi=i=>n===3?(cur===5&&i===2):false;
+  const aB=i=>{if(focus<0)return 1;if(n===3){return cur-3===i?1:.3}return (cur===3&&i===0)||(cur===4&&i===1)?1:.3};
+  /* เชือก */for(let i=0;i<n-1;i++){const a=pos[i],b=pos[i+1],y=fy-Math.min(a.h,b.h)/2;ctx.globalAlpha=1-e;const p1=P(a.x+a.w,y),p2=P(b.x,y);line(p1[0],p1[1],p2[0],p2[1],'#78350f',Math.max(2,k*.05));ctx.globalAlpha=1}
+  /* กรอบระบบ */if(cur<=2&&SP.p>0){const a=P(pos[0].x-.25,fy-Math.max(...hs)-.35),b=P(pos[n-1].x+pos[n-1].w+.25,fy+.05);ctx.setLineDash([8,6]);ctx.strokeStyle=CP;ctx.lineWidth=2;ctx.strokeRect(a[0],a[1],b[0]-a[0],b[1]-a[1]);ctx.setLineDash([]);tagU(P,'ระบบ: มวลรวม '+Q.M+' kg',(pos[0].x+pos[n-1].x+pos[n-1].w)/2,fy-Math.max(...hs)-.85,CP)}
+  /* กล่อง */pos.forEach((p,i)=>{ctx.globalAlpha=aB(i);rectU(P,k,p.x,fy-p.h,p.x+p.w,fy,BXF,BXS);const c=P(p.x+p.w/2,fy-p.h/2);fitTxt('m'+SUBN[i]+' = '+Q.ms[i],c[0],c[1]-k*.12,'#fff',Math.max(11,k*.3),p.w*k*.92);fitTxt('kg',c[0],c[1]+k*.2,'#fff',Math.max(10,k*.26),p.w*k*.9);ctx.globalAlpha=1});
+  const kF=2.2/Math.max(1,T.F1),last=pos[n-1],yF=fy-last.h/2;
+  /* F */if(SP.p>0){ctx.globalAlpha=aB(n-1);arw(P,last.x+last.w,yF,last.x+last.w+T.F1*kF,yF,CF,lw);tagU(P,'F = '+T.F1+' N',last.x+last.w+T.F1*kF/2,yF-.7,CF);ctx.globalAlpha=1}
+  /* a */if(SP.p>=1-1e-9&&cur<=2){const xa=(pos[0].x+last.x+last.w)/2,ya=fy-Math.max(...hs)-(cur<=2?1.55:.6);arw(P,xa-.9,ya,xa+.9,ya,CP,lw*.8);tagU(P,'a = '+r2(Q.a)+' m/s²',xa+1.05,ya,CP,'left')}
+  /* แผนภาพแรงหลังแยก */if(e>0){pos.forEach((p,i)=>{const cx=p.x+p.w/2,al=aB(i)*e*.4;arw(P,cx,fy-p.h/2,cx,fy-p.h/2+1.1,'#64748b',lw*.7,al);arw(P,cx,fy-p.h/2,cx,fy-p.h/2-1.1-p.h/2,'#64748b',lw*.7,al);if(al>.3&&k>40){tagU(P,'W',cx+.35,fy+.55,'#64748b','left',al/.4);tagU(P,'N',cx+.35,fy-p.h-.75,'#64748b','left',al/.4)}});
+    for(let i=0;i<n-1;i++){const Ti=Q.Ts[i],L=Ti*kF,a=pos[i],b=pos[i+1],ya=fy-a.h*.7,yb=fy-b.h*.3,sh2=i+3,shown=n===3?(i===0?cur>=3:cur>=4):cur>=3;if(!shown)continue;const g=i===0?E(Math.min(1,fq(3)*1.6)):E(Math.min(1,fq(4)*1.6));const lb=(SP.p>=sh2-1e-9||fin||(i===0?fq(3)>=.6:fq(4)>=.6))?'T'+SUBN[i]+' = '+r1(Ti)+' N':'T'+SUBN[i]+' = ?';
+      arw(P,a.x+a.w,ya,a.x+a.w+L*g,ya,CBL,lw,aB(i));arw(P,b.x,yb,b.x-L*g,yb,CBL,lw,aB(i+1));if(g>=1){tagU(P,lb,a.x+a.w+L/2,ya-.6,CBL,'center',aB(i));tagU(P,lb,b.x-L/2,yb+.75,CBL,'center',aB(i+1))}}}
+  if(cur===3&&!fin){const q=fq(3),al=q<.1?q/.1:q>.85?Math.max(0,(1-q)/.15):1;if(q>.35)note('W กับ N ของแต่ละก้อนหักล้างกันในแนวดิ่ง จึงพิจารณาเฉพาะแรงในแนวราบ',B,Math.min(al,(q-.35)/.1),B.d.y+u*3)}
+  caption(STEPS().map(x=>x[0]),B,u);asmTag(B);
+  const I=B.i,rv=s=>SP.p>=s-1e-9,rows=[['มวลรวม',rv(1)?Q.M+' kg':'?'],[['ความเร่ง a',CP],[rv(1)?r2(Q.a)+' m/s²':'?',CP]],[['T₁ = m₁a',CBL],[rv(3)?r1(Q.Ts[0])+' N':'?',CBL]]];if(n===3)rows.push([['T₂ = (m₁+m₂)a',CBL],[rv(4)?r1(Q.Ts[1])+' N':'?',CBL]]);rows.push([['F',CF],[T.F1+' N',CF]]);
+  table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.5:.95),u},rows)}
+
+/* ===================== ① ผลักกล่องที่ติดกัน ===================== */
+const FS=(i,j)=>'F'+SUBN[i]+SUBN[j];
+function QP(){const ms=T.nb===3?[T.m1,T.m2,T.m3]:[T.m1,T.m2],n=ms.length,M=ms.reduce((a,b)=>a+b,0),a=T.F1/M,L=T.sd==='L',C=[];for(let i=0;i<n-1;i++){const far=L?ms.slice(i+1):ms.slice(0,i+1);C.push(far.reduce((x,y)=>x+y,0)*a)}const ord=L?[...Array(n).keys()].reverse():[...Array(n).keys()];return{ms,n,M,a,L,C,ord}}
+function stepsP(){const Q=QP(),n=Q.n,o=Q.ord,L=Q.L,st=[['ขั้น 1: มองทั้งระบบเป็นก้อนเดียว แรงภายนอกในแนวราบมีแค่ F → a = F / มวลรวม',2],['ขั้น 2: ผลักกล่อง'+(L?'จากด้านซ้าย':'จากด้านขวา')+' กล่องทุกก้อนเคลื่อนที่ไปพร้อมกัน ด้วยความเร่งเท่ากัน',2.5]];
+  o.forEach((b,k)=>{const s=k+3;if(k===0){const nb=L?b-1:b+1;st.push(['ขั้น '+s+': แยกกล่อง · เริ่มจากก้อนไกลแรงผลักที่สุด m'+SUBN[b]+' มีแรงเดียวคือ m'+SUBN[nb]+' ดัน → '+FS(nb,b)+' = m'+SUBN[b]+'a',3])}else if(k<n-1){const pv=L?b-1:b+1,nx=L?b+1:b-1;st.push(['ขั้น '+s+': ก้อนกลาง m'+SUBN[b]+' ถูก m'+SUBN[pv]+' ดันไปข้างหน้า และ m'+SUBN[nx]+' ดันกลับ (กฎข้อ 3) → '+FS(pv,b)+' − '+FS(nx,b)+' = m'+SUBN[b]+'a',2.5])}else{const nx=L?b+1:b-1;st.push(['ขั้น '+s+': ตรวจกับก้อนที่ถูกผลัก m'+SUBN[b]+': F − '+FS(nx,b)+' = m'+SUBN[b]+'a ได้ค่า a เท่าเดิม ✓',2])}});return st}
+function draw1P(){const B=boxes(.6),{u}=B,{k,P}=scnW(B,13,5.4),Q=QP(),n=Q.n,cur=CUR(),fin=FIN(),lw=Math.max(4,k*.08),L=Q.L;
+  const ws=Q.ms.map(m=>.85+.1*m),hs=Q.ms.map(m=>.8+.07*m),span=ws.reduce((a,b)=>a+b,0),fy=4.25,e=E(fq(3)),mv=1.5*Math.pow(fq(2),2)*(L?1:-1),tot=span+(n-1)*2.0+2.2+1.5,x0=(13-tot)/2+(L?2.2:1.5);
+  groundU(P,k,fy,0,13);{const a=P(0,fy+.15),b=P(13,fy+.15);rbox(a[0],a[1]-2,b[0]-a[0],k*.1,'#e0f2fe','',0)}
+  let x=x0+mv;const pos=Q.ms.map((m,i)=>{const p={x:x+i*2.0*e,w:ws[i],h:hs[i]};x+=ws[i];return p});
+  const sStep=b=>3+Q.ord.indexOf(b),aB=b=>fin||cur<3?1:(sStep(b)===cur?1:.3);
+  if(cur<=2&&SP.p>0){const a=P(pos[0].x-.25,fy-Math.max(...hs)-.35),b=P(pos[n-1].x+pos[n-1].w+.25,fy+.05);ctx.setLineDash([8,6]);ctx.strokeStyle=CP;ctx.lineWidth=2;ctx.strokeRect(a[0],a[1],b[0]-a[0],b[1]-a[1]);ctx.setLineDash([]);tagU(P,'ระบบ: มวลรวม '+Q.M+' kg',(pos[0].x+pos[n-1].x+pos[n-1].w)/2,fy-Math.max(...hs)-.85,CP)}
+  pos.forEach((p,i)=>{ctx.globalAlpha=aB(i);rectU(P,k,p.x,fy-p.h,p.x+p.w,fy,BXF,BXS);const c=P(p.x+p.w/2,fy-p.h/2);fitTxt('m'+SUBN[i]+' = '+Q.ms[i],c[0],c[1]-k*.12,'#fff',Math.max(11,k*.3),p.w*k*.92);fitTxt('kg',c[0],c[1]+k*.2,'#fff',Math.max(10,k*.26),p.w*k*.9);ctx.globalAlpha=1});
+  const kF=Math.min(2.2/Math.max(1,T.F1),1.8/Math.max(...Q.C,.01)),pb=L?0:n-1,pp=pos[pb],yF=fy-pp.h/2;
+  if(SP.p>0){ctx.globalAlpha=aB(pb);if(L){arw(P,pp.x-T.F1*kF,yF,pp.x,yF,CF,lw);tagU(P,'F = '+T.F1+' N',pp.x-T.F1*kF/2,fy+.75,CF)}else{arw(P,pp.x+pp.w+T.F1*kF,yF,pp.x+pp.w,yF,CF,lw);tagU(P,'F = '+T.F1+' N',pp.x+pp.w+T.F1*kF/2,fy+.75,CF)}ctx.globalAlpha=1}
+  if(SP.p>=1-1e-9&&cur<=2){const xa=(pos[0].x+pos[n-1].x+pos[n-1].w)/2,ya=fy-Math.max(...hs)-1.55,d=L?1:-1;arw(P,xa-.9*d,ya,xa+.9*d,ya,CP,lw*.8);tagU(P,'a = '+r2(Q.a)+' m/s²',xa+1.05,ya,CP,'left')}
+  if(e>0){pos.forEach((p,i)=>{const cx=p.x+p.w/2,al=aB(i)*e*.4;arw(P,cx,fy-p.h/2,cx,fy-p.h/2+1.1,'#64748b',lw*.7,al);arw(P,cx,fy-p.h/2,cx,fy-p.h/2-1.1-p.h/2,'#64748b',lw*.7,al)});
+    for(let i=0;i<n-1;i++){const sh=Math.min(sStep(i),sStep(i+1));if(cur<sh&&!fin)continue;const g=fin||cur>sh?1:E(Math.min(1,fq(sh)*1.6)),Lc=Q.C[i]*kF*g,a=pos[i],b=pos[i+1],ya=fy-a.h*.68,yb=fy-b.h*.32,lab=fin||cur>sh||fq(sh)>=.6;
+      arw(P,a.x+a.w+Lc,ya,a.x+a.w,ya,CBL,lw,aB(i));arw(P,b.x-Lc,yb,b.x,yb,CBL,lw,aB(i+1));if(g>=1){const v=lab?' = '+r1(Q.C[i])+' N':' = ?',gx=(a.x+a.w+b.x)/2;tagU(P,FS(i+1,i)+v,gx,fy-Math.max(a.h,b.h)-.45,CBL,'center',aB(i));tagU(P,FS(i,i+1)+v,gx,fy+.75,CBL,'center',aB(i+1))}}}
+  if(cur===3&&!fin){const q=fq(3),al=q<.1?q/.1:q>.85?Math.max(0,(1-q)/.15):1;if(q>.35)note('แรงที่กล่องดันกันเป็นคู่กิริยา–ปฏิกิริยา ขนาดเท่ากัน ทิศตรงข้าม · W กับ N หักล้างกันในแนวดิ่ง',B,Math.min(al,(q-.35)/.1),B.d.y+u*3)}
+  caption(stepsP().map(x=>x[0]),B,u);asmTag(B);
+  const I=B.i,rv=s=>SP.p>=s-1e-9,rows=[['มวลรวม',rv(1)?Q.M+' kg':'?'],[['ความเร่ง a',CP],[rv(1)?r2(Q.a)+' m/s²':'?',CP]]];for(let i=0;i<n-1;i++){const sh=Math.min(sStep(i),sStep(i+1));rows.push([[FS(i,i+1)+' = '+FS(i+1,i),CBL],[rv(sh)?r1(Q.C[i])+' N':'?',CBL]])}rows.push([['F (ผลักจาก'+(L?'ซ้าย':'ขวา')+')',CF],[T.F1+' N',CF]]);
+  table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.5:.95),u},rows)}
+function calcP(wait){const Q=QP(),n=Q.n,ms=Q.ms,L=Q.L,rv=s=>SP.p>=s-1e-9,fin=FIN();let h='';if(!rv(1))return `<div class="cl"><span class="lab">หลักคิด</span>มองทั้งระบบหา a ก่อน → แยกทีละก้อน เริ่มจากก้อนที่ไกลแรงผลักที่สุด · F<sub>12</sub> = แรงที่ m₁ กระทำต่อ m₂</div>`+wait;
+  h+=`<div class="cl"><span class="lab">ทั้งระบบ</span>a = F / (${ms.map((_,i)=>'m'+SUBN[i]).join(' + ')}) = ${T.F1} / (${ms.join(' + ')}) = <span class="res">${r2(Q.a)} m/s²</span></div>`;
+  Q.ord.forEach((b,k)=>{if(!rv(k+3)||k===n-1)return;if(k===0){const nb=L?b-1:b+1,c=Math.min(b,nb);h+=`<div class="cl"><span class="lab">ก้อน m${SUBN[b]}</span>${FS(nb,b)} = m${SUBN[b]}a = (${ms[b]})(${r2(Q.a)}) = <span class="res">${r1(Q.C[c])} N</span></div>`}else{const pv=L?b-1:b+1,nx=L?b+1:b-1,cp=Math.min(b,pv),cn=Math.min(b,nx);h+=`<div class="cl"><span class="lab">ก้อน m${SUBN[b]}</span>${FS(pv,b)} − ${FS(nx,b)} = m${SUBN[b]}a → ${FS(pv,b)} = ${r1(Q.C[cn])} + (${ms[b]})(${r2(Q.a)}) = <span class="res">${r1(Q.C[cp])} N</span></div>`}});
+  if(fin){const b=Q.ord[n-1],nx=L?b+1:b-1,c=Math.min(b,nx);h+=`<div class="cl"><span class="lab">ตรวจ m${SUBN[b]}</span>F − ${FS(nx,b)} = ${T.F1} − ${r1(Q.C[c])} = ${r1(T.F1-Q.C[c])} N = (${ms[b]})(${r2(Q.a)}) ✓</div><div class="cl note">แรงที่กล่องดันกันเท่ากับแรงที่ต้องใช้เร่งกล่องที่อยู่ถัดไปทั้งหมด · ผลักจากด้านกล่องเบา แรงดันกันจะมาก · ลองกด "ผลักจาก${L?'ขวา':'ซ้าย'}" แล้วเทียบ</div>`}else h+=wait;return h}
+/* ===================== ② ลิฟต์ ===================== */
+const EL={rest:{b:'นิ่ง',n:'อยู่นิ่ง (v = 0, a = 0)',d:0,feel:'a = 0 → N = mg ตาชั่งอ่านเท่าน้ำหนักจริง รู้สึกปกติ'},up:{b:'ขึ้นด้วยความเร็วคงตัว',n:'เคลื่อนที่ขึ้นด้วยความเร็วคงตัว (a = 0)',d:0,feel:'ลิฟต์กำลังขึ้นก็จริง แต่ a = 0 → N = mg รู้สึกปกติ'},upA:{b:'ขึ้นเร่ง',n:'ออกตัวขึ้น ความเร็วเพิ่ม (a มีทิศขึ้น)',d:1,feel:'a ทิศขึ้น → N = m(g + a) มากกว่า mg รู้สึกหนักขึ้น'},upD:{b:'ขึ้นหน่วง',n:'กำลังขึ้นแต่ช้าลงเพื่อหยุด (a มีทิศลง)',d:-1,feel:'a ทิศลง → N = m(g − a) น้อยกว่า mg รู้สึกเบาลง'},dnA:{b:'ลงเร่ง',n:'ออกตัวลง ความเร็วเพิ่ม (a มีทิศลง)',d:-1,feel:'a ทิศลง → N = m(g − a) น้อยกว่า mg รู้สึกเบาลง'},dnD:{b:'ลงหน่วง',n:'กำลังลงแต่ช้าลงเพื่อหยุด (a มีทิศขึ้น)',d:1,feel:'ลิฟต์กำลังลงก็จริง แต่ a ทิศขึ้น → N = m(g + a) รู้สึกหนักขึ้น'},fall:{b:'เชือกขาด',n:'เชือกขาด ตกอย่างอิสระ (a = g ลง)',d:-1,feel:'a = g ทิศลง → N = m(g − g) = 0 ตาชั่งอ่านได้ 0 รู้สึกไร้น้ำหนัก'}};
+const ELK=['rest','up','upA','upD','dnA','dnD','fall'];
+const aOf=k=>k==='fall'?GG:T.ae,NOf=k=>{const e=EL[k];return Math.max(0,T.me*(GG+e.d*aOf(k)*(e.d?1:0)))};
+function elY(k,s){/* ตำแหน่งบนของลิฟต์ (หน่วยฉาก) และความเร็ว (ทิศ: + ลง) ตามเวลา s∈[0,1] */const q=s;switch(k){case'rest':return{y:2.6,v:0};case'up':return{y:4.4-3.4*q,v:-1};case'upA':return{y:4.6-3.6*q*q,v:-2*q};case'upD':return{y:4.6-3.6*(1-(1-q)*(1-q)),v:-2*(1-q)};case'dnA':return{y:1+3.6*q*q,v:2*q};case'dnD':return{y:1+3.6*(1-(1-q)*(1-q)),v:2*(1-q)};default:return{y:1+3.8*q*q,v:2.4*q}}}
+function draw2(){const B=boxes(.6),{u}=B,{k,P}=scnW(B,11.2,9.2),key=T.el,e=EL[key],cur=CUR(),fin=FIN(),lw=Math.max(4,k*.08);const s=SP.p>1?fq(2):0,st=elY(key,s),v0=elY(key,0).v;let vv=SP.p>1?st.v:(key==='up'?-1:key==='upD'?-2:key==='dnD'?2:0);
+  const cy=st.y,cx=2.2,cw=3.6,ch=3.2,N=NOf(key),Wt=T.me*GG,shN=SP.p>=3-1e-9||cur===3&&fq(3)>.5;
+  /* ปล่อง */rectU(P,k,1.9,.15,6.1,8.75,'#f1f5f9','#94a3b8',1.5);for(let y=.6;y<8.7;y+=1){const a=P(1.9,y),b=P(2.05,y);line(a[0],a[1],b[0],b[1],'#cbd5e1',1)}
+  /* สลิง */if(key==='fall'&&SP.p>1){const a=P(4,.15),b=P(4,1.1);line(a[0],a[1],b[0],b[1],'#475569',2);const c=P(4,cy);ctx.setLineDash([4,4]);line(c[0],c[1],c[0]+k*.15,c[1]-k*.8,'#475569',2);ctx.setLineDash([]);tagU(P,'เชือกขาด!',4,1.5,CF)}else{const a=P(4,.15),b=P(4,cy);line(a[0],a[1],b[0],b[1],'#475569',2.5)}
+  /* ห้องลิฟต์ */rectU(P,k,cx,cy,cx+cw,cy+ch,'#fff','#334155',2.5);
+  /* ตาชั่ง */rectU(P,k,cx+1.1,cy+ch-.32,cx+2.5,cy+ch-.05,'#e2e8f0','#334155',1.5);{const c=P(cx+1.8,cy+ch-.185);fitTxt(shN?fN(N/GG,1)+' kg':'?',c[0],c[1],'#0f766e',Math.max(10,k*.26),1.3*k)}
+  /* คน */const fl=key==='fall'&&SP.p>1?.35*Math.min(1,s*3):0,fy=cy+ch-.32-fl;stick(P,k,[[cx+1.55,fy],[cx+1.8,fy-.8],[cx+2.05,fy]],'#1e293b',.14);stick(P,k,[[cx+1.8,fy-.8],[cx+1.8,fy-1.75]],'#1e293b',.16);stick(P,k,[[cx+1.35,fy-1.05],[cx+1.8,fy-1.6],[cx+2.25,fy-1.05]],'#1e293b',.12);circ(P,k,cx+1.8,fy-2.05,.3,'#fde68a','#1e293b',2);
+  /* v, a */if(Math.abs(vv)>.02){const L=Math.min(2.2,Math.abs(vv)*1),y0=cy+ch/2;arw(P,1.2,y0-Math.sign(vv)*L/2,1.2,y0+Math.sign(vv)*L/2,CV,lw*.8);tagU(P,'v',1.2,y0+Math.sign(vv)*L/2+Math.sign(vv)*.45,CV)}
+  if(SP.p>=1-1e-9&&e.d){const L=Math.min(2.6,aOf(key)*.35+.6),y0=cy+ch/2;arw(P,.5,y0-e.d*L/2*-1,.5,y0-e.d*L/2,CP,lw*.8);tagU(P,'a',.5,y0-e.d*(L/2+.45),CP)}
+  /* แผนภาพแรง */const fx=9,fy0=4.6,kW=2/Wt;rectU(P,k,7.2,.9,10.8,8.4,'#f8fafc','#cbd5e1',1);{const c=P(9,1.35);txt('แผนภาพแรงของคน',c[0],c[1],'#334155',Math.max(10,k*.3),'center','middle',800)}rectU(P,k,fx-.35,fy0-.55,fx+.35,fy0+.55,'#fde68a','#1e293b',1.5);
+  if(SP.p>0){arw(P,fx-.15,fy0,fx-.15,fy0+Wt*kW*E(Math.min(1,fq(1)*1.5)),CF,lw);if(fq(1)>=.7)tagU(P,'W = mg = '+r1(Wt)+' N',fx-.5,fy0+Wt*kW+.1,CF,'right')}
+  if(SP.p>.5){if(shN){arw(P,fx+.15,fy0,fx+.15,fy0-N*kW,CV,lw);tagU(P,'N = '+r1(N)+' N',fx+.5,fy0-N*kW-.1,CV,'left')}else{ctx.setLineDash([6,5]);const a=P(fx+.15,fy0),b=P(fx+.15,fy0-2);line(a[0],a[1],b[0],b[1],CV,2);ctx.setLineDash([]);tagU(P,'N = ?',fx+.5,fy0-2,CV,'left')}}
+  if(shN){const c=P(cx+cw+.15,cy+ch-.2);tag('ตาชั่ง: '+r1(N)+' N',c[0],c[1],'#0f766e','left')}
+  if(cur===4&&!fin||fin)note(e.feel,B,fin?1:Math.min(1,fq(4)*3),B.d.y+B.d.h-u*1.2);
+  caption(STEPS().map(x=>x[0]),B,u);
+  const I=B.i,rows=ELK.map(kk=>{const E2=EL[kk],sh=fin||kk===key&&SP.p>=3-1e-9,r=[E2.b,E2.d===0?'ไม่มี':E2.d>0?'ขึ้น ↑':'ลง ↓',[sh?r1(NOf(kk)):'?',CV]];if(kk===key)r.sum=1;return r});
+  table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.62:.97),u},rows,['สถานการณ์','ทิศ a','N (N)'])}
+/* ===================== ③ รอก ===================== */
+function Q3(){const m1=T.p1,m2=T.p2;if(T.pu==='table'){const a=m2*GG/(m1+m2);return{a,T:m1*a,drive:m2*GG,dl:'m₂g'}}const a=Math.abs(m2-m1)*GG/(m1+m2);return{a,T:2*m1*m2*GG/(m1+m2),drive:Math.abs(m2-m1)*GG,dl:'(m₂ − m₁)g'}}
+function draw3(){const B=boxes(.6),{u}=B,{k,P}=scn3(B),Q=Q3(),cur=CUR(),fin=FIN(),lw=Math.max(4,k*.08),m1=T.p1,m2=T.p2,W1=m1*GG,W2=m2*GG,kF=2.0/Math.max(W1,W2),d=(SP.p>2?Math.pow(fq(3),2):0),showF=SP.p>0,gF=E(Math.min(1,fq(1)*1.5)),shT=SP.p>=4-1e-9||cur===4&&fq(4)>.4;
+  const Tl=shT?'T = '+r1(Q.T)+' N':'T',bw=m=>.8+.09*m,bh=m=>.7+.07*m;
+  if(T.pu==='table'){const ty=3.6,px=11,pr=.4;rectU(P,k,1,ty,px-.35,ty+.35,'#d6a46b','#7c4a1e');rectU(P,k,1.4,ty+.35,1.75,8.6,'#b7844d','#7c4a1e');rectU(P,k,px-1.2,ty+.35,px-.85,8.6,'#b7844d','#7c4a1e');groundU(P,k,8.6);
+    stick(P,k,[[px-.35,ty+.1],[px,ty-.05]],'#475569',.1);circ(P,k,px,ty-pr+.0,pr,'#cbd5e1','#334155',2);circ(P,k,px,ty-pr,.08,'#334155');
+    const D=2.6*d,w1=bw(m1),h1=bh(m1),x1=2.4+D,w2=bw(m2),h2=bh(m2),y2=4.6+D;
+    /* เชือก */{const a=P(x1+w1,ty-h1/2),b=P(px,ty-2*pr+.0),c=P(px+pr,ty-pr),e2=P(px+pr,y2);line(a[0],a[1],b[0],b[1],'#78350f',2.5);ctx.strokeStyle='#78350f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(P(px,ty-pr)[0],P(px,ty-pr)[1],pr*k,-Math.PI/2,0);ctx.stroke();line(c[0],c[1],e2[0],e2[1],'#78350f',2.5)}
+    rectU(P,k,x1,ty-h1,x1+w1,ty,BXF,BXS);{const c=P(x1+w1/2,ty-h1/2);fitTxt('m₁ = '+m1+' kg',c[0],c[1],'#fff',Math.max(10,k*.28),w1*k*.92)}
+    rectU(P,k,px+pr-w2/2,y2,px+pr+w2/2,y2+h2,'#60a5fa','#1d4ed8');{const c=P(px+pr,y2+h2/2);fitTxt('m₂ = '+m2+' kg',c[0],c[1],'#fff',Math.max(10,k*.28),w2*k*.92)}
+    if(showF){const c1=x1+w1/2;arw(P,c1,ty-h1/2,c1,ty-h1/2+W1*kF*gF,'#64748b',lw*.7,.45);arw(P,c1,ty-h1/2,c1,ty-h1/2-W1*kF*gF,'#64748b',lw*.7,.45);if(gF>=1){tagU(P,'W₁',c1-.3,ty+W1*kF*.5,'#64748b','right',.7);tagU(P,'N',c1-.3,ty-h1-W1*kF*.45,'#64748b','right',.7)}
+      arw(P,x1+w1,ty-h1/2+.15,x1+w1+Q.T*kF*gF,ty-h1/2+.15,CBL,lw);if(gF>=1)tagU(P,Tl,x1+w1+Q.T*kF/2,ty-h1/2+.8,CBL);
+      const c2=px+pr;arw(P,c2-.18,y2+h2/2,c2-.18,y2+h2/2+W2*kF*gF,CF,lw);arw(P,c2+.18,y2+h2/2,c2+.18,y2+h2/2-Q.T*kF*gF,CBL,lw);if(gF>=1){tagU(P,'W₂ = '+r1(W2)+' N',c2-.5,y2+h2/2+W2*kF*.8,CF,'right');tagU(P,Tl,c2+.5,y2+h2/2-Q.T*kF*.6,CBL,'left')}}
+    if(SP.p>=2-1e-9||cur===2&&fq(2)>.5){arw(P,x1+w1/2-.7,ty-h1-.6,x1+w1/2+.7,ty-h1-.6,CP,lw*.8);tagU(P,'a',x1+w1/2+1,ty-h1-.6,CP,'left');arw(P,px+pr+w2/2+.6,y2+.1,px+pr+w2/2+.6,y2+1.5,CP,lw*.8);tagU(P,'a = '+r2(Q.a)+' m/s²',px+pr+w2/2+.85,y2+.8,CP,'left')}}
+  else{const px=8,py=1.15,pr=.65;rectU(P,k,5.5,.15,10.5,.35,'#94a3b8','#334155',1.5);stick(P,k,[[px,.35],[px,py]],'#475569',.08);circ(P,k,px,py,pr,'#cbd5e1','#334155',2);circ(P,k,px,py,.1,'#334155');groundU(P,k,8.7,4,12);
+    const dir=Math.sign(m2-m1),D=2*d*dir,w1=bw(m1),h1=bh(m1),w2=bw(m2),h2=bh(m2),y1=4.3-D,y2=4.3+D,x1=px-pr,x2=px+pr;
+    {ctx.strokeStyle='#78350f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(P(px,py)[0],P(px,py)[1],pr*k,Math.PI,0);ctx.stroke();const a=P(x1,py),b=P(x1,y1),c=P(x2,py),e2=P(x2,y2);line(a[0],a[1],b[0],b[1],'#78350f',2.5);line(c[0],c[1],e2[0],e2[1],'#78350f',2.5)}
+    rectU(P,k,x1-w1/2,y1,x1+w1/2,y1+h1,BXF,BXS);{const c=P(x1,y1+h1/2);fitTxt('m₁ = '+m1+' kg',c[0],c[1],'#fff',Math.max(10,k*.28),w1*k*.92)}
+    rectU(P,k,x2-w2/2,y2,x2+w2/2,y2+h2,'#60a5fa','#1d4ed8');{const c=P(x2,y2+h2/2);fitTxt('m₂ = '+m2+' kg',c[0],c[1],'#fff',Math.max(10,k*.28),w2*k*.92)}
+    if(showF){[[x1,y1,h1,W1,'W₁',-1,w1],[x2,y2,h2,W2,'W₂',1,w2]].forEach(([x,y,h,Wv,nm,sd,w])=>{const xo=x+sd*(w/2+.35);arw(P,xo,y+h/2,xo,y+h/2+Wv*kF*gF,CF,lw);arw(P,xo,y+h/2,xo,y+h/2-Q.T*kF*gF,CBL,lw);if(gF>=1){tagU(P,nm+' = '+r1(Wv)+' N',xo+sd*.3,y+h/2+Wv*kF*.75,CF,sd<0?'right':'left');tagU(P,Tl,xo+sd*.3,y+h/2-Q.T*kF*.7,CBL,sd<0?'right':'left')}})}
+    if((SP.p>=2-1e-9||cur===2&&fq(2)>.5)){if(dir===0)tagU(P,'a = 0 ระบบอยู่นิ่ง',px,7.6,CP);else{const xh=dir>0?x2:x1,xl=dir>0?x1:x2,hx=dir>0?12.4:3.6,lx=dir>0?3.6:12.4;arw(P,hx,3.4,hx,4.8,CP,lw*.8);arw(P,lx,4.8,lx,3.4,CP,lw*.8);tagU(P,'a = '+r2(Q.a)+' m/s²',hx+(hx>8?.3:-.3),4.1,CP,hx>8?'left':'right');tagU(P,'a',lx+(lx>8?.3:-.3),4.1,CP,lx>8?'left':'right')}}}
+  if(cur===4&&!fin){const q=fq(4),a=q<.1?q/.1:q>.85?Math.max(0,(1-q)/.15):1;if(q>.35)note(T.pu==='table'?'T น้อยกว่า m₂g เพราะ m₂ กำลังเร่งลง (ถ้า T = m₂g ก้อน m₂ จะไม่เร่ง)':(T.p1===T.p2?'มวลเท่ากัน T = mg ระบบสมดุล':'T อยู่ระหว่าง m₁g กับ m₂g: น้อยกว่าน้ำหนักก้อนหนัก มากกว่าน้ำหนักก้อนเบา'),B,Math.min(a,(q-.35)/.1),B.d.y+B.d.h-u*1.2)}
+  caption(STEPS().map(x=>x[0]),B,u);asmTag(B);
+  const I=B.i,rv=s=>SP.p>=s-1e-9,rows=[['m₁ / m₂',m1+' kg / '+m2+' kg'],['แรงที่ทำให้เคลื่อนที่',rv(2)?Q.dl+' = '+r1(Q.drive)+' N':'?'],[['ความเร่ง a',CP],[rv(2)?r2(Q.a)+' m/s²':'?',CP]],[['แรงตึงเชือก T',CBL],[rv(4)?r1(Q.T)+' N':'?',CBL]],[['W₂ = m₂g',CF],[r1(W2)+' N',CF]]];if(T.pu!=='table')rows.push([['W₁ = m₁g',CF],[r1(W1)+' N',CF]]);
+  table({x:I.x,y:I.y,w:I.w,h:I.h*(B.wide?.55:.95),u},rows)}
+
+function draw(){[draw1,draw2,draw3][T.tab-1]()}
+function tick(dt){ST.clk+=dt;if(SP.p>=SP.tg)return false;const L=STEPS(),k=Math.floor(SP.p+1e-9)+1,du=L[k-1]?L[k-1][1]:1;SP.p=Math.min(SP.tg,SP.p+dt*SPD.v/Math.max(.2,du));if(SP.p>=SP.tg){SP.play=false;renderP()}return true}
+/* ===================== แผงล่าง ===================== */
+function calcBase(){const t=T.tab,fin=FIN(),rv=s=>SP.p>=s-1e-9,wait=`<div class="cl note">กด ▶ เล่น เพื่อดูต่อเนื่อง หรือ ถัดไป ▶ เพื่อดูทีละขั้น</div>`;let h='';
+  if(t===1&&T.md1==='push')return calcP(wait);
+  if(t===1){const Q=Q1(),n=Q.ms.length,ms=Q.ms;if(!rv(1))return `<div class="cl"><span class="lab">หลักคิด</span>มองทั้งระบบหา a ก่อน → แยกทีละก้อนหาแรงตึงเชือก (ΣF = ma)</div>`+wait;
+    h+=`<div class="cl"><span class="lab">ทั้งระบบ</span>a = F / (${ms.map((_,i)=>'m'+SUBN[i]).join(' + ')}) = ${T.F1} / (${ms.join(' + ')}) = <span class="res">${r2(Q.a)} m/s²</span></div>`;
+    if(rv(3))h+=`<div class="cl"><span class="lab">ก้อน m₁</span>T₁ = m₁a = (${ms[0]})(${r2(Q.a)}) = <span class="res">${r1(Q.Ts[0])} N</span></div>`;
+    if(n===3&&rv(4))h+=`<div class="cl"><span class="lab">ก้อน m₂</span>T₂ − T₁ = m₂a → T₂ = ${r1(Q.Ts[0])} + (${ms[1]})(${r2(Q.a)}) = <span class="res">${r1(Q.Ts[1])} N</span></div>`;
+    if(fin){const Tl=Q.Ts[n-2];h+=`<div class="cl"><span class="lab">ตรวจก้อนหน้า</span>F − T${SUBN[n-2]} = m${SUBN[n-1]}a → ${T.F1} − ${r1(Tl)} = ${r1(T.F1-Tl)} N = (${ms[n-1]})(${r2(Q.a)}) ✓</div><div class="cl note">เชือกเส้นที่อยู่ใกล้แรงดึง F ต้องลากมวลมากกว่า จึงตึงมากกว่า · แรงตึงเชือกเป็นแรงภายใน ไม่ต้องใช้ตอนคิดทั้งระบบ</div>`}else h+=wait;return h}
+  if(t===2){const key=T.el,e=EL[key],N=NOf(key),a=aOf(key);h=`<div class="cl"><span class="lab">กฎข้อที่ 2</span>ให้ทิศขึ้นเป็นบวก: N − mg = ma</div>`;if(!rv(3))return h+wait;
+    const sg=e.d>0?'+':'−';h+=e.d===0?`<div class="cl"><span class="lab">แทนค่า</span>a = 0 → N = mg = (${T.me})(9.8) = <span class="res">${r1(N)} N</span></div>`:key==='fall'?`<div class="cl"><span class="lab">แทนค่า</span>a = g ทิศลง → N = m(g − g) = <span class="res">0 N</span></div>`:`<div class="cl"><span class="lab">แทนค่า</span>a = ${fN(a,1)} m/s² ทิศ${e.d>0?'ขึ้น':'ลง'} → N = m(g ${sg} a) = (${T.me})(9.8 ${sg} ${fN(a,1)}) = <span class="res">${r1(N)} N</span></div>`;
+    h+=`<div class="cl"><span class="lab">ตาชั่งแสดง</span>N/g = ${r1(N)}/9.8 = ${fN(N/GG,1)} kg (มวลจริง ${T.me} kg)</div>`;if(fin)h+=`<div class="cl note">ค่าที่ตาชั่งอ่านได้ขึ้นกับทิศของ a ไม่ใช่ทิศที่ลิฟต์เคลื่อนที่ · a ขึ้น → หนักขึ้น · a ลง → เบาลง · a = 0 → ปกติ</div>`;else h+=wait;return h}
+  const Q=Q3(),m1=T.p1,m2=T.p2;if(!rv(2))return `<div class="cl"><span class="lab">หลักคิด</span>มองทั้งระบบ (เชือกยาวคงที่ ทุกก้อนมี a เท่ากัน) → a = แรงที่ทำให้เคลื่อนที่ ÷ มวลรวม → แยกก้อนหา T</div>`+wait;
+  h+=T.pu==='table'?`<div class="cl"><span class="lab">ทั้งระบบ</span>a = m₂g / (m₁ + m₂) = (${m2})(9.8) / (${m1} + ${m2}) = <span class="res">${r2(Q.a)} m/s²</span></div>`:`<div class="cl"><span class="lab">ทั้งระบบ</span>a = (m₂ − m₁)g / (m₁ + m₂) = |${m2} − ${m1}|(9.8) / (${m1} + ${m2}) = <span class="res">${r2(Q.a)} m/s²</span>${m1===m2?' → ระบบอยู่นิ่ง':''}</div>`;
+  if(rv(4)){if(T.pu==='table')h+=`<div class="cl"><span class="lab">ก้อน m₁</span>T = m₁a = (${m1})(${r2(Q.a)}) = <span class="res">${r1(Q.T)} N</span></div><div class="cl"><span class="lab">ตรวจ m₂</span>m₂g − T = m₂a → ${r1(m2*GG)} − ${r1(Q.T)} = ${r1(m2*GG-Q.T)} = (${m2})(${r2(Q.a)}) ✓</div>`;
+    else{const hv=m2>=m1;h+=`<div class="cl"><span class="lab">ก้อน m₁</span>T − m₁g = m₁a${hv?'':' (ก้อน m₁ เร่งลง: m₁g − T = m₁a)'} → T = <span class="res">${r1(Q.T)} N</span></div><div class="cl"><span class="lab">สูตรลัด</span>T = 2m₁m₂g / (m₁ + m₂) = 2(${m1})(${m2})(9.8) / ${m1+m2} = ${r1(Q.T)} N ✓</div>`}}else h+=wait;return h}
+/* ===================== แผงปรับค่า ===================== */
+function renderP(){const t=T.tab;
+  if(t===1)return finishP(PBS()+`<span class="label">แบบ</span>${segH('mds','md1',[['pull','ดึงด้วยเชือก'],['push','ผลักกล่องที่ติดกัน']])}`+(T.md1==='push'?segH('sds','sd',[['L','ผลักจากซ้าย'],['R','ผลักจากขวา']]):'')+`<span class="label">จำนวนกล่อง</span>${segH('nbs','nb',[[2,'2 ก้อน'],[3,'3 ก้อน']])}`+prow('F1',T.md1==='push'?'แรงผลัก F':'แรงดึง F','N')+prow('m1','มวล m₁','kg')+prow('m2','มวล m₂','kg')+(T.nb===3?prow('m3','มวล m₃','kg'):'')+spdUI(),[['F1','','',1,1,40,T],['m1','','',1,1,10,T],['m2','','',1,1,10,T],['m3','','',1,1,10,T]]);
+  if(t===2)return finishP(PBS()+`<span class="label">สถานการณ์</span>${segH('els','el',ELK.map(k=>[k,EL[k].b]))}`+prow('me','มวลคน m','kg')+(T.el==='fall'?'':prow('ae','ความเร่งลิฟต์ a','m/s²'))+spdUI(),[['me','','',5,20,100,T],['ae','','',.5,.5,5,T]]);
+  return finishP(PBS()+`<span class="label">สถานการณ์</span>${segH('pus','pu',[['table','มวลบนโต๊ะห้อยผ่านรอก'],['atw','เครื่องของแอตวูด']])}`+prow('p1','มวล m₁','kg')+prow('p2','มวล m₂','kg')+spdUI(),[['p1','','',1,1,10,T],['p2','','',1,1,10,T]])}
+$('params').addEventListener('click',e=>{const pb=e.target.closest('#pb button');if(pb){const d=pb.dataset.p,N=NS();if(d==='play'){if(SP.play){SP.play=false;SP.tg=SP.p}else{if(SP.p>=N-1e-9)SP.p=0;SP.play=true;SP.tg=N}}else if(d==='nx'){SP.play=false;if(SP.p>=N-1e-9)SP.p=0;SP.tg=Math.min(N,Math.floor(SP.p+1e-6)+1)}else if(d==='rs')spReset(false);renderP();S.dirty=true}});
+function onSeg(k){spReset(false)}function onP(k){spReset(false)}function onTab(){spReset(false)}
+
+const ASM=()=>T.tab===1?'พื้นลื่น · ไม่คิดแรงเสียดทาน':T.tab===3?(T.pu==='table'?'โต๊ะลื่น · ไม่คิดแรงเสียดทาน · เชือกและรอกไม่มีมวล':'ไม่คิดแรงเสียดทานที่รอก · เชือกและรอกไม่มีมวล'):'';
+function calc(){const a=ASM();return (a?`<div class="cl"><span class="lab">หมายเหตุ</span>${a}</div>`:'')+calcBase()}
+function asmTag(B){const a=ASM();if(!a)return;if(T.tab===3){if(B.wide)tag('ⓘ '+a,B.d.x+B.u*.4,B.d.y+B.d.h-B.u*.9,'#0369a1','left')}else tag('ⓘ '+a,B.d.x+B.d.w-B.u*.4,B.d.y+B.u*1.2,'#0369a1','right')}
+
+start();
+</script>
+</body>
+</html>
