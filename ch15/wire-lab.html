@@ -214,7 +214,7 @@ function resetAll(){Object.assign(T,DEF);S.on=false;S.k=0;S.z=0;S.vz=0;setTab(1)
 function g1(){const nr=W<640,k=Math.min(W*(nr?.32:.24),H*.32);return{nr,k,cx:W*(nr?.47:.45),cy:H*(nr?.68:.7)}}
 function P(g,x,y,z){return{x:g.cx+g.k*(x+.55*y),y:g.cy-g.k*(z+.33*y)}}
 const fz=()=>-T.sI*T.sB*Math.sin(T.th*Math.PI/180);          // ทิศแรง (+ ขึ้น)
-const MG=()=>T.m/1000*10;
+const MG=()=>T.m/1000*GV;
 function state1(){const F=S.on?Fmag():0,up=fz()>0,mg=MG();if(F<1e-9)return'none';if(!up)return'down';const r=F/mg;return r>1.02?'rise':r>=.98?'bal':'less'}
 const Fmag=()=>T.I*T.L*T.B*Math.abs(Math.sin(T.th*Math.PI/180));
 function line3(g,a,b,col,lw,dash){const p=P(g,...a),q=P(g,...b);ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.setLineDash(dash||[]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();ctx.setLineDash([])}
@@ -270,7 +270,7 @@ function step(dt){if(T.tab===1){if(S.on){const st=state1(),F=Fmag(),mg=MG();let 
   const tg=S.on?1:0;if(S.k!==tg){S.k+=Math.sign(tg-S.k)*Math.min(Math.abs(tg-S.k),dt*.7);S.dirty=true}if(S.on){S.ph=(S.ph+dt*.22)%1;S.dirty=true}}
 /* ===================== แผงล่าง ===================== */
 function calc(){if(T.tab===1){const s=Math.sin(T.th*Math.PI/180),F=Fmag(),mg=MG(),st=state1(),Ineed=mg/(T.L*T.B*Math.abs(s)||1e-9);
-    return `<div class="cl"><span class="lab">น้ำหนักลวด</span>mg = (${f3(T.m/1000)})(10) = <span class="res">${f3(mg)} N</span> <span class="note">(ใช้ g = 10 m/s²)</span></div><div class="cl"><span class="lab">ขนาดของแรง</span>F = ILB sinθ = (${T.I})(${T.L})(${T.B})(sin ${T.th}°) = (${T.I})(${T.L})(${T.B})(${s.toFixed(3)}) = <span class="res">${f3(F)} N</span></div>
+    return `<div class="cl"><span class="lab">น้ำหนักลวด</span>mg = (${f3(T.m/1000)})(${GV}) = <span class="res">${f3(mg)} N</span></div><div class="cl"><span class="lab">ขนาดของแรง</span>F = ILB sinθ = (${T.I})(${T.L})(${T.B})(sin ${T.th}°) = (${T.I})(${T.L})(${T.B})(${s.toFixed(3)}) = <span class="res">${f3(F)} N</span></div>
     <div class="cl"><span class="lab">ทิศของแรง</span>${Math.abs(s)<.02?'ไม่มีแรง เพราะกระแสขนานกับสนาม':fz()>0?'ตั้งฉากกับพื้นสนาม ชี้ขึ้น ↑':'ตั้งฉากกับพื้นสนาม ชี้ลง ↓'} · F ตั้งฉากกับทั้งทิศกระแสและทิศ B เสมอ</div>
     <div class="cl"><span class="lab">ลอยพอดีเมื่อ</span>ILB sinθ = mg → I = mg / (LB sinθ) = ${f3(mg)} / (${T.L})(${T.B})(${s.toFixed(3)}) = <span class="res">${Math.abs(s)<.02?'— (θ = 0° หรือ 180° ลอยไม่ได้)':f3(Ineed)+' A'}</span>${fz()<0&&Math.abs(s)>=.02?' · ตอนนี้ F ชี้ลง ต้องกลับทิศกระแสหรือ B ก่อน':''}</div>
     <div class="cl note">θ คือมุมระหว่างทิศกระแสกับทิศสนาม · θ = 90° แรงมากที่สุด · θ = 0° หรือ 180° แรงเป็นศูนย์ · กฎมือขวา: นิ้วทั้งสี่ชี้ตามกระแส วนนิ้วไปหา B นิ้วโป้งชี้ทิศแรง · กลับทิศกระแสหรือกลับทิศ B อย่างใดอย่างหนึ่ง แรงจะกลับทิศ</div>`}
@@ -292,6 +292,16 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.ke
 let tp=performance.now();
 function loop(t){const dt=Math.min(.05,(t-tp)/1000);tp=t;if(W)step(dt);if(S.dirty&&W){S.dirty=false;draw();setCalc(calc())}requestAnimationFrame(loop)}
 setTab(1);layout();requestAnimationFrame(loop);
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+let GV=9.8;const GTABS=[1];
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${GV} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;el.insertAdjacentHTML('afterbegin',`<div class="seg" id="gvs"><button data-gv="9.8" aria-pressed="${GV===9.8}">g = 9.8</button><button data-gv="10" aria-pressed="${GV===10}">g = 10</button></div>`)}
+{const _r=renderP;renderP=function(){const r=_r.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();GV=+b.dataset.gv;renderP();S.dirty=true},true);
+$('reset').addEventListener('click',()=>{if(GTABS.includes(T.tab)){GV=9.8;renderP();S.dirty=true}});
+renderP();
 </script>
 </body>
 </html>
