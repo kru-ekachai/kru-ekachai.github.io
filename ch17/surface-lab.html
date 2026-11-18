@@ -196,7 +196,7 @@ $('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k
 $('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
 
-const DEF={tab:1,lq1:'w20',ob1:'rod',L1:5,cl2:'water',rs:0,bm:'steel',rb:2,sel:1};
+const DEF={gv:9.8,tab:1,lq1:'w20',ob1:'rod',L1:5,cl2:'water',rs:0,bm:'steel',rb:2,sel:1};
 const GM={w0:['น้ำ 0 °C',.0756],w20:['น้ำ 20 °C',.0728],w100:['น้ำ 100 °C',.0589],hg:['ปรอท 20 °C',.4650],gly:['กลีเซอรีน 20 °C',.0631],ben:['เบนซีน 20 °C',.0289],eth:['เอทิลแอลกอฮอล์ 20 °C',.0223],soap:['น้ำสบู่ (ประมาณ)',.030]};
 const CL={water:['น้ำ',.0728,0,1000,'rgba(96,165,250,.5)'],eth:['เอทิลแอลกอฮอล์',.0223,0,789,'rgba(167,243,208,.6)'],hg:['ปรอท',.465,140,13600,'rgba(156,163,175,.75)']};
 const RT=[.25,.5,1];/* รัศมีหลอด (mm) */
@@ -255,7 +255,7 @@ $('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.tar
 function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
 cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
-const endDrag=()=>{if(S.drag){S.drag=null;replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+const endDrag=()=>{if(S.drag){S.drag=null;if(typeof dragEnd==='function')dragEnd();replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
 function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
   if(typeof tick==='function'&&tick(dt))S.dirty=true;
@@ -288,7 +288,7 @@ $('params').addEventListener('input',e=>{if(e.target.id==='spdR'){SPD.v=+e.targe
 
 
 const animTab=()=>false;
-const g0=9.8,LT=.5;
+const LT=.5;
 const ST={clk:0,p1:0,run1:false,B:null,t3:0,run3:false,hist:[]};
 const oL=()=>T.ob1==='rod'?2*T.L1/100:T.ob1==='ring'?2*2*Math.PI*T.L1/100:2*4*T.L1/100;
 /* ===================== ① ความตึงผิว ===================== */
@@ -341,9 +341,9 @@ function tick(dt){const d=dt*SPD.v;ST.clk+=d;if(T.tab===1&&ST.run1){ST.p1=Math.m
 function calc(){const t=T.tab;
   if(t===1){const [nm,gm]=GM[T.lq1],l=oL(),F=gm*l,lt=T.ob1==='rod'?`l = 2L = 2 × ${T.L1/100}`:T.ob1==='ring'?`l = 2(2πr) = 2 × 2π × ${T.L1/100}`:`l = 2(4a) = 2 × 4 × ${T.L1/100}`;
     return `<div class="cl"><span class="lab">ความยาวผิวที่ขาด</span>${lt} = ${fN(l,4)} m (ฟิล์มมี 2 ผิว)</div><div class="cl"><span class="lab">แรงดึงผิว</span>F = γl = ${gm} × ${fN(l,4)} = <span class="res">${fs(F)} N = ${fN(F*1000,2)} mN</span></div><div class="cl note">${nm}: γ = ${gm} N/m · ความตึงผิวลดลงเมื่ออุณหภูมิสูงขึ้น หรือมีสารเจือปน เช่น สบู่ · ไม่คิดน้ำหนักของวัตถุ</div>`}
-  if(t===2){const [nm,gm,th,rho]=CL[T.cl2],r=RT[T.rs]/1000,h=hcap(T.rs);return `<div class="cl"><span class="lab">สมดุลของของเหลวในหลอด</span>แรงดึงผิวแนวดิ่ง = น้ำหนักของเหลวที่ขึ้นไป → 2πrγcos θ = ρ(πr²h)g → h = 2γcos θ/(ρgr)</div><div class="cl"><span class="lab">แทนค่า (${nm}, r = ${RT[T.rs]} mm)</span>h = (2 × ${gm} × cos ${th}°)/(${rho} × 9.8 × ${fs(r)}) = <span class="res">${h>=0?'':'−'}${fN(Math.abs(h)*100,2)} cm</span></div><div class="cl note">${th<90?'θ เป็นมุมแหลม → ระดับในหลอดสูงกว่าข้างนอก':'θ เป็นมุมป้าน (cos θ ติดลบ) → ระดับในหลอดต่ำกว่าข้างนอก'} · หลอดยิ่งเล็ก ระดับยิ่งต่างกันมาก (h ∝ 1/r)</div>`}
+  if(t===2){const [nm,gm,th,rho]=CL[T.cl2],r=RT[T.rs]/1000,h=hcap(T.rs);return `<div class="cl"><span class="lab">สมดุลของของเหลวในหลอด</span>แรงดึงผิวแนวดิ่ง = น้ำหนักของเหลวที่ขึ้นไป → 2πrγcos θ = ρ(πr²h)g → h = 2γcos θ/(ρgr)</div><div class="cl"><span class="lab">แทนค่า (${nm}, r = ${RT[T.rs]} mm)</span>h = (2 × ${gm} × cos ${th}°)/(${rho} × ${T.gv} × ${fs(r)}) = <span class="res">${h>=0?'':'−'}${fN(Math.abs(h)*100,2)} cm</span></div><div class="cl note">${th<90?'θ เป็นมุมแหลม → ระดับในหลอดสูงกว่าข้างนอก':'θ เป็นมุมป้าน (cos θ ติดลบ) → ระดับในหลอดต่ำกว่าข้างนอก'} · หลอดยิ่งเล็ก ระดับยิ่งต่างกันมาก (h ∝ 1/r)</div>`}
   const {rb,r,m}=ball(),[nm,eta,rf]=FL[T.sel],v=vT(T.sel),bb=ST.B?ST.B[T.sel]:{v:0};
-  return `<div class="cl"><span class="lab">แรงหนืด (กฎของสโตกส์)</span>F_v = 6πηrv = 6π × ${eta} × ${fs(r)} × ${fN(bb.v,4)} = ${fs(6*Math.PI*eta*r*bb.v)} N</div><div class="cl"><span class="lab">ที่ความเร็วปลาย</span>mg = F_B + F_v → ρ_บอล(4/3πr³)g = ρ_ของเหลว(4/3πr³)g + 6πηrv_T → v_T = 2r²(ρ_บอล − ρ_ของเหลว)g/(9η)</div><div class="cl"><span class="lab">แทนค่า (${nm})</span>v_T = 2 × (${fs(r)})² × (${rb} − ${rf}) × 9.8/(9 × ${eta}) = <span class="res">${fs(v)} m/s</span></div><div class="cl note">ความหนืดมาก → แรงหนืดมาก → ความเร็วปลายต่ำ · กฎของสโตกส์ใช้ได้ดีเมื่อวัตถุเคลื่อนที่ช้าในของไหลหนืด</div>`}
+  return `<div class="cl"><span class="lab">แรงหนืด (กฎของสโตกส์)</span>F_v = 6πηrv = 6π × ${eta} × ${fs(r)} × ${fN(bb.v,4)} = ${fs(6*Math.PI*eta*r*bb.v)} N</div><div class="cl"><span class="lab">ที่ความเร็วปลาย</span>mg = F_B + F_v → ρ_บอล(4/3πr³)g = ρ_ของเหลว(4/3πr³)g + 6πηrv_T → v_T = 2r²(ρ_บอล − ρ_ของเหลว)g/(9η)</div><div class="cl"><span class="lab">แทนค่า (${nm})</span>v_T = 2 × (${fs(r)})² × (${rb} − ${rf}) × ${T.gv}/(9 × ${eta}) = <span class="res">${fs(v)} m/s</span></div><div class="cl note">ความหนืดมาก → แรงหนืดมาก → ความเร็วปลายต่ำ · กฎของสโตกส์ใช้ได้ดีเมื่อวัตถุเคลื่อนที่ช้าในของไหลหนืด</div>`}
 /* ===================== แผงปรับค่า ===================== */
 function renderP(){const t=T.tab;
   if(t===1)return finishP(`<span class="label">ของเหลว</span>${segH('s1','lq1',Object.keys(GM).map(k=>[k,GM[k][0]]))}<span class="label">วัตถุ</span>${segH('s2','ob1',[['rod','แท่งยาว (l = 2L)'],['ring','ห่วงวงกลม (l = 2·2πr)'],['rect','ลวดสี่เหลี่ยม (l = 2·4a)']])}`+prow('L1',T.ob1==='rod'?'ความยาว L':T.ob1==='ring'?'รัศมี r':'ด้าน a','cm')+'<div class="seg" id="b1"><button data-b="pull">▶ ดึงขึ้น</button><button data-b="home">⏮ เริ่มต้น</button></div>'+spdUI(),[['L1','','',.5,1,10,T]]);
@@ -354,6 +354,16 @@ function onSeg(k){if(k==='lq1'||k==='ob1'){ST.p1=0;ST.run1=false}if(k==='bm'){in
 function onP(k){if(k==='rb'){init3();ST.run3=false}if(k==='L1'){ST.p1=0}}
 function onTab(){ST.p1=0;ST.run1=false;init3();ST.run3=false}
 function dragStart(){return null}function dragMove(){}
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+const GTABS=[2, 3];
+Object.defineProperty(window,'g0',{get:()=>T.gv,configurable:true});
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;const tmp=document.createElement('div');tmp.innerHTML=segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']]);const sg=tmp.firstElementChild,pb=el.querySelector('#pb');if(pb){const w=document.createElement('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)';pb.replaceWith(w);w.append(pb,sg)}else el.prepend(sg)}
+{const _rp=renderP;renderP=function(){const r=_rp.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();T.gv=+b.dataset.v;renderP();S.dirty=true},true);
+renderP();
 
 start();
 </script>

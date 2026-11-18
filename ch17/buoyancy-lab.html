@@ -196,7 +196,7 @@ $('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k
 $('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
 
-const DEF={tab:1,mat1:'al',a1:5,liq1:'water',z:0,ob:'wood',rho2:1000,liq2:'water',md3:'crown',mat3:'au',V3:100};
+const DEF={gv:9.8,tab:1,mat1:'al',a1:5,liq1:'water',z:0,ob:'wood',rho2:1000,liq2:'water',md3:'crown',mat3:'au',V3:100};
 const OB={al:['อะลูมิเนียม',2700,'#94a3b8'],fe:['เหล็ก',7800,'#64748b'],cu:['ทองแดง',8900,'#c2410c']};
 const LQ={water:['น้ำ',1000,'rgba(96,165,250,.5)'],sea:['น้ำทะเล',1025,'rgba(37,99,235,.45)'],oil:['น้ำมันก๊าด',800,'rgba(251,191,36,.45)'],hg:['ปรอท',13600,'rgba(156,163,175,.7)']};
 const O2={wood:['ไม้',600,'#a16207'],ice:['น้ำแข็ง',917,'#cffafe'],pp:['พลาสติก (PP)',900,'#f472b6'],rub:['ยาง',1100,'#334155'],al:['อะลูมิเนียม',2700,'#94a3b8'],fe:['เหล็ก',7800,'#64748b'],cus:['กำหนด ρ เอง',0,'#7c3aed']};
@@ -254,7 +254,7 @@ $('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.tar
 function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
 cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
-const endDrag=()=>{if(S.drag){S.drag=null;replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+const endDrag=()=>{if(S.drag){S.drag=null;if(typeof dragEnd==='function')dragEnd();replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
 function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
   if(typeof tick==='function'&&tick(dt))S.dirty=true;
@@ -287,7 +287,7 @@ $('params').addEventListener('input',e=>{if(e.target.id==='spdR'){SPD.v=+e.targe
 
 
 const animTab=()=>false;
-const g0=9.8;
+
 const ST={clk:0,y2:-.6,v2:0,hid:'au',crown:19300,show:false};
 const f2=x=>fN(x,2);
 function spring(x,top,len,read,unit,u){ctx.fillStyle='#e2e8f0';ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x-u*1.6,top,u*3.2,len+u*1.6,6);ctx.fill();ctx.stroke();
@@ -333,13 +333,13 @@ function draw(){[draw1,draw2,draw3][T.tab-1]()}
 function tick(dt){const d=dt*SPD.v;ST.clk+=d;if(T.tab===2){step2(Math.min(d,.03));return true}return false}
 /* ===================== แผงล่าง ===================== */
 function calc(){const t=T.tab;
-  if(t===1){const q=q1(),[ln]=LQ[T.liq1];return `<div class="cl"><span class="lab">น้ำหนักวัตถุ</span>mg = ρ_วัตถุ V g = ${q.ro} × ${fs(q.V)} × 9.8 = ${f2(q.Wt)} N</div><div class="cl"><span class="lab">แรงพยุง</span>F_B = ρ_ของเหลว V_จม g = ${q.rl} × ${fs(q.V*q.f)} × 9.8 = <span class="res">${f2(q.FB)} N</span></div><div class="cl"><span class="lab">ตาชั่งสปริงอ่านได้</span>T = mg − F_B = ${f2(q.Wt)} − ${f2(q.FB)} = <span class="res">${f2(q.Tn)} N</span></div><div class="cl note">หลักอาร์คิมีดีส: แรงพยุง = น้ำหนักของ${ln}ที่ถูกแทนที่ (ตาชั่งถ้วยรองอ่านได้ ${f2(q.FB)} N เท่ากัน) · ปริมาตรที่ล้นออกมา = ปริมาตรส่วนที่จม</div>`}
+  if(t===1){const q=q1(),[ln]=LQ[T.liq1];return `<div class="cl"><span class="lab">น้ำหนักวัตถุ</span>mg = ρ_วัตถุ V g = ${q.ro} × ${fs(q.V)} × ${T.gv} = ${f2(q.Wt)} N</div><div class="cl"><span class="lab">แรงพยุง</span>F_B = ρ_ของเหลว V_จม g = ${q.rl} × ${fs(q.V*q.f)} × ${T.gv} = <span class="res">${f2(q.FB)} N</span></div><div class="cl"><span class="lab">ตาชั่งสปริงอ่านได้</span>T = mg − F_B = ${f2(q.Wt)} − ${f2(q.FB)} = <span class="res">${f2(q.Tn)} N</span></div><div class="cl note">หลักอาร์คิมีดีส: แรงพยุง = น้ำหนักของ${ln}ที่ถูกแทนที่ (ตาชั่งถ้วยรองอ่านได้ ${f2(q.FB)} N เท่ากัน) · ปริมาตรที่ล้นออกมา = ปริมาตรส่วนที่จม</div>`}
   if(t===2){const ro=rho2(),rl=LQ[T.liq2][1];if(ro<rl-1)return `<div class="cl"><span class="lab">ลอย</span>สมดุล mg = F_B → ρ_วัตถุVg = ρ_ของเหลวV_จมg</div><div class="cl"><span class="lab">สัดส่วนที่จม</span>V_จม/V = ρ_วัตถุ/ρ_ของเหลว = ${ro}/${rl} = <span class="res">${fN(ro/rl*100,1)}%</span> · โผล่พ้นผิว ${fN(100-ro/rl*100,1)}%</div>`;
     if(Math.abs(ro-rl)<=1)return `<div class="cl"><span class="lab">ปริ่ม</span>ρ_วัตถุ = ρ_ของเหลว → mg = F_B เมื่อจมทั้งก้อน วัตถุลอยค้างอยู่ได้ทุกระดับความลึก</div>`;
     return `<div class="cl"><span class="lab">จม</span>ρ_วัตถุ > ρ_ของเหลว แม้จมทั้งก้อน F_B ก็ยังน้อยกว่า mg</div><div class="cl"><span class="lab">เทียบแรง</span>F_B/mg = ρ_ของเหลว/ρ_วัตถุ = ${rl}/${ro} = ${fN(rl/ro,3)} → แรงลัพธ์ลง = mg(1 − ${fN(rl/ro,3)})</div>`}
   const q=q3(),hide=T.md3!=='learn'&&!ST.show,base=`<div class="cl"><span class="lab">ค่าที่อ่านได้</span>W_อากาศ = ${f2(q.Wa)} N · W_น้ำ = ${f2(q.Ww)} N</div>`;
   if(hide)return base+`<div class="cl"><span class="lab">หาค่า</span>F_B = W_อากาศ − W_น้ำ → V = F_B/(ρ_น้ำ g) → ρ = W_อากาศ/(gV) หรือ ρ = ρ_น้ำ × W_อากาศ/(W_อากาศ − W_น้ำ)</div><div class="cl note">${T.md3==='crown'?'ทองคำแท้ ρ = 19,300 kg/m³ · คำนวณแล้วกด 👁 ดูเฉลย':'คำนวณแล้วเทียบกับตารางความหนาแน่น · กด 👁 ดูเฉลย หรือ 🎲 สุ่มใหม่'}</div>`;
-  return base+`<div class="cl"><span class="lab">แรงพยุง</span>F_B = ${f2(q.Wa)} − ${f2(q.Ww)} = ${f2(q.FB)} N → V = ${f2(q.FB)}/(1000 × 9.8) = ${fs(q.V)} m³</div><div class="cl"><span class="lab">ความหนาแน่น</span>ρ = W_อากาศ/(gV) = ${f2(q.Wa)}/(9.8 × ${fs(q.V)}) = <span class="res">${fI(q.ro)} kg/m³</span> · ความหนาแน่นสัมพัทธ์ = ${fN(q.ro/1000,2)}${T.md3==='crown'?(q.ro>19000?' → ทองคำแท้':' → ไม่ใช่ทองคำแท้'):T.md3==='mys'?' → '+M3[ST.hid][0]:''}</div>`}
+  return base+`<div class="cl"><span class="lab">แรงพยุง</span>F_B = ${f2(q.Wa)} − ${f2(q.Ww)} = ${f2(q.FB)} N → V = ${f2(q.FB)}/(1000 × ${T.gv}) = ${fs(q.V)} m³</div><div class="cl"><span class="lab">ความหนาแน่น</span>ρ = W_อากาศ/(gV) = ${f2(q.Wa)}/(${T.gv} × ${fs(q.V)}) = <span class="res">${fI(q.ro)} kg/m³</span> · ความหนาแน่นสัมพัทธ์ = ${fN(q.ro/1000,2)}${T.md3==='crown'?(q.ro>19000?' → ทองคำแท้':' → ไม่ใช่ทองคำแท้'):T.md3==='mys'?' → '+M3[ST.hid][0]:''}</div>`}
 /* ===================== แผงปรับค่า ===================== */
 function renderP(){const t=T.tab;
   if(t===1)return finishP(`<span class="label">วัตถุ</span>${segH('s1','mat1',Object.keys(OB).map(k=>[k,OB[k][0]]))}`+prow('a1','ความยาวด้านลูกบาศก์','cm')+`<span class="label">ของเหลว</span>${segH('s2','liq1',['water','sea','oil'].map(k=>[k,LQ[k][0]]))}`+prow('z','ความลึกที่หย่อนลง','cm'),[['a1','','',1,3,8,T],['z','','',.1,0,12,T]]);
@@ -352,6 +352,16 @@ function onP(k){if(k==='rho2'){ST.y2=-.6;ST.v2=0}}
 function onTab(){ST.y2=-.6;ST.v2=0;newMys()}
 function dragStart(p){if(T.tab!==1)return null;const {bx,bw}=geo1();return Math.abs(p.x-bx)<bw*.6?{}:null}
 function dragMove(p){const {ys,sc}=geo1();setParam('z',Math.max(0,Math.min(12,(p.y-ys)/sc+T.a1*.5)))}
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+const GTABS=[1, 3];
+Object.defineProperty(window,'g0',{get:()=>T.gv,configurable:true});
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;const tmp=document.createElement('div');tmp.innerHTML=segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']]);const sg=tmp.firstElementChild,pb=el.querySelector('#pb');if(pb){const w=document.createElement('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)';pb.replaceWith(w);w.append(pb,sg)}else el.prepend(sg)}
+{const _rp=renderP;renderP=function(){const r=_rp.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();T.gv=+b.dataset.v;renderP();S.dirty=true},true);
+renderP();
 
 start();
 </script>

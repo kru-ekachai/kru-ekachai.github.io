@@ -196,7 +196,7 @@ $('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k
 $('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
 
-const DEF={tab:1,pu:'kPa',liq:'water',h1:5,h2:30,L2:100,two:false,h2b:10,gt:'mano',ml:'water',Pg:110,Pb:101.3,Pd:150,d1:4,d2:40,F1:200,mc:1500,s1:0};
+const DEF={gv:9.8,tab:1,pu:'kPa',liq:'water',h1:5,h2:30,L2:100,two:false,h2b:10,gt:'mano',ml:'water',Pg:110,Pb:101.3,Pd:150,d1:4,d2:40,F1:200,mc:1500,s1:0};
 const LQ={water:['น้ำ',1000,'rgba(96,165,250,.55)'],sea:['น้ำทะเล',1025,'rgba(37,99,235,.5)'],oil:['น้ำมันก๊าด',800,'rgba(251,191,36,.5)'],hg:['ปรอท',13600,'rgba(156,163,175,.75)']};
 
 /* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
@@ -251,7 +251,7 @@ $('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.tar
 function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
 cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
-const endDrag=()=>{if(S.drag){S.drag=null;replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+const endDrag=()=>{if(S.drag){S.drag=null;if(typeof dragEnd==='function')dragEnd();replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
 function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
   if(typeof tick==='function'&&tick(dt))S.dirty=true;
@@ -284,7 +284,7 @@ $('params').addEventListener('input',e=>{if(e.target.id==='spdR'){SPD.v=+e.targe
 
 
 const animTab=()=>false;
-const g0=9.8,P0=1.013e5;
+const P0=1.013e5;
 const ST={clk:0,pulse:0};
 const pv=Pa=>T.pu==='kPa'?fN(Pa/1000,2)+' kPa':fN(Pa/101325,3)+' atm';
 const fI=x=>Math.round(x).toLocaleString('en-US');
@@ -347,12 +347,12 @@ function draw(){[draw1,draw2,draw3,draw4][T.tab-1]()}
 function tick(dt){ST.clk+=dt*SPD.v;return T.tab===4}
 /* ===================== แผงล่าง ===================== */
 function calc(){const t=T.tab;
-  if(t===1){const [nm,rho]=LQ[T.liq],Pg=rho*g0*T.h1;return `<div class="cl"><span class="lab">ความดันเกจ</span>P = ρgh = ${rho} × 9.8 × ${fN(T.h1,1)} = ${fI(Pg)} Pa = <span class="res">${pv(Pg)}</span></div><div class="cl"><span class="lab">ความดันสัมบูรณ์</span>P = P₀ + ρgh = 1.013×10⁵ + ${fI(Pg)} = <span class="res">${pv(P0+Pg)}</span></div><div class="cl note">${nm}: ρ = ${rho} kg/m³ · ความหนาแน่นสัมพัทธ์ = ρ/ρ_น้ำ = ${rho}/1000 = ${fN(rho/1000,3).replace(/\.?0+$/,'')} · ที่ความลึกเดียวกัน ความดันเท่ากันทุกทิศ และไม่ขึ้นกับรูปทรงภาชนะ</div>`}
-  if(t===2){const rho=1000,F1=.5*rho*g0*T.h2*T.h2*T.L2,F2=.5*rho*g0*T.h2b*T.h2b*T.L2;let h=`<div class="cl"><span class="lab">ความดันเฉลี่ย</span>P̄ = ρg(h/2) = 1000 × 9.8 × ${T.h2}/2 = ${fI(rho*g0*T.h2/2)} Pa</div><div class="cl"><span class="lab">แรงดันต่อเขื่อน</span>F = P̄A = P̄(hL) = ${fI(rho*g0*T.h2/2)} × (${T.h2} × ${T.L2}) = <span class="res">${fs(F1)} N</span></div>`;
-    if(T.two)h+=`<div class="cl"><span class="lab">อีกฝั่ง (h = ${T.h2b} m)</span>F₂ = ½ρgh²L = 0.5 × 1000 × 9.8 × ${T.h2b}² × ${T.L2} = ${fs(F2)} N → แรงลัพธ์ = F₁ − F₂ = <span class="res">${fs(F1-F2)} N</span></div>`;
+  if(t===1){const [nm,rho]=LQ[T.liq],Pg=rho*g0*T.h1;return `<div class="cl"><span class="lab">ความดันเกจ</span>P = ρgh = ${rho} × ${T.gv} × ${fN(T.h1,1)} = ${fI(Pg)} Pa = <span class="res">${pv(Pg)}</span></div><div class="cl"><span class="lab">ความดันสัมบูรณ์</span>P = P₀ + ρgh = 1.013×10⁵ + ${fI(Pg)} = <span class="res">${pv(P0+Pg)}</span></div><div class="cl note">${nm}: ρ = ${rho} kg/m³ · ความหนาแน่นสัมพัทธ์ = ρ/ρ_น้ำ = ${rho}/1000 = ${fN(rho/1000,3).replace(/\.?0+$/,'')} · ที่ความลึกเดียวกัน ความดันเท่ากันทุกทิศ และไม่ขึ้นกับรูปทรงภาชนะ</div>`}
+  if(t===2){const rho=1000,F1=.5*rho*g0*T.h2*T.h2*T.L2,F2=.5*rho*g0*T.h2b*T.h2b*T.L2;let h=`<div class="cl"><span class="lab">ความดันเฉลี่ย</span>P̄ = ρg(h/2) = 1000 × ${T.gv} × ${T.h2}/2 = ${fI(rho*g0*T.h2/2)} Pa</div><div class="cl"><span class="lab">แรงดันต่อเขื่อน</span>F = P̄A = P̄(hL) = ${fI(rho*g0*T.h2/2)} × (${T.h2} × ${T.L2}) = <span class="res">${fs(F1)} N</span></div>`;
+    if(T.two)h+=`<div class="cl"><span class="lab">อีกฝั่ง (h = ${T.h2b} m)</span>F₂ = ½ρgh²L = 0.5 × 1000 × ${T.gv} × ${T.h2b}² × ${T.L2} = ${fs(F2)} N → แรงลัพธ์ = F₁ − F₂ = <span class="res">${fs(F1-F2)} N</span></div>`;
     return h+`<div class="cl note">ใช้ความดันเกจ เพราะความดันบรรยากาศกระทำทั้งสองด้านของเขื่อนหักล้างกัน · ความดันเฉลี่ย = ความดันที่ความลึกครึ่งหนึ่ง</div>`}
-  if(t===3){if(T.gt==='mano'){const [nm,rho]=LQ[T.ml],dP=T.Pg*1000-P0,dh=dP/(rho*g0);return `<div class="cl"><span class="lab">แมนอมิเตอร์</span>P_แก๊ส = P₀ + ρgΔh → Δh = (P_แก๊ส − P₀)/ρg = (${fI(T.Pg*1000)} − 101,300)/(${rho} × 9.8) = <span class="res">${fN(dh*100,1)} cm</span></div><div class="cl note">${dP>=0?'แก๊สดันมากกว่าบรรยากาศ ระดับฝั่งแก๊สต่ำกว่า':'แก๊สดันน้อยกว่าบรรยากาศ ระดับฝั่งแก๊สสูงกว่า'} · ความดันเกจของแก๊ส = ρgΔh = ${pv(dP)} · ปรอทหนาแน่นมาก Δh จึงสั้นกว่าน้ำ 13.6 เท่า</div>`}
-    if(T.gt==='baro'){const h=T.Pb*1000/(13600*g0);return `<div class="cl"><span class="lab">บารอมิเตอร์ปรอท</span>P₀ = ρ_ปรอท g h → h = P₀/(ρg) = ${fI(T.Pb*1000)}/(13600 × 9.8) = <span class="res">${fN(h*100,1)} cm</span></div><div class="cl note">ที่ระดับน้ำทะเล P₀ = 1.013×10⁵ Pa ลำปรอทสูง 76 cm (= 760 mmHg) · ยิ่งขึ้นที่สูง ความดันอากาศน้อยลง ลำปรอทยิ่งเตี้ย</div>`}
+  if(t===3){if(T.gt==='mano'){const [nm,rho]=LQ[T.ml],dP=T.Pg*1000-P0,dh=dP/(rho*g0);return `<div class="cl"><span class="lab">แมนอมิเตอร์</span>P_แก๊ส = P₀ + ρgΔh → Δh = (P_แก๊ส − P₀)/ρg = (${fI(T.Pg*1000)} − 101,300)/(${rho} × ${T.gv}) = <span class="res">${fN(dh*100,1)} cm</span></div><div class="cl note">${dP>=0?'แก๊สดันมากกว่าบรรยากาศ ระดับฝั่งแก๊สต่ำกว่า':'แก๊สดันน้อยกว่าบรรยากาศ ระดับฝั่งแก๊สสูงกว่า'} · ความดันเกจของแก๊ส = ρgΔh = ${pv(dP)} · ปรอทหนาแน่นมาก Δh จึงสั้นกว่าน้ำ 13.6 เท่า</div>`}
+    if(T.gt==='baro'){const h=T.Pb*1000/(13600*g0);return `<div class="cl"><span class="lab">บารอมิเตอร์ปรอท</span>P₀ = ρ_ปรอท g h → h = P₀/(ρg) = ${fI(T.Pb*1000)}/(13600 × ${T.gv}) = <span class="res">${fN(h*100,1)} cm</span></div><div class="cl note">ที่ระดับน้ำทะเล P₀ = 1.013×10⁵ Pa ลำปรอทสูง 76 cm (= 760 mmHg) · ยิ่งขึ้นที่สูง ความดันอากาศน้อยลง ลำปรอทยิ่งเตี้ย</div>`}
     return `<div class="cl"><span class="lab">เครื่องวัดบูร์ดอง</span>ท่อโลหะกลวงขดโค้ง ปลายหนึ่งต่อกับของไหล อีกปลายปิดและต่อกับเข็ม · ความดันมากขึ้น ท่อจะกางออกให้ตรงขึ้น เข็มหมุนตาม · อ่านได้ <span class="res">${T.Pd} kPa</span></div><div class="cl note">ใช้วัดความดันเกจ (ความดันที่มากกว่าความดันบรรยากาศ) เช่น เกจวัดลมยาง ถังแก๊ส</div>`}
   const q=hyd();return `<div class="cl"><span class="lab">ความดันที่ลูกสูบเล็ก</span>P = F₁/A₁ = ${T.F1}/(π × ${fN(T.d1/200,3)}²) = ${fs(q.P)} Pa</div><div class="cl"><span class="lab">กฎของพาสคัล</span>F₁/A₁ = F₂/A₂ → F₂ = F₁(A₂/A₁) = ${T.F1} × ${fN(q.A2/q.A1,1)} = <span class="res">${fs(q.F2)} N</span> ${q.ok?'≥':'&lt;'} น้ำหนักรถ ${fs(q.Wt)} N</div><div class="cl"><span class="lab">ระยะเคลื่อนที่</span>A₁s₁ = A₂s₂ → s₂ = s₁(A₁/A₂) = ${T.s1} × ${fs(q.A1/q.A2)} = ${fN(q.s2,2)} cm (ได้แรงเพิ่ม แต่เสียระยะ)</div>`}
 /* ===================== แผงปรับค่า ===================== */
@@ -366,6 +366,16 @@ function onSeg(){}function onP(k){if(k==='h2'&&T.h2b>T.h2)T.h2b=T.h2}
 function onTab(){}
 function dragStart(p){if(T.tab!==1)return null;const [a]=split();const tx=a.x+a.w*.08,tw=a.w*.5;return p.x>tx&&p.x<tx+tw?{}:null}
 function dragMove(p){const [a]=split(),ty=a.y+a.h*.12,th=a.h*.76;setParam('h1',Math.max(0,Math.min(10,(p.y-ty)/th*10)))}
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+const GTABS=[1, 2, 3, 4];
+Object.defineProperty(window,'g0',{get:()=>T.gv,configurable:true});
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;const tmp=document.createElement('div');tmp.innerHTML=segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']]);const sg=tmp.firstElementChild,pb=el.querySelector('#pb');if(pb){const w=document.createElement('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)';pb.replaceWith(w);w.append(pb,sg)}else el.prepend(sg)}
+{const _rp=renderP;renderP=function(){const r=_rp.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();T.gv=+b.dataset.v;renderP();S.dirty=true},true);
+renderP();
 
 start();
 </script>
