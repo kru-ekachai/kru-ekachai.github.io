@@ -143,8 +143,9 @@ kbd{font-family:var(--f-mono);border:1px solid var(--line);border-bottom-width:2
         <div class="row"><div class="tl"><label for="p-L">ความยาวเชือก L</label><output id="o-p-L"></output></div><input type="range" id="p-L" min="0.2" max="2" step="0.05" value="1"></div>
         <div class="row"><div class="tl"><label for="p-m">มวลลูกตุ้ม m</label><output id="o-p-m"></output></div><input type="range" id="p-m" min="0.1" max="2" step="0.05" value="0.5"></div>
         <div class="row"><div class="tl"><label for="p-th">มุมเริ่มต้น θ₀</label><output id="o-p-th"></output></div><input type="range" id="p-th" min="2" max="80" step="1" value="10"></div>
-        <div class="row"><div class="tl"><label for="p-g">ความเร่งโน้มถ่วง g</label><output id="o-p-g"></output></div><input type="range" id="p-g" min="1" max="25" step="0.01" value="9.81">
-          <div class="seg" id="gpre"><button data-g="9.81" aria-pressed="true">โลก</button><button data-g="1.62" aria-pressed="false">ดวงจันทร์</button><button data-g="3.71" aria-pressed="false">ดาวอังคาร</button><button data-g="24.79" aria-pressed="false">ดาวพฤหัสฯ</button></div>
+        <div class="row"><div class="tl"><label for="p-g">ความเร่งโน้มถ่วง g</label><output id="o-p-g"></output></div><input type="range" id="p-g" min="1" max="25" step="0.01" value="9.8">
+          <div class="seg" id="gvs"><button data-gv="9.8" aria-pressed="true">g = 9.8</button><button data-gv="10" aria-pressed="false">g = 10</button></div>
+          <div class="seg" id="gpre"><button data-g="9.8" aria-pressed="true">โลก</button><button data-g="1.62" aria-pressed="false">ดวงจันทร์</button><button data-g="3.71" aria-pressed="false">ดาวอังคาร</button><button data-g="24.79" aria-pressed="false">ดาวพฤหัสฯ</button></div>
         </div>
         <div class="row"><div class="tl"><label for="p-b">แรงต้าน (หน่วง) b</label><output id="o-p-b"></output></div><input type="range" id="p-b" min="0" max="0.5" step="0.01" value="0"></div>
       </div>
@@ -190,7 +191,7 @@ kbd{font-family:var(--f-mono);border:1px solid var(--line);border-bottom-width:2
 (()=>{
 const $=id=>document.getElementById(id);
 const TAU=Math.PI*2, WIN=8;
-const P={spring:{m:.5,k:20,A:.2,b:0}, pend:{L:1,m:.5,th:10,g:9.81,b:0}};
+const P={spring:{m:.5,k:20,A:.2,b:0}, pend:{L:1,m:.5,th:10,g:9.8,b:0}};
 const S={mode:'spring',running:false,speed:1,t:0,x:0,v:0,hist:[],cross:[],Tm:null,E0:1,amp0:.2,drag:false,vec:true,show:{x:true,v:true,a:true},predict:false};
 
 const fmt=(n,d=2)=>(Math.abs(n)<5e-4?0:n).toFixed(d).replace('-','−');
@@ -295,7 +296,7 @@ function drawPend(){
   c.fillStyle=C.muted;c.font=`${Math.round(16*s)}px ${MONO}`;c.textAlign='left';c.textBaseline='middle';
   c.fillText('L = '+fmt(p.L,2)+' m',px+12*s,py+Math.min(L*.5,L-30*s));
   if(S.vec){
-    const tx=Math.cos(S.x),ty=-Math.sin(S.x),mg=p.m*p.g,k=100*s/(2*9.81);
+    const tx=Math.cos(S.x),ty=-Math.sin(S.x),mg=p.m*p.g,k=100*s/(2*9.8);
     arrow(c,mx,my,0,mg*k,C.muted,'mg',4*s,s);
     const Ft=-mg*Math.sin(S.x);arrow(c,mx,my,tx*Ft*k,ty*Ft*k,C.force,'F',5*s,s);
     const vmax=Math.max(S.amp0,.01)*omega(),vv=p.L*S.v*(110*s/vmax);arrow(c,mx,my,tx*vv,ty*vv,C.cv,'v',5*s,s);
@@ -325,7 +326,7 @@ function formula(){
     $('note').textContent=S.predict?'ลองทาย: ถ้าเพิ่มมวลเป็น 2 เท่า คาบจะเปลี่ยนอย่างไร?':'คาบขึ้นกับมวลและค่านิจสปริงเท่านั้น ไม่ขึ้นกับแอมพลิจูด';
   }else{const p=P.pend;
     $('formula').textContent=`T = 2π√(L/g) = 2π√(${fmt(p.L,2)}/${fmt(p.g,2)})`;$('r-T').textContent=`= ${fmt(T,3)} s`;
-    $('note').textContent=S.predict?'ลองทาย: ถ้าเพิ่มมวลลูกตุ้ม หรือไปแกว่งบนดวงจันทร์ คาบจะเปลี่ยนอย่างไร?':'สูตรใช้ได้ดีเมื่อมุมแกว่งเล็ก (ไม่เกินราว 10°) · คาบไม่ขึ้นกับมวลของลูกตุ้ม';
+    $('note').textContent=(S.predict?'':'ใช้ g = '+(+p.g.toFixed(2))+' m/s²'+(gName()?' ('+gName()+')':'')+' · ')+(S.predict?'ลองทาย: ถ้าเพิ่มมวลลูกตุ้ม หรือไปแกว่งบนดวงจันทร์ คาบจะเปลี่ยนอย่างไร?':'สูตรใช้ได้ดีเมื่อมุมแกว่งเล็ก (ไม่เกินราว 10°) · คาบไม่ขึ้นกับมวลของลูกตุ้ม');
   }
 }
 
@@ -333,6 +334,12 @@ function formula(){
 function hideAnswer(){if(!S.predict)return;$('app').classList.add('predict');formula();}
 function setPredict(on){S.predict=on;$('pred').classList.toggle('on',on);$('app').classList.toggle('predict',on);formula();}
 function reveal(){if(!S.predict)return;$('app').classList.remove('predict');formula();}
+
+
+// ---------- ปุ่มเลือกค่า g (9.8 / 10) ใช้กับปุ่ม "โลก" ----------
+let GV=9.8;
+function gName(){const b=[...document.querySelectorAll('#gpre button')].find(x=>Math.abs(+x.dataset.g-P.pend.g)<.005);return b?b.textContent:''}
+document.querySelectorAll('#gvs button').forEach(b=>b.addEventListener('click',()=>{const old=GV;GV=+b.dataset.gv;document.querySelectorAll('#gvs button').forEach(x=>x.setAttribute('aria-pressed',x===b));const eb=document.querySelector('#gpre button');eb.dataset.g=String(GV);if(Math.abs(P.pend.g-old)<.005){const el=$('p-g');el.value=GV;el.dispatchEvent(new Event('input'))}else formula()}));
 
 // ---------- loop ----------
 let prev=performance.now();
