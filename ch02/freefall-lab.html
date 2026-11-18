@@ -196,7 +196,7 @@ $('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k
 $('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
 
-const DEF={tab:1,h1:45,fi:.5,u2:15,h2:20};
+const DEF={gv:9.8,tab:1,h1:45,fi:.5,u2:15,h2:20};
 
 /* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
 const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
@@ -250,7 +250,7 @@ $('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.tar
 function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
 cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
 cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
-const endDrag=()=>{if(S.drag){S.drag=null;replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+const endDrag=()=>{if(S.drag){S.drag=null;if(typeof dragEnd==='function')dragEnd();replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
 function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
   if(typeof tick==='function'&&tick(dt))S.dirty=true;
@@ -283,7 +283,7 @@ $('params').addEventListener('input',e=>{if(e.target.id==='spdR'){SPD.v=+e.targe
 
 
 const animTab=()=>false;
-const g=9.8;
+
 const ST={clk:0,t:0,run:false};
 const tG1=()=>Math.sqrt(2*T.h1/g),tG2=()=>(T.u2+Math.sqrt(T.u2*T.u2+2*g*T.h2))/g;
 /* ===================== ① ตกแบบเสรี ===================== */
@@ -303,8 +303,8 @@ function draw2(){const u=UU(),Hm=T.h2+T.u2*T.u2/(2*g),gy=H*.92,top=H*.07,sc=(gy-
 function draw(){[draw1,draw2][T.tab-1]()}
 function tick(dt){ST.clk+=dt;if(!ST.run)return false;const te=T.tab===1?tG1():tG2();ST.t=Math.min(te,ST.t+dt*SPD.v*.6);if(ST.t>=te){ST.run=false;renderP()}return true}
 /* ===================== แผงล่าง ===================== */
-function calc(){if(T.tab===1){const t=Math.min(ST.t,tG1()),tg=tG1();return `<div class="cl"><span class="lab">ตอนนี้ (u = 0, a = g = 9.8 m/s² ทิศลง)</span>s = ½gt² = ½(9.8)(${fN(t,2)})² = ${fN(.5*g*t*t,2)} m · v = gt = 9.8 × ${fN(t,2)} = ${fN(g*t,2)} m/s</div><div class="cl"><span class="lab">ถึงพื้น (h = ${T.h1} m)</span>t = √(2h/g) = √(2 × ${T.h1}/9.8) = <span class="res">${fN(tg,2)} s</span> · v = √(2gh) = <span class="res">${fN(Math.sqrt(2*g*T.h1),2)} m/s</span></div><div class="cl note">ไม่คิดแรงต้านอากาศ · วัตถุทุกชนิดตกด้วยความเร่ง g เท่ากัน · ใช้ทิศลงเป็นบวก (a = +9.8)</div>`}
-  const tu=T.u2/g,Hm=T.u2*T.u2/(2*g),tg=tG2(),vg=Math.sqrt(T.u2*T.u2+2*g*T.h2);return `<div class="cl"><span class="lab">ขึ้นถึงจุดสูงสุด (v = 0)</span>v = u + at → 0 = ${T.u2} − 9.8t → t = <span class="res">${fN(tu,2)} s</span> · v² = u² + 2as → s = ${T.u2}²/(2 × 9.8) = <span class="res">${fN(Hm,2)} m</span></div><div class="cl"><span class="lab">ตกถึงพื้น (s = −${T.h2} m)</span>−${T.h2} = ${T.u2}t − ½(9.8)t² → t = <span class="res">${fN(tg,2)} s</span> · v = −√(u² + 2gh) = <span class="res">−${fN(vg,2)} m/s</span></div><div class="cl note">ใช้ทิศขึ้นเป็นบวก: u = +${T.u2}, a = −9.8 m/s² ตลอดการเคลื่อนที่ · ${T.h2?'':'โยนจากพื้น: เวลาขึ้น = เวลาลง และตกกลับด้วยอัตราเร็วเท่าตอนโยน'}</div>`}
+function calc(){if(T.tab===1){const t=Math.min(ST.t,tG1()),tg=tG1();return `<div class="cl"><span class="lab">ตอนนี้ (u = 0, a = g = ${T.gv} m/s² ทิศลง)</span>s = ½gt² = ½(${T.gv})(${fN(t,2)})² = ${fN(.5*g*t*t,2)} m · v = gt = ${T.gv} × ${fN(t,2)} = ${fN(g*t,2)} m/s</div><div class="cl"><span class="lab">ถึงพื้น (h = ${T.h1} m)</span>t = √(2h/g) = √(2 × ${T.h1}/${T.gv}) = <span class="res">${fN(tg,2)} s</span> · v = √(2gh) = <span class="res">${fN(Math.sqrt(2*g*T.h1),2)} m/s</span></div><div class="cl note">ไม่คิดแรงต้านอากาศ · วัตถุทุกชนิดตกด้วยความเร่ง g เท่ากัน · ใช้ทิศลงเป็นบวก (a = +${T.gv})</div>`}
+  const tu=T.u2/g,Hm=T.u2*T.u2/(2*g),tg=tG2(),vg=Math.sqrt(T.u2*T.u2+2*g*T.h2);return `<div class="cl"><span class="lab">ขึ้นถึงจุดสูงสุด (v = 0)</span>v = u + at → 0 = ${T.u2} − ${T.gv}t → t = <span class="res">${fN(tu,2)} s</span> · v² = u² + 2as → s = ${T.u2}²/(2 × ${T.gv}) = <span class="res">${fN(Hm,2)} m</span></div><div class="cl"><span class="lab">ตกถึงพื้น (s = −${T.h2} m)</span>−${T.h2} = ${T.u2}t − ½(${T.gv})t² → t = <span class="res">${fN(tg,2)} s</span> · v = −√(u² + 2gh) = <span class="res">−${fN(vg,2)} m/s</span></div><div class="cl note">ใช้ทิศขึ้นเป็นบวก: u = +${T.u2}, a = −${T.gv} m/s² ตลอดการเคลื่อนที่ · ${T.h2?'':'โยนจากพื้น: เวลาขึ้น = เวลาลง และตกกลับด้วยอัตราเร็วเท่าตอนโยน'}</div>`}
 /* ===================== แผงปรับค่า ===================== */
 const PB=()=>`<div class="seg" id="pb"><button data-p="run">${ST.run?'⏸ หยุด':'▶ ปล่อย / โยน'}</button><button data-p="home">⏮ เริ่มต้น</button></div>`;
 function renderP(){if(T.tab===1)return finishP(prow('h1','ความสูงที่ปล่อย h','m')+`<span class="label">ถ่ายภาพทุก</span>${segH('sf','fi',[[.25,'0.25 s'],[.5,'0.5 s'],[1,'1 s']])}`+PB()+spdUI(),[['h1','','',5,5,80,T]]);
@@ -312,6 +312,16 @@ function renderP(){if(T.tab===1)return finishP(prow('h1','ความสูง�
 $('params').addEventListener('click',e=>{const b=e.target.closest('#pb button');if(!b)return;if(b.dataset.p==='home'){ST.t=0;ST.run=false}else{const te=T.tab===1?tG1():tG2();if(ST.t>=te)ST.t=0;ST.run=!ST.run}renderP();S.dirty=true});
 function onSeg(){}function onP(){ST.t=0;ST.run=false}function onTab(){ST.t=0;ST.run=false}
 function dragStart(){return null}function dragMove(){}
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+const GTABS=[1, 2];
+Object.defineProperty(window,'g',{get:()=>T.gv,configurable:true});
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;const tmp=document.createElement('div');tmp.innerHTML=segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']]);const sg=tmp.firstElementChild,pb=el.querySelector('#pb');if(pb){const w=document.createElement('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)';pb.replaceWith(w);w.append(pb,sg)}else el.prepend(sg)}
+{const _rp=renderP;renderP=function(){const r=_rp.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();T.gv=+b.dataset.v;renderP();S.dirty=true},true);
+renderP();
 
 start();
 </script>
