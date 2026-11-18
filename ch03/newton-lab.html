@@ -196,7 +196,7 @@ $('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k
 $('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
 
-const DEF={tab:1,s1:'go',mL:2,mH:8,F2:12,m2:3,fr:false,fk:4,gm:'aF',s3:'horse',md3:'show',pl:'moon',m4:5};
+const DEF={gv:9.8,tab:1,s1:'go',mL:2,mH:8,F2:12,m2:3,fr:false,fk:4,gm:'aF',s3:'horse',md3:'show',pl:'moon',m4:5};
 
 /* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
 const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
@@ -522,9 +522,9 @@ function calc(){const t=T.tab,k=CUR(),fin=FIN(),wait=`<div class="cl note">ก�
     if(T.s3==='horse')h+=`<div class="cl note">ม้าเคลื่อนที่ได้เพราะพื้นดันม้าไปข้างหน้ามากกว่าแรงที่รถดึงม้า · รถเคลื่อนที่ได้เพราะม้าดึงรถมากกว่าแรงเสียดทาน (พิจารณาแรงที่กระทำต่อวัตถุก้อนเดียว)</div>`;
     if(T.s3==='book')h+=`<div class="cl note">W กับ N กระทำต่อหนังสือก้อนเดียวกัน ขนาดเท่ากันเพราะหนังสือสมดุล (กฎข้อที่ 1) ไม่ใช่เพราะกฎข้อที่ 3</div>`;return h}
   const p=PL[T.pl];let h=`<div class="cl"><span class="lab">สูตร</span>W = mg · มวล m (kg) วัดด้วยตาชั่งคาน · น้ำหนัก W (N) วัดด้วยตาชั่งสปริง</div>`;if(SP.p<1-1e-9)return h+wait;
-  h+=`<div class="cl"><span class="lab">บนโลก</span>W = mg = (${T.m4})(9.8) = <span class="res">${r1(T.m4*9.8)} N</span></div>`;
+  h+=`<div class="cl"><span class="lab">บนโลก</span>W = mg = (${T.m4})(${T.gv}) = <span class="res">${r1(T.m4*T.gv)} N</span></div>`;
   if(SP.p>=2-1e-9)h+=`<div class="cl"><span class="lab">บน${p.n}</span>W = mg = (${T.m4})(${fN(p.g,1)}) = <span class="res">${r1(T.m4*p.g)} N</span> · มวลยังเป็น ${T.m4} kg</div>`;
-  if(fin)h+=`<div class="cl note">${T.pl==='space'?'ในอวกาศไกลจากดาว g ≈ 0 วัตถุจึงไม่มีน้ำหนัก (ลอยได้) แต่ยังมีมวลและความเฉื่อยเท่าเดิม ผลักยังรู้สึกหนัก':'น้ำหนักบน'+p.n+' เป็น '+fN(p.g/9.8,2)+' เท่าของบนโลก เพราะ g ต่างกัน แต่มวลไม่เปลี่ยน'}</div>`;else h+=wait;return h}
+  if(fin)h+=`<div class="cl note">${T.pl==='space'?'ในอวกาศไกลจากดาว g ≈ 0 วัตถุจึงไม่มีน้ำหนัก (ลอยได้) แต่ยังมีมวลและความเฉื่อยเท่าเดิม ผลักยังรู้สึกหนัก':'น้ำหนักบน'+p.n+' เป็น '+fN(p.g/PL.earth.g,2)+' เท่าของบนโลก เพราะ g ต่างกัน แต่มวลไม่เปลี่ยน'}</div>`;else h+=wait;return h}
 
 /* ===================== แผงปรับค่า ===================== */
 function renderP(){const t=T.tab;
@@ -543,6 +543,16 @@ const clrAll=()=>{PTS=[];SEL.pick=null;SEL.chk=false};$('reset').addEventListene
 function dragStart(p){const u=UU();if(T.tab===2&&G2){const tx=G2.x0+T.F2*G2.kF;if(Math.hypot(p.x-tx,p.y-G2.y)<u*2.5)return{k:'F'};return null}
   if(T.tab===3&&T.md3==='self'&&!SEL.chk){const B=boxes(.6),{P}=scn3(B),sc=SC3[T.s3];let best=null,bd=u*2.2;sc.cand.forEach(c=>{const a=P(c.p[0],c.p[1]),b=P(c.p[2],c.p[3]),l=Math.hypot(b[0]-a[0],b[1]-a[1])||1,t=Math.max(0,Math.min(1,((p.x-a[0])*(b[0]-a[0])+(p.y-a[1])*(b[1]-a[1]))/l/l)),dd=Math.hypot(p.x-a[0]-t*(b[0]-a[0]),p.y-a[1]-t*(b[1]-a[1]));if(dd<bd){bd=dd;best=c.L}});if(best){SEL.pick=best;renderP();S.dirty=true}}return null}
 function dragMove(p){if(S.drag&&S.drag.k==='F'&&G2)setParam('F2',(p.x-G2.x0)/G2.kF)}
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+const GTABS=[4];
+Object.defineProperty(PL.earth,'g',{get:()=>T.gv,configurable:true});
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;const tmp=document.createElement('div');tmp.innerHTML=segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']]);const sg=tmp.firstElementChild,pb=el.querySelector('#pb');if(pb){const w=document.createElement('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)';pb.replaceWith(w);w.append(pb,sg)}else el.prepend(sg)}
+{const _rp=renderP;renderP=function(){const r=_rp.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();T.gv=+b.dataset.v;renderP();S.dirty=true},true);
+renderP();
 
 start();
 </script>

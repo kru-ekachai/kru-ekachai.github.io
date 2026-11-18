@@ -196,7 +196,7 @@ $('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k
 $('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
 
-const DEF={tab:1,md1:'pull',sd:'L',nb:3,m1:2,m2:3,m3:5,F1:20,el:'upA',me:50,ae:2,pu:'table',p1:4,p2:2};
+const DEF={gv:9.8,tab:1,md1:'pull',sd:'L',nb:3,m1:2,m2:3,m3:5,F1:20,el:'upA',me:50,ae:2,pu:'table',p1:4,p2:2};
 
 /* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
 const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
@@ -309,7 +309,7 @@ function poly(P,pts,fill,stroke,lw=2){ctx.fillStyle=fill;ctx.beginPath();pts.for
 function rectU(P,k,x0,y0,x1,y1,fill,stroke,lw=2){const a=P(x0,y0);rbox(a[0],a[1],(x1-x0)*k,(y1-y0)*k,fill,stroke,lw)}
 function groundU(P,k,y,x0=0,x1=16){const a=P(x0,y),b=P(x1,y);line(a[0],a[1],b[0],b[1],'#64748b',2.5);ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;for(let x=x0;x<x1;x+=.45){const q=P(x,y);ctx.beginPath();ctx.moveTo(q[0],q[1]+2);ctx.lineTo(q[0]-.3*k,q[1]+.35*k);ctx.stroke()}}
 function scn3(B){const d=B.d,u=B.u,k=Math.min(d.w/16,(d.h-u*.6)/9.2),ox=d.x+(d.w-16*k)/2,oy=d.y+u*.4+(d.h-u*.4-9.2*k)/2;return{k,P:(x,y)=>[ox+x*k,oy+y*k]}}
-const GG=9.8,SUBN='₁₂₃';
+const SUBN='₁₂₃';
 function STEPS(){const t=T.tab;
   if(t===1&&T.md1==='push')return stepsP();
   if(t===1){const n=T.nb,L=[['ขั้น 1: มองทั้งระบบเป็นก้อนเดียว แรงภายนอกในแนวราบมีแค่ F → a = F / มวลรวม',2],['ขั้น 2: ปล่อยให้กล่องทุกก้อนเคลื่อนที่ไปพร้อมกัน ด้วยความเร่งเท่ากัน',2.5],['ขั้น 3: แยกกล่องออกเป็นแผนภาพแรง · ก้อนท้าย m₁ มีแรง T₁ ดึงไปข้างหน้าแรงเดียว → T₁ = m₁a',3]];
@@ -428,12 +428,12 @@ function calcBase(){const t=T.tab,fin=FIN(),rv=s=>SP.p>=s-1e-9,wait=`<div class=
     if(n===3&&rv(4))h+=`<div class="cl"><span class="lab">ก้อน m₂</span>T₂ − T₁ = m₂a → T₂ = ${r1(Q.Ts[0])} + (${ms[1]})(${r2(Q.a)}) = <span class="res">${r1(Q.Ts[1])} N</span></div>`;
     if(fin){const Tl=Q.Ts[n-2];h+=`<div class="cl"><span class="lab">ตรวจก้อนหน้า</span>F − T${SUBN[n-2]} = m${SUBN[n-1]}a → ${T.F1} − ${r1(Tl)} = ${r1(T.F1-Tl)} N = (${ms[n-1]})(${r2(Q.a)}) ✓</div><div class="cl note">เชือกเส้นที่อยู่ใกล้แรงดึง F ต้องลากมวลมากกว่า จึงตึงมากกว่า · แรงตึงเชือกเป็นแรงภายใน ไม่ต้องใช้ตอนคิดทั้งระบบ</div>`}else h+=wait;return h}
   if(t===2){const key=T.el,e=EL[key],N=NOf(key),a=aOf(key);h=`<div class="cl"><span class="lab">กฎข้อที่ 2</span>ให้ทิศขึ้นเป็นบวก: N − mg = ma</div>`;if(!rv(3))return h+wait;
-    const sg=e.d>0?'+':'−';h+=e.d===0?`<div class="cl"><span class="lab">แทนค่า</span>a = 0 → N = mg = (${T.me})(9.8) = <span class="res">${r1(N)} N</span></div>`:key==='fall'?`<div class="cl"><span class="lab">แทนค่า</span>a = g ทิศลง → N = m(g − g) = <span class="res">0 N</span></div>`:`<div class="cl"><span class="lab">แทนค่า</span>a = ${fN(a,1)} m/s² ทิศ${e.d>0?'ขึ้น':'ลง'} → N = m(g ${sg} a) = (${T.me})(9.8 ${sg} ${fN(a,1)}) = <span class="res">${r1(N)} N</span></div>`;
-    h+=`<div class="cl"><span class="lab">ตาชั่งแสดง</span>N/g = ${r1(N)}/9.8 = ${fN(N/GG,1)} kg (มวลจริง ${T.me} kg)</div>`;if(fin)h+=`<div class="cl note">ค่าที่ตาชั่งอ่านได้ขึ้นกับทิศของ a ไม่ใช่ทิศที่ลิฟต์เคลื่อนที่ · a ขึ้น → หนักขึ้น · a ลง → เบาลง · a = 0 → ปกติ</div>`;else h+=wait;return h}
+    const sg=e.d>0?'+':'−';h+=e.d===0?`<div class="cl"><span class="lab">แทนค่า</span>a = 0 → N = mg = (${T.me})(${T.gv}) = <span class="res">${r1(N)} N</span></div>`:key==='fall'?`<div class="cl"><span class="lab">แทนค่า</span>a = g ทิศลง → N = m(g − g) = <span class="res">0 N</span></div>`:`<div class="cl"><span class="lab">แทนค่า</span>a = ${fN(a,1)} m/s² ทิศ${e.d>0?'ขึ้น':'ลง'} → N = m(g ${sg} a) = (${T.me})(${T.gv} ${sg} ${fN(a,1)}) = <span class="res">${r1(N)} N</span></div>`;
+    h+=`<div class="cl"><span class="lab">ตาชั่งแสดง</span>N/g = ${r1(N)}/${T.gv} = ${fN(N/GG,1)} kg (มวลจริง ${T.me} kg)</div>`;if(fin)h+=`<div class="cl note">ค่าที่ตาชั่งอ่านได้ขึ้นกับทิศของ a ไม่ใช่ทิศที่ลิฟต์เคลื่อนที่ · a ขึ้น → หนักขึ้น · a ลง → เบาลง · a = 0 → ปกติ</div>`;else h+=wait;return h}
   const Q=Q3(),m1=T.p1,m2=T.p2;if(!rv(2))return `<div class="cl"><span class="lab">หลักคิด</span>มองทั้งระบบ (เชือกยาวคงที่ ทุกก้อนมี a เท่ากัน) → a = แรงที่ทำให้เคลื่อนที่ ÷ มวลรวม → แยกก้อนหา T</div>`+wait;
-  h+=T.pu==='table'?`<div class="cl"><span class="lab">ทั้งระบบ</span>a = m₂g / (m₁ + m₂) = (${m2})(9.8) / (${m1} + ${m2}) = <span class="res">${r2(Q.a)} m/s²</span></div>`:`<div class="cl"><span class="lab">ทั้งระบบ</span>a = (m₂ − m₁)g / (m₁ + m₂) = |${m2} − ${m1}|(9.8) / (${m1} + ${m2}) = <span class="res">${r2(Q.a)} m/s²</span>${m1===m2?' → ระบบอยู่นิ่ง':''}</div>`;
+  h+=T.pu==='table'?`<div class="cl"><span class="lab">ทั้งระบบ</span>a = m₂g / (m₁ + m₂) = (${m2})(${T.gv}) / (${m1} + ${m2}) = <span class="res">${r2(Q.a)} m/s²</span></div>`:`<div class="cl"><span class="lab">ทั้งระบบ</span>a = (m₂ − m₁)g / (m₁ + m₂) = |${m2} − ${m1}|(${T.gv}) / (${m1} + ${m2}) = <span class="res">${r2(Q.a)} m/s²</span>${m1===m2?' → ระบบอยู่นิ่ง':''}</div>`;
   if(rv(4)){if(T.pu==='table')h+=`<div class="cl"><span class="lab">ก้อน m₁</span>T = m₁a = (${m1})(${r2(Q.a)}) = <span class="res">${r1(Q.T)} N</span></div><div class="cl"><span class="lab">ตรวจ m₂</span>m₂g − T = m₂a → ${r1(m2*GG)} − ${r1(Q.T)} = ${r1(m2*GG-Q.T)} = (${m2})(${r2(Q.a)}) ✓</div>`;
-    else{const hv=m2>=m1;h+=`<div class="cl"><span class="lab">ก้อน m₁</span>T − m₁g = m₁a${hv?'':' (ก้อน m₁ เร่งลง: m₁g − T = m₁a)'} → T = <span class="res">${r1(Q.T)} N</span></div><div class="cl"><span class="lab">สูตรลัด</span>T = 2m₁m₂g / (m₁ + m₂) = 2(${m1})(${m2})(9.8) / ${m1+m2} = ${r1(Q.T)} N ✓</div>`}}else h+=wait;return h}
+    else{const hv=m2>=m1;h+=`<div class="cl"><span class="lab">ก้อน m₁</span>T − m₁g = m₁a${hv?'':' (ก้อน m₁ เร่งลง: m₁g − T = m₁a)'} → T = <span class="res">${r1(Q.T)} N</span></div><div class="cl"><span class="lab">สูตรลัด</span>T = 2m₁m₂g / (m₁ + m₂) = 2(${m1})(${m2})(${T.gv}) / ${m1+m2} = ${r1(Q.T)} N ✓</div>`}}else h+=wait;return h}
 /* ===================== แผงปรับค่า ===================== */
 function renderP(){const t=T.tab;
   if(t===1)return finishP(PBS()+`<span class="label">แบบ</span>${segH('mds','md1',[['pull','ดึงด้วยเชือก'],['push','ผลักกล่องที่ติดกัน']])}`+(T.md1==='push'?segH('sds','sd',[['L','ผลักจากซ้าย'],['R','ผลักจากขวา']]):'')+`<span class="label">จำนวนกล่อง</span>${segH('nbs','nb',[[2,'2 ก้อน'],[3,'3 ก้อน']])}`+prow('F1',T.md1==='push'?'แรงผลัก F':'แรงดึง F','N')+prow('m1','มวล m₁','kg')+prow('m2','มวล m₂','kg')+(T.nb===3?prow('m3','มวล m₃','kg'):'')+spdUI(),[['F1','','',1,1,40,T],['m1','','',1,1,10,T],['m2','','',1,1,10,T],['m3','','',1,1,10,T]]);
@@ -445,6 +445,16 @@ function onSeg(k){spReset(false)}function onP(k){spReset(false)}function onTab()
 const ASM=()=>T.tab===1?'พื้นลื่น · ไม่คิดแรงเสียดทาน':T.tab===3?(T.pu==='table'?'โต๊ะลื่น · ไม่คิดแรงเสียดทาน · เชือกและรอกไม่มีมวล':'ไม่คิดแรงเสียดทานที่รอก · เชือกและรอกไม่มีมวล'):'';
 function calc(){const a=ASM();return (a?`<div class="cl"><span class="lab">หมายเหตุ</span>${a}</div>`:'')+calcBase()}
 function asmTag(B){const a=ASM();if(!a)return;if(T.tab===3){if(B.wide)tag('ⓘ '+a,B.d.x+B.u*.4,B.d.y+B.d.h-B.u*.9,'#0369a1','left')}else tag('ⓘ '+a,B.d.x+B.d.w-B.u*.4,B.d.y+B.u*1.2,'#0369a1','right')}
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+const GTABS=[2, 3];
+Object.defineProperty(window,'GG',{get:()=>T.gv,configurable:true});
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;const tmp=document.createElement('div');tmp.innerHTML=segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']]);const sg=tmp.firstElementChild,pb=el.querySelector('#pb');if(pb){const w=document.createElement('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)';pb.replaceWith(w);w.append(pb,sg)}else el.prepend(sg)}
+{const _rp=renderP;renderP=function(){const r=_rp.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();T.gv=+b.dataset.v;renderP();S.dirty=true},true);
+renderP();
 
 start();
 </script>

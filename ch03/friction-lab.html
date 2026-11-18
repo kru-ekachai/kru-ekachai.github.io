@@ -196,7 +196,7 @@ $('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k
 $('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
 
-const DEF={tab:1,sf:'wood',F1:30,mf:5,th:20,mi:5,th3:30,dir:'up'};
+const DEF={gv:9.8,tab:1,sf:'wood',F1:30,mf:5,th:20,mi:5,th3:30,dir:'up'};
 
 /* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
 const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
@@ -311,7 +311,7 @@ function groundU(P,k,y,x0=0,x1=16){const a=P(x0,y),b=P(x1,y);line(a[0],a[1],b[0]
 function scnW(B,w,h){const d=B.d,u=B.u,k=Math.min(d.w/w,(d.h-u*.6)/h),ox=d.x+(d.w-w*k)/2,oy=d.y+u*.4+(d.h-u*.4-h*k)/2;return{k,P:(x,y)=>[ox+x*k,oy+y*k]}}
 function arw(P,x0,y0,x1,y1,col,lw,al=1){if(Math.hypot(x1-x0,y1-y0)<.03)return;ctx.globalAlpha=al;const a=P(x0,y0),b=P(x1,y1);arrow(a[0],a[1],b[0],b[1],col,lw);ctx.globalAlpha=1}
 function tagU(P,s,x,y,col,al='center',a=1){ctx.globalAlpha=a;const q=P(x,y);tag(s,q[0],q[1],col,al);ctx.globalAlpha=1}
-const GG=9.8;
+
 const SURF={wood:{n:'ไม้บนไม้',s:.5,k:.3,c:'#d6a46b',cs:'#7c4a1e'},rubber:{n:'ยางบนคอนกรีต',s:.8,k:.6,c:'#cbd5e1',cs:'#475569'},ice:{n:'ไม้บนน้ำแข็ง',s:.1,k:.05,c:'#bae6fd',cs:'#0284c7'}};
 const SF=()=>SURF[T.sf];
 function STEPS(){const t=T.tab;
@@ -376,14 +376,14 @@ function tick(dt){ST.clk+=dt;if(SP.p>=SP.tg)return false;const L=STEPS(),k=Math.
 /* ===================== แผงล่าง ===================== */
 function calc(){const t=T.tab,fin=FIN(),rv=s=>SP.p>=s-1e-9,wait=`<div class="cl note">กด ▶ เล่น เพื่อดูต่อเนื่อง หรือ ถัดไป ▶ เพื่อดูทีละขั้น</div>`,S=SF();let h='';
   if(t===1){const Q=Q1(),Z=st1();h=`<div class="cl"><span class="lab">สูตร</span>N = mg · f<sub>s,max</sub> = μ<sub>s</sub>N · f<sub>k</sub> = μ<sub>k</sub>N (${S.n}: μs = ${S.s}, μk = ${S.k})</div>`;if(!rv(1))return h+wait;
-    h+=`<div class="cl"><span class="lab">แรงตั้งฉาก</span>N = mg = (${T.mf})(9.8) = <span class="res">${r1(Q.N)} N</span></div>`;if(rv(Q.sl?3:2))h+=`<div class="cl"><span class="lab">สถิตสูงสุด</span>f<sub>s,max</sub> = μ<sub>s</sub>N = (${S.s})(${r1(Q.N)}) = <span class="res">${r1(Q.fs)} N</span> → ต้องดึงเกินค่านี้กล่องจึงขยับ</div><div class="cl"><span class="lab">จลน์</span>f<sub>k</sub> = μ<sub>k</sub>N = (${S.k})(${r1(Q.N)}) = <span class="res">${r1(Q.fk)} N</span></div>`;
+    h+=`<div class="cl"><span class="lab">แรงตั้งฉาก</span>N = mg = (${T.mf})(${T.gv}) = <span class="res">${r1(Q.N)} N</span></div>`;if(rv(Q.sl?3:2))h+=`<div class="cl"><span class="lab">สถิตสูงสุด</span>f<sub>s,max</sub> = μ<sub>s</sub>N = (${S.s})(${r1(Q.N)}) = <span class="res">${r1(Q.fs)} N</span> → ต้องดึงเกินค่านี้กล่องจึงขยับ</div><div class="cl"><span class="lab">จลน์</span>f<sub>k</sub> = μ<sub>k</sub>N = (${S.k})(${r1(Q.N)}) = <span class="res">${r1(Q.fk)} N</span></div>`;
     if(fin)h+=(Q.sl?`<div class="cl"><span class="lab">ความเร่ง</span>F = ${T.F1} N > μsN → a = (F − f<sub>k</sub>)/m = (${T.F1} − ${r1(Q.fk)})/${T.mf} = <span class="res">${r2((T.F1-Q.fk)/T.mf)} m/s²</span></div>`:`<div class="cl"><span class="lab">กล่องนิ่ง</span>F = ${T.F1} N ≤ μsN = ${r1(Q.fs)} N → f = F = <span class="res">${T.F1} N</span> · a = 0</div>`)+`<div class="cl note">ก่อนขยับ f = F (ไม่ได้เท่ากับ μsN เสมอ) · μsN คือค่าสูงสุดที่แรงเสียดทานสถิตทำได้</div>`;else h+=wait;return h}
   if(t===2){const m=T.mi,ws=m*GG*Math.sin(T.th*D2R),N=m*GG*Math.cos(T.th*D2R),sl=slides2();h=`<div class="cl"><span class="lab">สูตร</span>แรงตามพื้นเอียง mg sin θ · N = mg cos θ · ไถลเมื่อ tan θ > μs</div>`;if(!rv(2))return h+wait;
-    h+=`<div class="cl"><span class="lab">แตกแรง</span>mg sin θ = (${m})(9.8)sin ${T.th}° = <span class="res">${r1(ws)} N</span> · mg cos θ = (${m})(9.8)cos ${T.th}° = <span class="res">${r1(N)} N</span></div>`;
-    if(rv(4))h+=sl?`<div class="cl"><span class="lab">ไถล</span>tan ${T.th}° = ${fN(Math.tan(T.th*D2R),2)} > μs = ${S.s} → a = g(sin θ − μk cos θ) = 9.8(${fN(Math.sin(T.th*D2R),3)} − ${S.k}×${fN(Math.cos(T.th*D2R),3)}) = <span class="res">${r2(GG*(Math.sin(T.th*D2R)-S.k*Math.cos(T.th*D2R)))} m/s²</span></div>`:`<div class="cl"><span class="lab">นิ่ง</span>tan ${T.th}° = ${fN(Math.tan(T.th*D2R),2)} ≤ μs = ${S.s} → f = mg sin θ = <span class="res">${r1(ws)} N</span> (ไม่เกิน μsN = ${r1(S.s*N)} N)</div>`;
+    h+=`<div class="cl"><span class="lab">แตกแรง</span>mg sin θ = (${m})(${T.gv})sin ${T.th}° = <span class="res">${r1(ws)} N</span> · mg cos θ = (${m})(${T.gv})cos ${T.th}° = <span class="res">${r1(N)} N</span></div>`;
+    if(rv(4))h+=sl?`<div class="cl"><span class="lab">ไถล</span>tan ${T.th}° = ${fN(Math.tan(T.th*D2R),2)} > μs = ${S.s} → a = g(sin θ − μk cos θ) = ${T.gv}(${fN(Math.sin(T.th*D2R),3)} − ${S.k}×${fN(Math.cos(T.th*D2R),3)}) = <span class="res">${r2(GG*(Math.sin(T.th*D2R)-S.k*Math.cos(T.th*D2R)))} m/s²</span></div>`:`<div class="cl"><span class="lab">นิ่ง</span>tan ${T.th}° = ${fN(Math.tan(T.th*D2R),2)} ≤ μs = ${S.s} → f = mg sin θ = <span class="res">${r1(ws)} N</span> (ไม่เกิน μsN = ${r1(S.s*N)} N)</div>`;
     if(fin)h+=`<div class="cl note">มุมวิกฤต tan θc = μs → θc = ${fN(Math.atan(S.s)/D2R,1)}° ไม่ขึ้นกับมวล · ลองกด "ไปที่มุมวิกฤต"</div>`;else h+=wait;return h}
   const m=T.mi,r=T.th3*D2R,ws=m*GG*Math.sin(r),N=m*GG*Math.cos(r),fk=S.k*N,up=T.dir==='up',F=up?ws+fk:ws-fk;h=`<div class="cl"><span class="lab">หลักคิด</span>ความเร็วคงตัว → a = 0 → ΣF = 0 ตามแนวพื้นเอียง</div>`;if(!rv(2))return h+wait;
-  h+=`<div class="cl"><span class="lab">แรงเสียดทาน</span>f = μk mg cos θ = (${S.k})(${m})(9.8)cos ${T.th3}° = <span class="res">${r1(fk)} N</span> ทิศ${up?'ลง':'ขึ้น'}ตามพื้นเอียง</div>`;
+  h+=`<div class="cl"><span class="lab">แรงเสียดทาน</span>f = μk mg cos θ = (${S.k})(${m})(${T.gv})cos ${T.th3}° = <span class="res">${r1(fk)} N</span> ทิศ${up?'ลง':'ขึ้น'}ตามพื้นเอียง</div>`;
   if(fin)h+=up?`<div class="cl"><span class="lab">ดึงขึ้น</span>F = mg sin θ + f = ${r1(ws)} + ${r1(fk)} = <span class="res">${r1(F)} N</span></div>`:`<div class="cl"><span class="lab">ลงช้า ๆ</span>F = mg sin θ − f = ${r1(ws)} − ${r1(fk)} = <span class="res">${r1(Math.abs(F))} N</span> ${F>=0?'(ออกแรงรั้งขึ้น)':'(ต้องดันลง เพราะแรงเสียดทานมากกว่า mg sin θ)'}</div><div class="cl note">ทิศของแรงเสียดทานจลน์ตรงข้ามกับทิศการเคลื่อนที่เสมอ</div>`;else h+=wait;return h}
 /* ===================== แผงปรับค่า ===================== */
 const surfSeg=()=>`<span class="label">ผิวสัมผัส</span>${segH('sfs','sf',Object.keys(SURF).map(k=>[k,SURF[k].n]))}`;
@@ -397,6 +397,16 @@ function onSeg(k){spReset(false)}function onP(k){spReset(!!S.drag)}
 let GF=null;
 function dragStart(p){if(T.tab!==1||!GF)return null;const tx=GF.o[0]+T.F1*GF.kF*GF.k;if(Math.hypot(p.x-tx,p.y-GF.o[1])<UU()*2.5)return{k:'F',G:GF};return null}
 function dragMove(p){const d=S.drag;if(d&&d.k==='F')setParam('F1',(p.x-d.G.o[0])/(d.G.kF*d.G.k))}function onTab(){spReset(false)}
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+const GTABS=[1, 2, 3];
+Object.defineProperty(window,'GG',{get:()=>T.gv,configurable:true});
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(T.tab)||el.querySelector('#gvs'))return;const tmp=document.createElement('div');tmp.innerHTML=segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']]);const sg=tmp.firstElementChild,pb=el.querySelector('#pb');if(pb){const w=document.createElement('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)';pb.replaceWith(w);w.append(pb,sg)}else el.prepend(sg)}
+{const _rp=renderP;renderP=function(){const r=_rp.apply(this,arguments);gInject();return r}}
+{const _c=calc;calc=function(){return (GTABS.includes(T.tab)?gLine():'')+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();T.gv=+b.dataset.v;renderP();S.dirty=true},true);
+renderP();
 
 start();
 </script>
