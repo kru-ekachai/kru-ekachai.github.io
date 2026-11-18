@@ -175,7 +175,7 @@ h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)
 <script>
 /* ===================== ตัวช่วย ===================== */
 const $=id=>document.getElementById(id);
-const E_CH=1.6e-19, M_E=9.1e-31, M_P=1.67e-27, G=10;
+const E_CH=1.6e-19, M_E=9.1e-31, M_P=1.67e-27;Object.defineProperty(window,'G',{get:()=>GV,configurable:true});
 const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
 const sup=n=>String(n).split('').map(c=>SUP[c]||c).join('');
 const trimN=s=>s.includes('.')&&!s.includes('e')?s.replace(/\.?0+$/,''):s;
@@ -355,9 +355,9 @@ function calc3(){const st=T();
     <div class="cl"><span class="lab">หยดน้ำมัน</span>q = ne = (${st.n})(1.6×10⁻¹⁹) = ${fmt(o.q)} C (ประจุลบ แรงไฟฟ้าชี้ขึ้น) · m = ${fmt(o.m)} kg</div>
     <div class="cl"><span class="lab">แรง</span>mg = ${fmt(o.mg)} N · qE = ${fmt(o.qE)} N</div>
     <div class="cl"><span class="lab">ลอยนิ่งเมื่อ</span>qE = mg → V = mgd/q = <span class="res">${fmt(o.Vb)} V</span> ${still?'<span class="ok">✓ ลอยนิ่งแล้ว</span>':''}</div>
-    <div class="cl note">ใช้ g = 10 m/s² · ปรับ V จนหยดน้ำมันลอยนิ่ง</div>`}
+    <div class="cl note">ปรับ V จนหยดน้ำมันลอยนิ่ง</div>`}
   const p=pend();return `<div class="cl"><span class="lab">สนาม</span>E = V/d = ${fmt(st.pV)}/${fmt(p.d)} = <b>${fmt(p.E)} N/C</b> (ทิศจากซ้ายไปขวา)</div>
-    <div class="cl"><span class="lab">แรง</span>qE = (${fmt(Math.abs(p.q))})(${fmt(p.E)}) = ${fmt(Math.abs(p.F))} N · mg = (${fmt(p.m)})(10) = ${fmt(p.mg)} N</div>
+    <div class="cl"><span class="lab">แรง</span>qE = (${fmt(Math.abs(p.q))})(${fmt(p.E)}) = ${fmt(Math.abs(p.F))} N · mg = (${fmt(p.m)})(${GV}) = ${fmt(p.mg)} N</div>
     <div class="cl"><span class="lab">มุมเอียง</span>tan θ = qE/mg = ${fmt(Math.abs(p.F)/p.mg)} → <span class="res">θ = ${fmt(Math.abs(p.th*180/Math.PI),3)}°</span></div>
     <div class="cl"><span class="lab">แรงตึงเชือก</span>T = √((mg)² + (qE)²) = <b>${fmt(p.T)} N</b></div>`}
 
@@ -397,6 +397,16 @@ let tp=performance.now();
 function loop(t){const dt=Math.min(.05,(t-tp)/1000);tp=t;if(W){if(S.tab===2)step2(dt);if(S.tab===3)step3(dt)}
   if(S.dirty&&W){S.dirty=false;draw();calc()}requestAnimationFrame(loop)}
 showTabs();syncSegs();renderParams();layout();requestAnimationFrame(loop);
+
+/* ===================== ปุ่มเลือกค่า g (9.8 / 10) ===================== */
+let GV=9.8;const GTABS=[3];
+const gLine=()=>`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${GV} m/s²</div>`;
+function gInject(){const el=$('params');if(!el||!GTABS.includes(S.tab)||el.querySelector('#gvs'))return;el.insertAdjacentHTML('afterbegin',`<div class="seg" id="gvs"><button data-gv="9.8" aria-pressed="${GV===9.8}">g = 9.8</button><button data-gv="10" aria-pressed="${GV===10}">g = 10</button></div>`)}
+{const _r=renderParams;renderParams=function(){const r=_r.apply(this,arguments);gInject();return r}}
+{const _c=calc3;calc3=function(){return gLine()+_c.apply(this,arguments)}}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#gvs button');if(!b)return;e.stopPropagation();GV=+b.dataset.gv;renderParams();S.dirty=true},true);
+$('reset').addEventListener('click',()=>{if(GTABS.includes(S.tab)){GV=9.8;renderParams();S.dirty=true}});
+renderParams();
 </script>
 </body>
 </html>
