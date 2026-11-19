@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>พลังงานจลน์และพลังงานศักย์</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* ทีวี/คอม: พอดีจอเดียว · โทรศัพท์: ภาพบน ปุ่มล่าง */
+:root{
+  --f-display:"Chakra Petch","Sarabun",system-ui,sans-serif;
+  --f-body:"Sarabun",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --u:clamp(13px,1.9vh,40px);
+  --bg:#e9eeec; --panel:#f8faf9; --ink:#16232a; --muted:#4d5f64; --line:#c3cfcd;
+  --accent:#0d6e66; --accent-ink:#fff;
+  --pos:#d42a2a; --neg:#2557d6; --ask:#c98a04; --metal1:#eef2f3; --metal2:#9fb0b6;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-body);font-size:var(--u);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:calc(var(--u)*.6);
+  padding:calc(var(--u)*.7) calc(var(--u)*1) calc(var(--u)*.7 + env(safe-area-inset-bottom))}
+
+/* แถบบน */
+.bar{display:flex;align-items:center;gap:calc(var(--u)*.6);flex-wrap:wrap}
+.back{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--accent);text-decoration:none;opacity:.85;white-space:nowrap}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.4);white-space:nowrap}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.85);border:0;background:transparent;color:var(--muted);
+  padding:.3em .7em;border-radius:9px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+.tools{display:flex;gap:calc(var(--u)*.45);flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95);padding:.35em .8em;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap;min-height:2.3em}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.on{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#e3f1ef}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg button{white-space:nowrap;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);padding:.35em .75em;border:0;background:var(--panel);color:var(--muted);cursor:pointer;min-height:2.3em}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].p{background:var(--pos);color:#fff}
+.seg button[aria-pressed="true"].n{background:var(--neg);color:#fff}
+
+/* เวที */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;min-width:0;min-height:0;position:relative;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.toast{position:absolute;bottom:.8em;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.35em .9em;border-radius:999px;
+  font-size:calc(var(--u)*.85);opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:.92}
+
+/* ส่วนล่าง */
+.bottom{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr);gap:calc(var(--u)*.6)}
+.bottom .panel{padding:calc(var(--u)*.6) calc(var(--u)*.9);display:grid;gap:calc(var(--u)*.35);align-content:center}
+.label{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.75);letter-spacing:.06em;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3em .9em;margin:0}
+.nums div{display:grid}
+.nums dt{font-size:calc(var(--u)*.78);color:var(--muted)}
+.nums dd{margin:0;font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*1.1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums .cnt{font-family:var(--f-mono);font-size:calc(var(--u)*1.4)}
+.nums .big dd{font-family:var(--f-mono);font-size:calc(var(--u)*1.5)}
+.nums .big dd small{font-family:var(--f-body);font-weight:500;font-size:.5em;color:var(--muted);margin-left:.4em}
+.legend{display:grid;gap:.4em;font-size:calc(var(--u)*.85)}
+.legend span{display:flex;align-items:center;gap:.5em}
+.legend b{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;font-family:var(--f-mono);font-size:.95em;flex:none}
+.lp{color:var(--pos);border:1.5px solid var(--pos)}
+.ln{background:var(--neg);color:#fff}
+
+
+/* แท็บ */
+[hidden]{display:none!important}
+.seg button[aria-pressed="true"].g{background:var(--accent);color:#fff}
+.otab{width:100%;border-collapse:collapse;font-size:calc(var(--u)*.9)}
+.otab th{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.8);color:var(--muted);text-align:right;padding:0 .5em .15em}
+.otab th:first-child,.otab td:first-child{text-align:left;padding-left:0}
+.otab td{font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);text-align:right;padding:.05em .5em;white-space:nowrap}
+.otab td:first-child{font-family:var(--f-display);font-weight:600;font-size:calc(var(--u)*.95)}
+.otab .cp{color:var(--pos)}.otab .cn{color:var(--neg)}
+.otab tr.sum td{border-top:1px solid var(--line);padding-top:.15em}
+/* หน้าจอเล็ก (คอมจอเล็ก) */
+@media (max-width:1600px) and (min-width:761px){h1{display:none}}
+/* โทรศัพท์ / แท็บเล็ตแนวตั้ง */
+@media (max-width:760px){
+  :root{--u:15px}
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100dvh;grid-template-rows:auto 52vh auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar{gap:8px}
+  h1{font-size:18px;flex:1}
+  .tabs{order:3;width:100%}
+  .spacer{display:none}
+  .tools{order:4;width:100%}
+  .tools .btn{flex:1 1 auto;padding:.35em .5em;font-size:14px}
+  .tools .seg{flex:1 1 auto}.tools .seg button{flex:1}
+  .bottom{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bottom .legendbox{display:none}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nums .big{grid-column:1/-1}
+}
+@media (max-width:760px) and (orientation:landscape){.app{grid-template-rows:auto 78vh auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* เฉพาะไฟล์นี้ */
+[hidden]{display:none!important}
+.bottom{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.params{display:grid;gap:calc(var(--u)*.4);align-content:center}
+.prow{display:grid;grid-template-columns:minmax(5em,auto) auto minmax(0,5.5em) auto auto;align-items:center;gap:.35em}
+.prow .pl{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95)}
+.prow input{width:100%;font-family:var(--f-mono);font-weight:700;font-size:calc(var(--u)*1.1);padding:.15em .3em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);text-align:right}
+.prow .unit{font-family:var(--f-body);color:var(--muted);font-size:calc(var(--u)*.9)}
+.mini{font-family:var(--f-display);font-weight:700;font-size:calc(var(--u)*.95);min-width:2em;min-height:1.9em;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.hint2{font-size:calc(var(--u)*.8);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.calc{font-family:var(--f-mono);font-size:calc(var(--u)*.92);line-height:1.5;overflow:auto;max-height:100%}
+.calc .cl{white-space:nowrap}
+.calc .res{color:var(--accent);font-weight:700;font-size:1.1em}
+.calc .lab{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em;margin-right:.4em}
+.calc .warn{font-family:var(--f-display);font-weight:700;color:#b45309}
+.calc .note{font-family:var(--f-body);color:var(--muted)}
+@media (max-width:760px){.tools #modeSeg{flex-basis:100%}#modeSeg button{font-size:13px;padding:.35em .3em}.bottom{grid-template-columns:minmax(0,1fr)}.calc{font-size:12.5px}.calc .cl{white-space:normal;overflow-wrap:anywhere}.prow{grid-template-columns:6em auto minmax(0,1fr) auto auto}}
+.calc .warn,.calc .cl{white-space:normal}
+.calc .ok{font-family:var(--f-display);font-weight:700;color:#15803d}
+.prange{width:100%;accent-color:var(--accent);margin:0 0 .2em}
+.params{gap:calc(var(--u)*.15)!important}
+.nuc{display:inline-flex;align-items:center;white-space:nowrap}.nuc .az{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:.95;font-size:.62em;margin-right:.08em}.nuc .az sup,.nuc .az sub{vertical-align:baseline;position:static}
+.calc table{border-collapse:collapse;font-size:.95em;margin:.15em 0}.calc td,.calc th{padding:.05em .9em .05em 0;text-align:left;white-space:nowrap}.calc th{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:.85em}
+.calc tr.hit td{color:#15803d;font-weight:700}
+
+@media (max-width:760px){.calc td{white-space:normal!important}}
+@media (max-width:760px) and (orientation:portrait){.app{grid-template-rows:auto 56vh auto}}
+.seg{flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="bar">
+    <a class="back" href="../">← ห้องทดลอง</a>
+    <h1>พลังงานจลน์และพลังงานศักย์</h1>
+    <div class="tabs" role="tablist" id="tabs"><button role="tab" aria-selected="true" data-t="1">① พลังงานจลน์ W = ΔEk</button><button role="tab" aria-selected="false" data-t="2">② พลังงานศักย์โน้มถ่วง</button><button role="tab" aria-selected="false" data-t="3">③ พลังงานศักย์ยืดหยุ่น</button></div>
+    <div class="spacer"></div>
+    <div class="tools"><button class="btn" id="reset">↺ เริ่มใหม่</button><button class="btn" id="fs">⛶ เต็มจอ</button></div>
+  </div>
+  <div class="panel stage" id="stageBox"><canvas id="cv"></canvas><div class="toast" id="toast"></div></div>
+  <div class="bottom">
+    <div class="panel params" id="params"></div>
+    <div class="panel"><div class="calc" id="calc"></div></div>
+  </div>
+</div>
+<script>
+/* ===================== ตัวช่วยร่วม ===================== */
+const $=id=>document.getElementById(id);
+const trimN=s=>s.includes('.')?s.replace(/\.?0+$/,''):s;
+const f3=x=>!isFinite(x)?'—':Math.abs(x)<1e-12?'0':trimN(Number(x.toPrecision(3)).toString()).replace('-','−');
+const fN=(x,d)=>(Math.round(x*10**d)/10**d).toFixed(d).replace('-','−');
+const SUPd={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺'};
+const SUBd={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const sup=s=>String(s).split('').map(c=>SUPd[c]||c).join(''),sub=s=>String(s).split('').map(c=>SUBd[c]||c).join('');
+function fs(x){if(!isFinite(x))return '—';if(Math.abs(x)<1e-40)return '0';let e=Math.floor(Math.log10(Math.abs(x))),m=Number((x/Math.pow(10,e)).toPrecision(3));if(Math.abs(m)>=10){m/=10;e++}
+  if(e>=-2&&e<=4)return f3(x);return trimN(m.toPrecision(3)).replace('-','−')+'×10'+sup(e)}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+let lastCalc='';const setCalc=h=>{if(h!==lastCalc){lastCalc=h;$('calc').innerHTML=h}};
+const cv=$('cv'),ctx=cv.getContext('2d');let W=0,H=0;
+function layout(){const r=cv.getBoundingClientRect(),D=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*D;cv.height=H*D;ctx.setTransform(D,0,0,D,0,0);S.dirty=true}
+new ResizeObserver(()=>layout()).observe(cv);
+const UU=()=>Math.max(11,Math.min(W,H*1.7)*.014);
+function font(px,w=600,fam='"Chakra Petch","Sarabun",sans-serif'){ctx.font=`${w} ${px}px ${fam}`}
+function tag(text,x,y,col,ax='center'){font(Math.max(12,UU()*1.05),700);const w=ctx.measureText(text).width+12,h=Math.max(19,UU()*1.65);
+  let bx=ax==='center'?x-w/2:ax==='left'?x:x-w,by=y-h/2;bx=Math.max(3,Math.min(W-w-3,bx));by=Math.max(3,Math.min(H-h-3,by));
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(bx,by,w,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,bx+6,by+h/2+1)}
+function arrow(x1,y1,x2,y2,col,lw=3){const a=Math.atan2(y2-y1,x2-x1),h=Math.max(8,lw*3.2);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-Math.cos(a)*h*.6,y2-Math.sin(a)*h*.6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45));ctx.lineTo(x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45));ctx.closePath();ctx.fill()}
+function wave(x1,y1,x2,y2,col,u,lp){const L=Math.hypot(x2-x1,y2-y1);if(L<2)return;const a=Math.atan2(y2-y1,x2-x1),A=u*.42;lp=lp||u*1.1;
+  ctx.save();ctx.translate(x1,y1);ctx.rotate(a);ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();for(let s=0;s<=L;s+=1.2)ctx.lineTo(s,A*Math.sin(2*Math.PI*s/lp)*Math.min(1,s/(lp*.6),(L-s)/(lp*.6)));ctx.stroke();ctx.restore()}
+/* สัญลักษณ์นิวไคลด์ ᴬ_Z X */
+function nucSym(x,y,A,Z,X,size,col='#0f172a',ax='center'){font(size,700);const wX=ctx.measureText(X).width;font(size*.5,700,'"JetBrains Mono",monospace');const wn=Math.max(ctx.measureText(String(A)).width,ctx.measureText(String(Z)).width);
+  const tw=wn+3+wX;let x0=ax==='center'?x-tw/2:ax==='left'?x:x-tw;ctx.fillStyle=col;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+  ctx.fillText(String(A),x0+wn,y-size*.38);ctx.fillText(String(Z),x0+wn,y+size*.12);font(size,700);ctx.textAlign='left';ctx.fillText(X,x0+wn+3,y+size*.12);return tw}
+const nucTxt=(A,Z,X)=>`<span class="nuc"><span class="az"><sup>${A}</sup><sub>${Z}</sub></span>${X}</span>`;
+/* ปุ่มกลุ่ม (seg) */
+function segSync(id,attr,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+function segOn(id,fn){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(b)fn(b)})}
+/* แผงปรับค่าทั่วไป: [key,label,unit,step,min,max,obj] */
+let SPEC=[];
+function renderParams(spec,hint=''){SPEC=spec;$('params').innerHTML='<span class="label">ปรับค่า</span>'+spec.map(([k,l,u,st,a,b,o])=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${o[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${u}</span></div><input class="prange" type="range" data-r="${k}" min="${a}" max="${b}" step="${st}" value="${o[k]}" aria-label="${l}">`).join('')+(hint?`<span class="hint2">${hint}</span>`:'')}
+function setParam(k,v){const sp=SPEC.find(x=>x[0]===k);if(!sp)return;v=Math.max(sp[4],Math.min(sp[5],Math.round(v/sp[3])*sp[3]));v=+v.toFixed(4);sp[6][k]=v;
+  const i=document.querySelector(`#params input[data-k="${k}"]`);if(i&&document.activeElement!==i)i.value=v;const r=document.querySelector(`#params input[data-r="${k}"]`);if(r&&document.activeElement!==r)r.value=v;S.dirty=true;if(typeof onParam==='function')onParam(k)}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const sp=SPEC.find(x=>x[0]===b.dataset.k);setParam(b.dataset.k,sp[6][b.dataset.k]+sp[3]*(+b.dataset.d))});
+$('params').addEventListener('input',e=>{const i=e.target.closest('input[data-k],input[data-r]');if(!i)return;const v=parseFloat(i.value);if(isFinite(v))setParam(i.dataset.k||i.dataset.r,v)});
+$('params').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(i){const sp=SPEC.find(x=>x[0]===i.dataset.k);if(sp)i.value=sp[6][i.dataset.k]}});
+$('fs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
+function showTabs(t){document.querySelectorAll('[data-tabs]').forEach(el=>el.hidden=!el.dataset.tabs.includes(String(t)))}
+
+const DEF={gv:9.8,tab:1,m:2,u0:0,F:10,s:5,mg:2,h:3,ref:'floor',k:200,x:.2};
+
+/* ===================== ตัวช่วยร่วมสำหรับแล็บแสง ===================== */
+const RC='#dc2626',RC2='#f97316',NC='#64748b',MC='#475569',IC='#2563eb',GU='#fca5a5',TC='#0d6e66';
+const R2D=180/Math.PI,D2R=Math.PI/180;
+const T={...DEF};
+const S={dirty:true,drag:null};
+function ray(x1,y1,x2,y2,col,dash,arw,lw=3){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.setLineDash(dash?[8,6]:[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  if(arw){const mx=x1+(x2-x1)*.55,my=y1+(y2-y1)*.55,a=Math.atan2(y2-y1,x2-x1),L=12;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*L*.6,my+Math.sin(a)*L*.6);ctx.lineTo(mx+Math.cos(a+2.5)*L*.6,my+Math.sin(a+2.5)*L*.6);ctx.lineTo(mx+Math.cos(a-2.5)*L*.6,my+Math.sin(a-2.5)*L*.6);ctx.closePath();ctx.fill()}}
+function arcAng(cx,cy,r,a0,a1,col,lab,u){ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();let d=a1-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;ctx.arc(cx,cy,r,a0,a0+d,d<0);ctx.stroke();if(lab){const am=a0+d/2;tag(lab,cx+Math.cos(am)*(r+u*2.4),cy+Math.sin(am)*(r+u*2.4),col)}}
+function dashLine(x1,y1,x2,y2,col,lw=2){ray(x1,y1,x2,y2,col,true,false,lw)}
+function dot(x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function txt(s,x,y,col,px,al='center',bl='middle',w=700){font(px,w);ctx.fillStyle=col;ctx.textAlign=al;ctx.textBaseline=bl;ctx.fillText(s,x,y)}
+/* ---------- อนิเมชันทีละขั้น ---------- */
+const A={p:99,tg:99,N:6,last:0,spd:1.25};
+function replay(){A.p=0;A.tg=99;S.dirty=true}
+function instant(){A.p=99;S.dirty=true}
+function stepA(){if(A.p>=A.N-1e-3){A.p=0;A.tg=1}else A.tg=Math.floor(A.p+1e-6)+1;S.dirty=true}
+const fr=k=>Math.max(0,Math.min(1,A.p-k));
+function aseg(k,x1,y1,x2,y2,col,dash,arw,lw){const f=fr(k);if(f<=0)return;ray(x1,y1,x1+(x2-x1)*f,y1+(y2-y1)*f,col,dash,arw&&f>=1,lw)}
+function apoly(k,pts,col,dash,arw){/* วาดเส้นหลายช่วงตามสัดส่วนความยาว */const f=fr(k);if(f<=0||pts.length<2)return;let L=0;const d=[];for(let i=1;i<pts.length;i++){d.push(Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));L+=d[i-1]}
+  let rem=L*f;for(let i=1;i<pts.length&&rem>0;i++){const t=Math.min(1,rem/d[i-1]);const a=pts[i-1],b=pts[i];ray(a.x,a.y,a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,col,dash,arw&&f>=1&&i===Math.ceil(pts.length/2));rem-=d[i-1]}}
+function toEdge(x,y,dx,dy){let t=1e9;if(dx>0)t=Math.min(t,(W-x)/dx);if(dx<0)t=Math.min(t,-x/dx);if(dy>0)t=Math.min(t,(H-y)/dy);if(dy<0)t=Math.min(t,-y/dy);if(t>1e8)t=0;return{x:x+dx*t,y:y+dy*t}}
+function stageTag(list,y){A.N=list.length;const i=Math.min(A.N,Math.floor(A.p+1e-6)+1);tag('ขั้น '+i+'/'+A.N+' : '+list[i-1],W/2,y===undefined?UU()*1.4:y,TC)}
+const aniDone=()=>!animTab()||A.p>=A.N-1e-3;
+const WAIT='<div class="cl note">ดูรังสีให้ครบทุกขั้น แล้วคำตอบจะขึ้นตรงนี้</div>';
+/* ภาพลูกศรค่อย ๆ งอก + กะพริบที่ปลาย */
+function growImg(k,x,y0,y1,col,alpha=1){const f=fr(k);if(f<=0)return 0;const u=UU();if(f<1){ctx.fillStyle=`rgba(37,99,235,${.4*(1-f)})`;ctx.beginPath();ctx.arc(x,y1,u*(1+2.5*(1-f)),0,7);ctx.fill()}
+  ctx.globalAlpha=alpha;if(Math.abs(y1-y0)*f>6)arrow(x,y0,x,y0+(y1-y0)*f,col,5);ctx.globalAlpha=1;return f}
+/* ---------- เลนส์บาง ---------- */
+function drawLens(x,ay,h,cvx,u,col='#7dd3fc'){const w=u*1.6;ctx.fillStyle='rgba(125,211,252,.35)';ctx.strokeStyle='#0284c7';ctx.lineWidth=2.5;ctx.beginPath();
+  if(cvx){ctx.moveTo(x,ay-h);ctx.quadraticCurveTo(x+w*1.6,ay,x,ay+h);ctx.quadraticCurveTo(x-w*1.6,ay,x,ay-h)}
+  else{ctx.moveTo(x-w,ay-h);ctx.lineTo(x+w,ay-h);ctx.quadraticCurveTo(x+w*.15,ay,x+w,ay+h);ctx.lineTo(x-w,ay+h);ctx.quadraticCurveTo(x-w*.15,ay,x-w,ay-h)}ctx.closePath();ctx.fill();ctx.stroke()}
+function axisMarks(ay,list,u){list.forEach(([x,l])=>{if(x<2||x>W-2)return;dot(x,ay,4,'#0f172a');txt(l,x,ay+6,'#0f172a',Math.max(13,u*1.05),'center','top',800)})}
+/* หาภาพเลนส์บาง: s>0 หน้าเลนส์, f เลนส์นูน + เว้า − */
+function thin(s,f){if(Math.abs(s-f)<1e-9)return{inf:true};const sp=s*f/(s-f);return{sp,m:sp/s}}
+/* ---------- แผงปรับค่า ---------- */
+const segH=(id,key,list)=>`<div class="seg" id="${id}" data-key="${key}">${list.map(([v,l])=>`<button data-v="${v}" aria-pressed="${String(T[key])===String(v)}">${l}</button>`).join('')}</div>`;
+const prow=(k,l,un)=>`<div class="prow"><span class="pl">${l}</span><button class="mini" data-k="${k}" data-d="-1">−</button><input data-k="${k}" type="number" inputmode="decimal" value="${T[k]}"><button class="mini" data-k="${k}" data-d="1">+</button><span class="unit">${un}</span></div><input class="prange" type="range" data-r="${k}" value="${T[k]}" aria-label="${l}">`;
+const ANI='<span class="label">อนิเมชัน</span><div class="seg" id="aniSeg"><button data-a="play">▶ เล่นอีกครั้ง</button><button data-a="step">⏭ ทีละขั้น</button></div>';
+function finishP(h,spec){SPEC=spec||[];$('params').innerHTML=h;SPEC.forEach(([k,,,st,a,b])=>{const r=document.querySelector(`#params input[data-r="${k}"]`);if(r){r.min=a;r.max=b;r.step=st;r.value=T[k]}})}
+function syncInputs(){document.querySelectorAll('#params input[data-k],#params input[data-r]').forEach(x=>{if(x!==document.activeElement){const k=x.dataset.k||x.dataset.r;if(T[k]!==undefined)x.value=T[k]}})}
+$('params').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const sg=b.closest('.seg');if(!sg)return;
+  if(sg.id==='aniSeg'){b.dataset.a==='play'?replay():stepA();return}
+  const key=sg.dataset.key;if(key&&b.dataset.v!==undefined){const o=T[key],v=b.dataset.v;T[key]=typeof o==='boolean'?v==='true':(v!==''&&!isNaN(+v)?+v:v);if(typeof onSeg==='function')onSeg(key);renderP();replay()}});
+$('params').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.r)replay()});
+function onParam(k){if(typeof onP==='function')onP(k);if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.r)instant();else replay();syncInputs()}
+/* ---------- แท็บ / ลาก / วงรอบ ---------- */
+function setTab(t){if(typeof auStop==='function')auStop();T.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',+b.dataset.t===t));if(typeof onTab==='function')onTab(t);renderP();replay()}
+function resetAll(){const t=T.tab;Object.keys(T).forEach(k=>delete T[k]);Object.assign(T,DEF);setTab(t)}
+$('reset').onclick=resetAll;$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(+b.dataset.t)});
+function pos(e){const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener('pointerdown',e=>{const p=pos(e);S.drag=typeof dragStart==='function'?dragStart(p):null;if(S.drag){cv.setPointerCapture(e.pointerId);instant();dragMove(p);syncInputs()}});
+cv.addEventListener('pointermove',e=>{if(S.drag){dragMove(pos(e));instant();syncInputs()}});
+const endDrag=()=>{if(S.drag){S.drag=null;if(typeof dragEnd==='function')dragEnd();replay()}};cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key;if(k==='f'||k==='F')$('fs').click();else if(k==='r'||k==='R')resetAll();else if(/^[1-9]$/.test(k)&&document.querySelector(`#tabs button[data-t="${k}"]`))setTab(+k)});
+function loop(ts){const dt=Math.min(.05,Math.max(0,(ts-(A.last||ts))/1000));A.last=ts;if(animTab()&&A.p<Math.min(A.tg,A.N)){A.p=Math.min(A.p+dt*A.spd,A.tg,A.N);S.dirty=true}
+  if(typeof tick==='function'&&tick(dt))S.dirty=true;
+  if(S.dirty&&W){S.dirty=false;ctx.fillStyle=typeof BG==='function'?BG():'#f8faf9';ctx.fillRect(0,0,W,H);draw();setCalc(calc())}requestAnimationFrame(loop)}
+function start(){setTab(T.tab);layout();requestAnimationFrame(loop)}
+/* ---------- สีจากความยาวคลื่น (nm) ---------- */
+function lamRGB(l){let r=0,g=0,b=0;if(l<440){r=-(l-440)/60;b=1}else if(l<490){g=(l-440)/50;b=1}else if(l<510){g=1;b=-(l-510)/20}else if(l<580){r=(l-510)/70;g=1}else if(l<645){r=1;g=-(l-645)/65}else r=1;
+  const f=l<420?.3+.7*(l-380)/40:l>700?.3+.7*(780-l)/80:1;return[r*f,g*f,b*f]}
+const lamCol=(l,a=1)=>{const[r,g,b]=lamRGB(l);return `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a})`};
+function lamName(l){return l<450?'ม่วง':l<495?'น้ำเงิน':l<570?'เขียว':l<590?'เหลือง':l<620?'แสด':'แดง'}
+/* ---------- เสียงจริง (Web Audio) ---------- */
+const AU={c:null,m:null,on:false,vol:.3,v:{}};
+function auInit(){try{if(!AU.c){AU.c=new (window.AudioContext||window.webkitAudioContext)();AU.m=AU.c.createGain();AU.m.gain.value=0;const lim=AU.c.createDynamicsCompressor();AU.m.connect(lim);lim.connect(AU.c.destination)}AU.c.resume()}catch(e){}}
+function auMaster(){if(AU.m)AU.m.gain.setTargetAtTime(AU.on?.35*AU.vol*AU.vol:0,AU.c.currentTime,.05)}
+function auSet(on){AU.on=on;if(on)auInit();auMaster();if(!on)auStop()}
+function auWave(harm){const re=new Float32Array(harm.length+1),im=new Float32Array(harm.length+1);harm.forEach((a,i)=>im[i+1]=a);return AU.c.createPeriodicWave(re,im)}
+function auTone(id,f,amp,harm){/* โทนต่อเนื่อง: amp 0..1 */if(!AU.on||!AU.c)return;let v=AU.v[id];if(!v){const o=AU.c.createOscillator(),g=AU.c.createGain();g.gain.value=0;o.connect(g);g.connect(AU.m);o.start();v=AU.v[id]={o,g,h:null}}
+  const hk=harm?harm.join():'';if(hk!==v.h){v.h=hk;if(harm)v.o.setPeriodicWave(auWave(harm));else v.o.type='sine'}v.o.frequency.setTargetAtTime(Math.max(10,Math.min(20000,f)),AU.c.currentTime,.02);v.g.gain.setTargetAtTime(Math.max(0,Math.min(1,amp)),AU.c.currentTime,.03)}
+function auOff(id){const v=AU.v[id];if(v&&AU.c)v.g.gain.setTargetAtTime(0,AU.c.currentTime,.03)}
+function auStop(){Object.keys(AU.v).forEach(auOff)}
+function auBlip(f,dur,amp,when){if(!AU.on||!AU.c)return;const t=AU.c.currentTime+(when||0),o=AU.c.createOscillator(),g=AU.c.createGain();o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+.01);g.gain.exponentialRampToValueAtTime(.0005,t+dur);o.connect(g);g.connect(AU.m);o.start(t);o.stop(t+dur+.05)}
+function auNoise(dur,amp,when,lp){if(!AU.on||!AU.c)return;const n=Math.floor(AU.c.sampleRate*dur),b=AU.c.createBuffer(1,n,AU.c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const s=AU.c.createBufferSource(),f=AU.c.createBiquadFilter(),g=AU.c.createGain();f.type='lowpass';f.frequency.value=lp||800;g.gain.value=amp;s.buffer=b;s.connect(f);f.connect(g);g.connect(AU.m);s.start(AU.c.currentTime+(when||0))}
+function auUI(){return spdUI()+`<span class="label">เสียงจริง</span><div class="seg" id="auSeg"><button data-au="1" aria-pressed="${AU.on}">🔊 เปิดเสียง</button><button data-au="0" aria-pressed="${!AU.on}">🔇 ปิดเสียง</button></div><div class="prow"><span class="pl">ความดัง</span><input id="auVol" class="prange" type="range" min="0" max="100" value="${Math.round(AU.vol*100)}" aria-label="ความดัง"></div>`}
+$('params').addEventListener('click',e=>{const b=e.target.closest('#auSeg button');if(b){auSet(b.dataset.au==='1');document.querySelectorAll('#auSeg button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.au==='1')===AU.on));S.dirty=true}});
+$('params').addEventListener('input',e=>{if(e.target.id==='auVol'){AU.vol=+e.target.value/100;auMaster()}});
+/* ---------- แถบปรับความเร็ว (ภาพ + จังหวะเสียง) ---------- */
+const SPD={v:1};
+function spdUI(){return `<div class="prow"><span class="pl">ความเร็ว <b id="spdV">${SPD.v.toFixed(2).replace(/0$/,'')}×</b></span><input id="spdR" class="prange" type="range" min="0.1" max="2" step="0.05" value="${SPD.v}" aria-label="ความเร็ว"></div>`}
+$('params').addEventListener('input',e=>{if(e.target.id==='spdR'){SPD.v=+e.target.value;const l=$('spdV');if(l)l.textContent=SPD.v.toFixed(2).replace(/0$/,'')+'×';S.dirty=true}});
+
+
+const animTab=()=>false;
+const ST={clk:0};
+const CF='#dc2626',CV='#16a34a',CP='#7c3aed',CO='#ea580c',CBL='#2563eb',BXF='#f59e0b',BXS='#b45309';
+const r2=v=>fN(v,2),r1=v=>fN(v,1);
+const E=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function boxes(k=.6){const u=UU(),wide=W>=H*1.2;return wide?{u,wide,d:{x:u,y:u*2.4,w:W*.6-u,h:H-u*3.4},i:{x:W*.62,y:u,w:W*.38-u*1.2,h:H-u*2}}:{u,wide,d:{x:u*.6,y:u*2,w:W-u*1.2,h:H*k-u*1.4},i:{x:u*.6,y:H*(k+.02),w:W-u*1.2,h:H*(.98-k)-u*.6}}}
+function table(b,rows,head){const u=b.u||UU(),n=rows.length+(head?1:0),rh=Math.min(u*2.8,b.h/n),fz=Math.max(11,Math.min(u*1.45,rh*.45)),cols=(head||rows[0]).length,cw=b.w/cols;let y=b.y+(b.h-rh*n)/2;ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;
+  const row=(r,bg,bold)=>{ctx.fillStyle=bg;ctx.fillRect(b.x,y,b.w,rh);ctx.strokeRect(b.x,y,b.w,rh);r.forEach((c,j)=>{const [s,col]=Array.isArray(c)?c:[c,'#0f172a'];font(fz,800);let f=fz;const w=ctx.measureText(s).width;if(w>cw-u*.6)f=Math.max(9,fz*(cw-u*.6)/w);txt(s,b.x+cw*(j+.5),y+rh/2,col,f,'center','middle',bold?800:700)});y+=rh};
+  if(head)row(head,'#e2e8f0',1);rows.forEach((r,i)=>row(r,r.sum?'#fef2f2':i%2?'#f8fafc':'#fff',r.sum))}
+function rbox(x,y,w,h,fill,stroke,lw=2,r=0){ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.beginPath();if(r)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);ctx.fill();if(stroke)ctx.stroke()}
+function line(x1,y1,x2,y2,col,lw=2){ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function fitTxt(s,x,y,col,fz,mw,al='center',w=800){font(fz,w);const tw=ctx.measureText(s).width;if(tw>mw)fz=Math.max(9,fz*mw/tw);txt(s,x,y,col,fz,al,'middle',w)}
+/* กล่องข้อความเหลือง (กะพริบ/จาง) */
+function note(msg,B,al=1,yy){const u=B.u;ctx.globalAlpha=al;let fz=Math.max(14,u*1.4);font(fz,800);let w=ctx.measureText(msg).width;const mw=B.d.w-u*2;if(w>mw){fz*=mw/w;font(fz,800);w=ctx.measureText(msg).width}const bx=B.d.x+B.d.w/2,by=yy===undefined?B.d.y+B.d.h-u*1.3:yy;rbox(bx-w/2-u*.8,by-fz*.9,w+u*1.6,fz*1.8,'rgba(254,243,199,.97)','#d97706',2,8);txt(msg,bx,by,'#92400e',fz,'center','middle',800);ctx.globalAlpha=1}
+/* ===================== ขั้นตอน (เล่น / ถัดไป) ===================== */
+const SP={p:0,tg:0,play:false};
+const NS=()=>STEPS().length;
+const fq=i=>Math.max(0,Math.min(1,SP.p-(i-1))),FIN=()=>SP.p>=NS()-1e-9,CUR=()=>Math.ceil(SP.p-1e-9);
+function spReset(full){SP.play=false;SP.p=SP.tg=full?NS():0}
+function caption(list,B,u){const k=CUR(),s=k<=0?'กด ▶ เล่น หรือ ถัดไป ▶ เพื่อดูทีละขั้น':list[Math.min(k,list.length)-1];let f=Math.max(12,W<700?u*.95:u*1.15);font(f,800);const w=ctx.measureText(s).width,mw=(B.wide?W*.6:W)-u*1.6;if(w>mw)f=Math.max(9,f*mw/w);txt(s,u*.8,u*1.1,'#0f766e',f,'left','middle',800)}
+const PBS=()=>`<div class="seg" id="pb"><button data-p="play">${SP.play?'⏸ หยุด':'▶ เล่น'}</button><button data-p="nx">ถัดไป ▶</button><button data-p="rs">⏮ เริ่มใหม่</button></div>`;
+function stick(P,k,pts,col='#1e293b',lw=.22){ctx.strokeStyle=col;ctx.lineWidth=lw*k;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.stroke()}
+function circ(P,k,x,y,r,fill,stroke,lw=2){const q=P(x,y);ctx.fillStyle=fill;ctx.beginPath();ctx.arc(q[0],q[1],r*k,0,7);ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}
+function poly(P,pts,fill,stroke,lw=2){ctx.fillStyle=fill;ctx.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])});ctx.closePath();ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}}
+function rectU(P,k,x0,y0,x1,y1,fill,stroke,lw=2){const a=P(x0,y0);rbox(a[0],a[1],(x1-x0)*k,(y1-y0)*k,fill,stroke,lw)}
+function groundU(P,k,y,x0=0,x1=16){const a=P(x0,y),b=P(x1,y);line(a[0],a[1],b[0],b[1],'#64748b',2.5);ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;for(let x=x0;x<x1;x+=.45){const q=P(x,y);ctx.beginPath();ctx.moveTo(q[0],q[1]+2);ctx.lineTo(q[0]-.3*k,q[1]+.35*k);ctx.stroke()}}
+function scnW(B,w,h){const d=B.d,u=B.u,k=Math.min(d.w/w,(d.h-u*.6)/h),ox=d.x+(d.w-w*k)/2,oy=d.y+u*.4+(d.h-u*.4-h*k)/2;return{k,P:(x,y)=>[ox+x*k,oy+y*k]}}
+function arw(P,x0,y0,x1,y1,col,lw,al=1){if(Math.hypot(x1-x0,y1-y0)<.03)return;ctx.globalAlpha=al;const a=P(x0,y0),b=P(x1,y1);arrow(a[0],a[1],b[0],b[1],col,lw);ctx.globalAlpha=1}
+function tagU(P,s,x,y,col,al='center',a=1){ctx.globalAlpha=a;const q=P(x,y);tag(s,q[0],q[1],col,al);ctx.globalAlpha=1}
+function tick(dt){ST.clk+=dt;if(SP.p>=SP.tg)return false;const L=STEPS(),k=Math.floor(SP.p+1e-9)+1,du=L[k-1]?L[k-1][1]:1;SP.p=Math.min(SP.tg,SP.p+dt*SPD.v/Math.max(.2,du));if(SP.p>=SP.tg){SP.play=false;renderP()}return true}
+$('params').addEventListener('click',e=>{const pb=e.target.closest('#pb button');if(pb){const d=pb.dataset.p,N=NS();if(d==='play'){if(SP.play){SP.play=false;SP.tg=SP.p}else{if(SP.p>=N-1e-9)SP.p=0;SP.play=true;SP.tg=N}}else if(d==='nx'){SP.play=false;if(SP.p>=N-1e-9)SP.p=0;SP.tg=Math.min(N,Math.floor(SP.p+1e-6)+1)}else if(d==='rs')spReset(false);renderP();S.dirty=true}});
+/* ===================== กวาดแรงย่อยออกจากแรงหลักลงแกน (แบบ force-lab บทที่ 3) =====================
+   O = จุดเริ่ม (พิกเซล) · vx, vy = องค์ประกอบ (พิกเซล แกน y ชี้ขึ้น) · p = 0→1 ทั้งขั้น (ครึ่งแรกกวาดแกน x ครึ่งหลังกวาดแกน y)
+   dy = เลื่อนแรงย่อยแกน y ออกด้านข้าง · dx = เลื่อนแรงย่อยแกน x ขึ้น/ลง (พิกเซล) กันลูกศรซ้อน · phi = หมุนแกน (องศา) เช่น พื้นเอียง */
+const cl01=x=>Math.max(0,Math.min(1,x)),KR=Math.PI/180;
+function sweepArw(O,a0,a1,L,p,col,lw,lbl,u,al=1){if(p<=0||L<2)return null;const d=((a1-a0+540)%360+360)%360-180,a=a0+d*E(Math.min(1,p)),tip=[O[0]+L*Math.cos(a*KR),O[1]-L*Math.sin(a*KR)];
+  if(p<1&&Math.abs(d)>.5){ctx.save();ctx.strokeStyle=col;ctx.globalAlpha=.45*al;ctx.lineWidth=2;ctx.setLineDash([3,5]);ctx.beginPath();ctx.arc(O[0],O[1],L,-a0*KR,-a*KR,a>a0);ctx.stroke();ctx.restore()}
+  ctx.globalAlpha=al;arrow(O[0],O[1],tip[0],tip[1],col,lw);ctx.globalAlpha=1;if(lbl&&p<1)tag(lbl,tip[0]+u*1.6*Math.cos(a*KR),tip[1]-u*1.6*Math.sin(a*KR),col);return tip}
+function sweepXY(O,vx,vy,p,cx,cy,lw,lbls,u,al=1,dy=0,dx=0,phi=0){const c=Math.cos(phi*KR),s=Math.sin(phi*KR),ex=vx*c+vy*s,ey=-vx*s+vy*c,th=Math.atan2(vy,vx)/KR,px=cl01(p*2),py=cl01(p*2-1);lbls=lbls||[];
+  if(Math.abs(ex)>1)sweepArw([O[0],O[1]+dx],th,phi+(ex>=0?0:180),Math.abs(ex),px,cx,lw,lbls[0],u,al);
+  if(Math.abs(ey)>1)sweepArw([O[0]+dy,O[1]],th,phi+(ey>=0?90:270),Math.abs(ey),py,cy,lw,lbls[1],u,al);
+  return{px,py}}
+
+Object.defineProperty(window,'gg',{get:()=>T.gv,configurable:true});
+const GTABS=[2];
+const gS=()=>'';const gRow=h=>GTABS.includes(T.tab)?`<div style="display:flex;flex-wrap:wrap;gap:calc(var(--u)*.4)">${h}${segH('gvs','gv',[[9.8,'g = 9.8'],[10,'g = 10']])}</div>`:h;
+const gf=x=>String(+(+x).toFixed(2));
+const gLine=()=>GTABS.includes(T.tab)?`<div class="cl"><span class="lab">ค่า g</span>ใช้ g = ${T.gv} m/s²</div>`:'';
+
+function STEPS(){if(T.tab===1)return[['ขั้น 1: รถมวล '+T.m+' kg มีความเร็วต้น u = '+T.u0+' m/s → Ek ต้น = ½mu²',1.8],['ขั้น 2: ออกแรง F = '+T.F+' N ดันไปได้ระยะ s = '+T.s+' m (พื้นลื่น) → งาน W = Fs',2.6],['ขั้น 3: งานที่ทำ = พลังงานจลน์ที่เพิ่มขึ้น: W = Ek ปลาย − Ek ต้น',2],['ขั้น 4: หาความเร็วปลาย v จาก Ek ปลาย = ½mv²',2]];
+  if(T.tab===2)return[['ขั้น 1: เลือกระดับอ้างอิง (h = 0) → '+(T.ref==='floor'?'พื้นห้อง':'ผิวโต๊ะ'),1.6],['ขั้น 2: ยกวัตถุขึ้นด้วยความเร็วคงตัว แรงยก = mg',2.6],['ขั้น 3: งานที่ใช้ยก = mgh = พลังงานศักย์โน้มถ่วงที่เพิ่มขึ้น',2]];
+  return[['ขั้น 1: อัดสปริงเข้าไประยะ x แรงที่ต้องใช้เพิ่มขึ้นตาม F = kx',2.4],['ขั้น 2: งานที่ใช้อัด = พื้นที่ใต้กราฟ F–x (สามเหลี่ยม)',2],['ขั้น 3: เก็บเป็นพลังงานศักย์ยืดหยุ่น Ep = ½kx²',1.8]]}
+const rv=s=>SP.p>=s-1e-9;
+function bars(R,u,list,mx){rbox(R.x,R.y,R.w,R.h,'#fff','#cbd5e1',1,8);const n=list.length,bw=R.w/(n*1.6+.6),bt=R.y+R.h-u*2.6,top=R.y+u*3;list.forEach(([l,v,c],i)=>{const x=R.x+bw*(.6+i*1.6),hh=(bt-top)*Math.max(0,v)/mx;rbox(x,bt-hh,bw,hh,c,'',0,4);fitTxt(l,x+bw/2,bt+u*1.2,c,Math.max(10,u*1),bw*1.5,'center',800);if(v>0)fitTxt(fN(v,0)+' J',x+bw/2,bt-hh-u*.9,c,Math.max(10,u*1),bw*1.5,'center',800)})}
+/* ===================== ① พลังงานจลน์ ===================== */
+function z1(){const W=T.F*T.s,E0=.5*T.m*T.u0*T.u0,E1=E0+W;return{W,E0,E1,v:Math.sqrt(2*E1/T.m)}}
+function draw1(){const B=boxes(.6),{u}=B,{k,P}=scnW(B,15,6.5),Z=z1(),lw=Math.max(3.5,k*.09),y=5,x0=1.5,sc=11/Math.max(T.s,8),q=rv(2)?1:SP.p>1?fq(2):0,cx=x0+T.s*sc*q*q;
+  groundU(P,k,y,.5,14.5);{const a=P(x0+1,y+.5),b=P(x0+1+T.s*sc,y+.5);ctx.setLineDash([5,4]);line(a[0],a[1],b[0],b[1],'#94a3b8',1.5);ctx.setLineDash([]);tagU(P,'s = '+T.s+' m',x0+1+T.s*sc/2,y+.6,'#475569')}
+  rectU(P,k,cx,y-1.1,cx+2,y-.3,'#3b82f6','#1e3a8a');circ(P,k,cx+.45,y-.25,.25,'#1e293b');circ(P,k,cx+1.55,y-.25,.25,'#1e293b');{const qq=P(cx+1,y-.7);txt(T.m+' kg',qq[0],qq[1],'#fff',Math.max(10,k*.32),'center','middle',800)}
+  if(SP.p>1&&!rv(3)){arw(P,cx-1.4,y-.7,cx,y-.7,CF,lw);tagU(P,'F = '+T.F+' N',cx-.7,y-1.5,CF)}
+  const v=Math.sqrt(T.u0*T.u0+2*T.F/T.m*T.s*q*q);if(v>.01){arw(P,cx+2.1,y-1.6,cx+2.1+Math.min(3,v*.4),y-1.6,CV,lw*.8);tagU(P,'v = '+fN(v,1)+' m/s',cx+2.2,y-2.3,CV,'left')}
+  caption(STEPS().map(x=>x[0]),B,u);
+  const I=B.i,rows=[[['Ek ต้น = ½mu²',CBL],[fN(Z.E0,0)+' J',CBL]],[['งาน W = Fs',CF],[rv(2)?fN(Z.W,0)+' J':'?',CF]],[['Ek ปลาย',CV],[rv(3)?fN(Z.E1,0)+' J':'?',CV]],[['v ปลาย',CV],[rv(4)?fN(Z.v,2)+' m/s':'?',CV]]];table({x:I.x,y:I.y,w:I.w,h:B.wide?I.h*.45:I.h*.95,u},rows);
+  if(B.wide)bars({x:I.x,y:I.y+I.h*.5,w:I.w,h:I.h*.5},u,[['Ek ต้น',Z.E0,'#3b82f6'],['W',rv(2)?Z.W:0,'#dc2626'],['Ek ปลาย',rv(3)?Z.E1:0,'#16a34a']],Math.max(Z.E1,1))}
+/* ===================== ② พลังงานศักย์โน้มถ่วง ===================== */
+function draw2(){const B=boxes(.6),{u}=B,{k,P}=scnW(B,12,9),yF=8.4,s=1.4,tb=1,yR=T.ref==='floor'?yF:yF-tb*s,q=rv(2)?1:SP.p>1?E(fq(2)):0,hy=yR-T.h*s*q,Ep=T.mg*gg*T.h;
+  groundU(P,k,yF,.5,11.5);rectU(P,k,6.5,yF-tb*s,10.5,yF-tb*s+.25,'#a16207','#713f12');stick(P,k,[[6.9,yF-tb*s+.25],[6.9,yF]],'#713f12',.15);stick(P,k,[[10.1,yF-tb*s+.25],[10.1,yF]],'#713f12',.15);
+  if(SP.p>0){ctx.globalAlpha=Math.min(1,fq(1)*2);ctx.setLineDash([8,5]);stick(P,k,[[.5,yR],[11.5,yR]],CP,.05);ctx.setLineDash([]);tagU(P,'ระดับอ้างอิง h = 0',.8,yR+Math.max(.45,UU()*1.1/k),CP,'left');ctx.globalAlpha=1}
+  const bx=T.ref==='floor'?3.4:8.5;rectU(P,k,bx-.6,hy-1.2,bx+.6,hy,BXF,BXS);{const qq=P(bx,hy-.6);txt(T.mg+' kg',qq[0],qq[1],'#78350f',Math.max(10,k*.3),'center','middle',800)}
+  if(q>0){const a=P(bx+1.1,yR),b=P(bx+1.1,hy);line(a[0],a[1],b[0],b[1],CF,2.5);line(a[0]-6,a[1],a[0]+6,a[1],CF,2.5);line(b[0]-6,b[1],b[0]+6,b[1],CF,2.5);if(q>=1)tagU(P,'h = '+T.h+' m',bx+1.3,(yR+hy)/2,CF,'left')}
+  if(SP.p>1&&!rv(3)){arw(P,bx,hy-1.2,bx,hy-2.6,CBL,Math.max(3,k*.08));tagU(P,'แรงยก = mg = '+gf(T.mg*gg)+' N',bx-.3,hy-2,CBL,'right')}
+  caption(STEPS().map(x=>x[0]),B,u);
+  const I=B.i,rows=[['m · g',T.mg+' kg · '+T.gv+' m/s²'],['ระดับอ้างอิง',T.ref==='floor'?'พื้นห้อง':'ผิวโต๊ะ (สูง 1 m)'],[['ความสูง h',CF],[T.h+' m',CF]],[['Ep = mgh',CP],[rv(3)?fN(Ep,0)+' J':'?',CP]]];table({x:I.x,y:I.y,w:I.w,h:B.wide?I.h*.45:I.h*.95,u},rows);
+  if(B.wide){const ex=[['เทียบกับพื้นห้อง',fN(T.mg*gg*(T.h+(T.ref==='floor'?0:1)),0)+' J'],['เทียบกับผิวโต๊ะ',fN(T.mg*gg*(T.h-(T.ref==='floor'?1:0)),0)+' J']];table({x:I.x,y:I.y+I.h*.52,w:I.w,h:I.h*.3,u},ex,['วัตถุตำแหน่งเดิม','Ep']);fitTxt('Ep ขึ้นกับระดับอ้างอิงที่เลือก (ติดลบได้ถ้าอยู่ต่ำกว่า)',I.x+I.w/2,I.y+I.h*.9,'#475569',Math.max(11,u*1.05),I.w,'center',700)}}
+/* ===================== ③ พลังงานศักย์ยืดหยุ่น ===================== */
+function draw3(){const B=boxes(.6),{u}=B,d=B.d,q=rv(1)?1:SP.p>0?fq(1):0,xs=T.x*q,Ep=.5*T.k*T.x*T.x,Rs={x:d.x,y:d.y+u*2,w:d.w,h:d.h*.38},{k,P}=scnW({d:Rs,u},14,4.4);
+  rectU(P,k,.5,.4,1,3.4,'#94a3b8','#334155');groundU(P,k,3.4,.5,13.5);const L0=7,sc=12,Lx=L0-xs*sc,x1=1+Lx;ctx.strokeStyle='#475569';ctx.lineWidth=Math.max(2.5,k*.07);ctx.beginPath();const n=14;for(let i=0;i<=n;i++){const xx=1+Lx*i/n,yy=2.3+(i%2?-.45:.45)*(i&&i<n?1:0),qq=P(xx,yy);i?ctx.lineTo(...qq):ctx.moveTo(...qq)}ctx.stroke();
+  rectU(P,k,x1,1.5,x1+1.6,3.4,BXF,BXS);{const a=P(1+L0,3.6),b=P(x1,3.6);ctx.setLineDash([4,4]);line(a[0],a[1]-k*2.6,a[0],a[1]-k*.1,'#94a3b8',1.5);ctx.setLineDash([]);if(xs>.001){line(a[0],a[1],b[0],b[1],CF,2.5);tagU(P,'x = '+fN(xs,2)+' m',(1+L0+x1)/2,3.95,CF)}}
+  if(xs>.001){arw(P,x1+3.4,2.4,x1+1.6,2.4,CBL,Math.max(3,k*.08));tagU(P,'F = kx = '+fN(T.k*xs,0)+' N',x1+2.5,1.3,CBL)}
+  const G={x:d.x,y:d.y+u*2+d.h*.4,w:d.w,h:d.h*.6-u*2},L=G.x+u*4.6,Rr=G.x+G.w-u*1.4,Tp=G.y+u*2,Bt=G.y+G.h-u*2.6,xm=.5,fm=T.k*xm,X=v=>L+(Rr-L)*v/xm,Y=v=>Bt-(Bt-Tp)*v/fm,fz=Math.max(10,u*.9);
+  rbox(G.x,G.y,G.w,G.h,'#fff','#cbd5e1',1,8);for(let v=0;v<=xm+1e-9;v+=.1){line(X(v),Tp,X(v),Bt,'#eef2f7',1);txt(fN(v,1),X(v),Bt+u*.8,'#475569',fz,'center','middle',700)}arrow(L,Bt,Rr+u*.6,Bt,'#334155',2);arrow(L,Bt,L,Tp-u*.6,'#334155',2);txt('x (m)',Rr,Bt+u*1.9,'#334155',fz,'right','middle',800);txt('F (N)',L+u*.4,Tp-u*1,'#334155',fz,'left','middle',800);txt(String(fm),L-u*.4,Y(fm),'#475569',fz,'right','middle',700);
+  if(rv(2)){ctx.fillStyle='rgba(124,58,237,.25)';ctx.beginPath();ctx.moveTo(X(0),Y(0));ctx.lineTo(X(T.x),Y(T.k*T.x));ctx.lineTo(X(T.x),Y(0));ctx.closePath();ctx.fill();tag('พื้นที่ = '+fN(Ep,1)+' J',X(T.x*.66),Y(T.k*T.x*.33),CP)}
+  line(X(0),Y(0),X(xm),Y(fm),CBL,2.5);dot(X(xs),Y(T.k*xs),Math.max(5,u*.5),CF);
+  caption(STEPS().map(x=>x[0]),B,u);
+  const I=B.i,rows=[['ค่านิจสปริง k',T.k+' N/m'],['ระยะอัด x',T.x+' m'],[['แรงสูงสุด kx',CBL],[fN(T.k*T.x,0)+' N',CBL]],[['Ep = ½kx²',CP],[rv(3)?fN(Ep,1)+' J':'?',CP]]];table({x:I.x,y:I.y,w:I.w,h:B.wide?I.h*.45:I.h*.95,u},rows)}
+function draw(){[draw1,draw2,draw3][T.tab-1]()}
+/* ===================== แผงล่าง ===================== */
+function calc(){return gLine()+calc0()}
+function calc0(){const fin=FIN(),wait=`<div class="cl note">กด ▶ เล่น เพื่อดูต่อเนื่อง หรือ ถัดไป ▶ เพื่อดูทีละขั้น</div>`;let h='';
+  if(T.tab===1){const Z=z1();h=`<div class="cl"><span class="lab">สูตร</span>Ek = ½mv² · ทฤษฎีบทงาน–พลังงาน: W = ΔEk</div>`;if(!rv(3))return h+wait;h+=`<div class="cl"><span class="lab">แทนค่า</span>${T.F} × ${T.s} = Ek ปลาย − ½(${T.m})(${T.u0})² → Ek ปลาย = <span class="res">${fN(Z.E1,0)} J</span></div>`;if(rv(4))h+=`<div class="cl"><span class="lab">ความเร็ว</span>v = √(2Ek/m) = √(2 × ${fN(Z.E1,0)} / ${T.m}) = <span class="res">${fN(Z.v,2)} m/s</span></div>`;return fin?h:h+wait}
+  if(T.tab===2){h=`<div class="cl"><span class="lab">สูตร</span>Ep = mgh · h วัดจากระดับอ้างอิง</div>`;if(!rv(3))return h+wait;return h+`<div class="cl"><span class="lab">แทนค่า</span>Ep = ${T.mg} × ${T.gv} × ${T.h} = <span class="res">${fN(T.mg*gg*T.h,0)} J</span></div>`}
+  h=`<div class="cl"><span class="lab">สูตร</span>F = kx · Ep = ½kx²</div>`;if(!rv(2))return h+wait;h+=`<div class="cl"><span class="lab">พื้นที่ใต้กราฟ</span>½ × ${T.x} × ${fN(T.k*T.x,0)} = ${fN(.5*T.k*T.x*T.x,1)} J</div>`;if(rv(3))h+=`<div class="cl"><span class="lab">Ep</span>½ × ${T.k} × ${T.x}² = <span class="res">${fN(.5*T.k*T.x*T.x,1)} J</span> · อัดเพิ่ม 2 เท่า → Ep เพิ่ม 4 เท่า</div>`;return fin?h:h+wait}
+/* ===================== แผงปรับค่า ===================== */
+function renderP(){const t=T.tab;if(t===1)return finishP(gRow(PBS())+prow('m','มวลรถ','kg')+prow('u0','ความเร็วต้น u','m/s')+prow('F','แรงดัน F','N')+prow('s','ระยะ s','m')+spdUI(),[['m','','',.5,.5,10,T],['u0','','',.5,0,10,T],['F','','',1,1,50,T],['s','','',.5,1,8,T]]);
+  if(t===2)return finishP(gRow(PBS())+prow('mg','มวล','kg')+prow('h','ความสูงจากระดับอ้างอิง','m')+`<span class="label">ระดับอ้างอิง</span>${segH('rfs','ref',[['floor','พื้นห้อง'],['table','ผิวโต๊ะ']])}`+spdUI(),[['mg','','',.5,.5,10,T],['h','','',.5,.5,4,T]]);
+  return finishP(gRow(PBS())+prow('k','ค่านิจสปริง k','N/m')+prow('x','ระยะอัด x','m')+spdUI(),[['k','','',10,50,400,T],['x','','',.05,.05,.5,T]])}
+function onSeg(k){if(k==='gv'){S.dirty=true;return}spReset(false)}function onP(k){spReset(!!S.drag)}function onTab(){spReset(false)}
+
+start();
+</script>
+</body>
+</html>
