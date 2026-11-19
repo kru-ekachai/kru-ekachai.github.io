@@ -371,8 +371,8 @@ function draw3(){const B=boxes(.6),{u}=B,h=20,tf=Math.sqrt(2*h/gg),xm=Math.max(1
   axesM(F,xm+4,Math.ceil(h*1.1),u);rbox(F.X(0),F.Y(h),F.k*ox,F.Y(0)-F.Y(h),'#e2e8f0','#94a3b8',1);
   for(let t=0;t<=tc+1e-9;t+=.2){const yy=h-.5*gg*t*t,X1=F.X(ox),X2=F.X(ox+T.u3*t);ctx.globalAlpha=.35;dot(X1,F.Y(yy),Math.max(5,u*.5),'#dc2626');dot(X2,F.Y(yy),Math.max(5,u*.5),'#2563eb');ctx.globalAlpha=1;if(rv(3)){ctx.setLineDash([3,4]);line(X1,F.Y(yy),X2,F.Y(yy),'#94a3b8',1);ctx.setLineDash([])}}
   const yy=h-.5*gg*tc*tc;dot(F.X(ox),F.Y(yy),Math.max(7,u*.7),'#dc2626');dot(F.X(ox+T.u3*tc),F.Y(yy),Math.max(7,u*.7),'#2563eb');
-  if(SP.p>0)tag('ปล่อยตก',F.X(ox)-u*.6,F.Y(h)-u*1.2,'#dc2626','right');if(SP.p>0)tag('ยิงแนวราบ '+T.u3+' m/s',F.X(ox)+u*.6,F.Y(h)-u*1.2,'#2563eb','left');
-  if(rv(3))tag('ถึงพื้นพร้อมกัน t = '+fN(tf,2)+' s',F.X(ox+T.u3*tf/2),F.Y(h*.55),CV);
+  const W=B.wide,al=W?'right':'left',lx=W?F.X(xm+4):F.X(xm+4)+u*1.2,ly=F.Y(h*1.08);if(SP.p>0){tag('● ปล่อยตก',lx,ly,'#dc2626',al);tag('● ยิงแนวราบ '+T.u3+' m/s',lx,ly+u*2.3,'#2563eb',al)}
+  if(rv(3))tag('ถึงพื้นพร้อมกัน t = '+fN(tf,2)+' s',lx,ly+u*4.6,CV,al);
   caption(STEPS().map(x=>x[0]),B,u);
   const I=B.i,rows=[0,.4,.8,1.2,1.6,2].filter(t=>t<=tf+1e-9).map(t=>[fN(t,1)+' s',[fN(.5*gg*t*t,1)+' m','#dc2626'],[fN(.5*gg*t*t,1)+' m','#2563eb']]);table({x:I.x,y:I.y,w:I.w,h:B.wide?I.h*.6:I.h*.95,u},rows,['เวลา','ตกได้ (แดง)','ตกได้ (น้ำเงิน)'])}
 function draw(){[draw1,draw2,draw3][T.tab-1]()}
